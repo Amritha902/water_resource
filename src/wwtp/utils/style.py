@@ -62,3 +62,12 @@ def apply() -> None:
         "font.size": 9,
         "figure.dpi": 130,
     })
+
+#: early-warning methods (docs/05_early_warning.md).  The analyser alarm is
+#: today's practice and takes the neutral reference colour.
+WARNING = {
+    "Early-warning net": "#2a78d6",
+    "Gradient boosting": "#eb6834",
+    "Analyser trend": "#eda100",
+    "Analyser alarm": "#8a8880",
+}
