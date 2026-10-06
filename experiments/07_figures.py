@@ -242,11 +242,66 @@ def fig_ablation(rows: list[dict], out: Path) -> None:
     print("  fig5_ablation.png")
 
 
+
+
+def fig_frontier(frontier: list[dict], rows: list[dict], out: Path) -> None:
+    """Aeration energy against the ammonium violation rate.
+
+    One measure per axis -- no second y-scale.  The PANDA-RL points are a
+    frontier traced by varying the budget; PID and DDPG-B are single
+    operating points on the same axes.  Everything is directly labelled
+    because three of the series colours sit below 3:1 on this surface.
+    """
+    fr = sorted(frontier, key=lambda r: r["viol_NH"])
+    if not fr:
+        return
+    x = [100.0 * r["viol_NH"] for r in fr]
+    y = [r["AE"] for r in fr]
+
+    fig, ax = plt.subplots(figsize=(6.4, 4.2))
+    colour = style.color_for("PANDA-RL")
+    ax.plot(x, y, color=colour, lw=1.8, marker="o", ms=6, zorder=3,
+            markeredgecolor=style.SURFACE, markeredgewidth=1.5,
+            label="PANDA-RL (budget swept)")
+    for r, xi, yi in zip(fr, x, y):
+        ax.annotate(f"budget {100 * r['nh_budget']:.0f}%", xy=(xi, yi),
+                    xytext=(6, -11), textcoords="offset points", fontsize=7.5,
+                    color=style.INK_MUTED)
+
+    for method, marker in (("PID", "s"), ("DDPG-B", "D")):
+        sel = [r for r in rows if r["weather"] == "dry"
+               and r["method"] == method]
+        if not sel:
+            continue
+        mx = 100.0 * float(np.mean([r["viol_NH"] for r in sel]))
+        my = float(np.mean([r["AE"] for r in sel]))
+        c = style.color_for(method)
+        ax.scatter([mx], [my], s=95, marker=marker, color=c, zorder=4,
+                   edgecolor=style.SURFACE, linewidth=1.5, label=method)
+        ax.annotate(method, xy=(mx, my), xytext=(8, 5),
+                    textcoords="offset points", fontsize=9,
+                    color=style.INK_SECONDARY, fontweight="bold")
+
+    ax.set_xlabel("time above the 4 g N/m$^3$ ammonium limit [% of week]")
+    ax.set_ylabel("aeration energy [kWh/d]")
+    ax.set_title("What the aeration saving actually costs")
+    ax.legend(loc="upper right")
+    fig.text(0.0, -0.04,
+             "Down is cheaper, left is cleaner. A method is only better than "
+             "another if it is down-and-left of it.",
+             fontsize=8, color=style.INK_MUTED)
+    fig.tight_layout()
+    fig.savefig(out / "fig6_frontier.png", bbox_inches="tight")
+    plt.close(fig)
+    print("  fig6_frontier.png")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--results", default="results")
     ap.add_argument("--out", default="docs/figures")
     ap.add_argument("--tag", default="aeration")
+    ap.add_argument("--frontier-tag", default="frontier")
     ap.add_argument("--dose-response", action="store_true",
                     help="also regenerate the Figure-4 sweep (slow)")
     args = ap.parse_args()
@@ -264,9 +319,13 @@ def main() -> None:
         return json.loads(path.read_text()) if path.exists() else None
 
     rows, traces, curves = load("summary"), load("traces"), load("curves")
+    fpath = res / f"summary_{args.frontier_tag}.json"
+    frontier = json.loads(fpath.read_text()) if fpath.exists() else None
     if rows:
         fig_tradeoff(rows, out)
         fig_ablation(rows, out)
+        if frontier:
+            fig_frontier(frontier, rows, out)
     if curves:
         fig_learning_curves(curves, out)
     if traces:
