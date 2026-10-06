@@ -344,3 +344,58 @@ def test_trained_aeration_twin_learned_the_figure_4_trade_off():
     assert high_do - low_do > 1.0, "aeration gain flattened or inverted"
     assert high_nh < low_nh, "more air must lower effluent ammonium"
     assert high_tn > low_tn, "more air must raise effluent total nitrogen"
+
+
+# -- intra-episode dual ascent ----------------------------------------------
+
+def test_intra_episode_dual_tracks_the_violation_rate():
+    """With Dyna the policy outruns a once-per-episode multiplier."""
+    from wwtp.rl.twin import AerationTwin
+    agent = PandaRLAgent(
+        PandaRLConfig(n_obs=4, warmup_steps=1, batch_size=8, dyna_ratio=1,
+                      lambda_every=4, lambda_lr_online=0.5, rate_ema_beta=0.5,
+                      constraints=(Constraint("NH_peak", 4.0, 0.05, "NH"),)),
+        twin=AerationTwin())
+    x = np.random.default_rng(0).random(4)
+    for _ in range(32):
+        agent.observe(x, 0.0, -0.4, x, False, cost=np.array([1.0]),
+                      inlet=np.array([18000.0, 30.0, 70.0]))
+    start = float(agent.lmbda[0])
+    for _ in range(16):
+        agent.update()
+    assert float(agent.lmbda[0]) > start
+
+
+def test_intra_episode_dual_releases_when_the_limit_is_respected():
+    agent = PandaRLAgent(
+        PandaRLConfig(n_obs=4, warmup_steps=1, batch_size=8,
+                      lambda_every=4, lambda_lr_online=0.5, rate_ema_beta=0.5,
+                      lambda_init=2.0,
+                      constraints=(Constraint("NH_peak", 4.0, 0.20, "NH"),)))
+    x = np.random.default_rng(1).random(4)
+    for _ in range(32):
+        agent.observe(x, 0.0, -0.4, x, False, cost=np.array([0.0]))
+    start = float(agent.lmbda[0])
+    for _ in range(16):
+        agent.update()
+    assert float(agent.lmbda[0]) < start
+
+
+def test_episode_dual_is_skipped_when_the_online_dual_is_running():
+    """Otherwise the same episode is counted twice."""
+    agent = PandaRLAgent(
+        PandaRLConfig(n_obs=4, lambda_every=4,
+                      constraints=(Constraint("NH_peak", 4.0, 0.05, "NH"),)))
+    before = float(agent.lmbda[0])
+    out = agent.end_episode({"rate_NH_peak": 0.9})
+    assert float(agent.lmbda[0]) == before
+    assert out["rate_NH"] == 0.9
+
+
+def test_episode_dual_still_runs_when_the_online_dual_is_off():
+    agent = PandaRLAgent(
+        PandaRLConfig(n_obs=4, lambda_every=0, lambda_lr=2.0,
+                      constraints=(Constraint("NH_peak", 4.0, 0.05, "NH"),)))
+    before = float(agent.lmbda[0])
+    agent.end_episode({"rate_NH_peak": 0.9})
+    assert float(agent.lmbda[0]) > before
