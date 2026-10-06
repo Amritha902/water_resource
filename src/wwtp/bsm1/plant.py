@@ -141,12 +141,21 @@ class BSM1Plant:
 
     # -- performance -------------------------------------------------------
     def aeration_energy_rate(self, u: np.ndarray) -> float:
-        """Instantaneous aeration energy [kWh/d] (BSM1 definition)."""
+        """Instantaneous aeration energy [kWh/d].
+
+        BSM1 definition, also eq. (20) of Du et al. (2023):
+        ``AE = (S_O_sat / 1800) * sum_i V_i KLa_i``.
+        """
         kla = self.p.kla.copy()
         kla[4] = float(np.clip(u[0], *KLA5_BOUNDS))
-        return float(np.sum(self.p.volumes * kla) * 24.0 / 1800.0)
+        return float(self.p.asm1_params.S_O_sat
+                     * np.sum(self.p.volumes * kla) / 1800.0)
 
     def pumping_energy_rate(self, q_a: float, q_in: float) -> float:
-        """Instantaneous pumping energy [kWh/d] (BSM1 definition)."""
+        """Instantaneous pumping energy [kWh/d].
+
+        BSM1 definition, also eq. (21) of Du et al. (2023):
+        ``PE = 0.004 Q_a + 0.008 Q_r + 0.05 Q_w``.
+        """
         q_a = float(np.clip(q_a, *QA_BOUNDS))
-        return 0.04 * (q_a + self.p.q_r + self.p.q_w)
+        return float(0.004 * q_a + 0.008 * self.p.q_r + 0.05 * self.p.q_w)

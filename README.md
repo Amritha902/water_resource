@@ -1,76 +1,148 @@
-# PANDA-MAACC — prediction-driven multiagent adaptive critic control for wastewater treatment plants
+# Water resource project — RL control of a wastewater treatment plant
 
-Extension of
+This repo has three parts:
 
-> D. Wang, X. Li, J. Ren, J. Qiao, **"Multiagent Adaptive Critic Control With
-> Expert Knowledge for Wastewater Treatment Plants"**, *IEEE Transactions on
-> Industrial Informatics*, 2026. DOI 10.1109/TII.2026.3659924
+1. A simulation of the BSM1 wastewater treatment plant, written from scratch.
+2. Reproductions of the two papers we are building on.
+3. Our own change to the RL network, which is the new contribution.
 
-The base paper is a control-theory contribution: it decomposes a BSM1 plant
-into interconnected subsystems, puts one adaptive-critic agent on each, and
-anchors the learning to an expert PID prior so the loop is safe from step
-zero. This repository reproduces that algorithm and then adds the part the
-paper leaves open — **machine learning that predicts what the plant is about
-to face, instead of only reacting to what it has already felt.**
-
-```
-u_{k,i}  =  b_{k,i}   +   g_{k,i} · a_{k,i}   +   f_{k,i}
-            expert        gated adaptive          anticipatory
-            prior         critic term             feed-forward
-            (paper)       (paper + forecast)      (new)
-```
-
-Setting `g ≡ 1, f ≡ 0` recovers the paper's eq. (7) exactly, so the extension
-is a strict generalisation, not a replacement.
+Nothing here is finished yet. `STATUS.md` says exactly what works, what the
+numbers are so far, and what is left.
 
 ---
 
-## The four learned components
+## The two papers
 
-| # | Component | What it is | Where |
-|---|---|---|---|
-| 1 | **Probabilistic influent forecaster** | dilated causal TCN over 24 h of inlet history → 10/50/90 % quantiles of flow, ammonium and readily-biodegradable COD for the next 2 h, plus a dry/rain/storm regime head | `src/wwtp/forecast/` |
-| 2 | **Neural digital twin** | GRU residual model of the closed loop on a 6-minute grid; its recurrent state stands in for the unknown interconnection term `G_i(s_k)` of eq. (4), and it predicts effluent ammonium too | `src/wwtp/twin/` |
-| 3 | **Anticipatory feed-forward** | the move is found by *differentiating the twin* over a 48-minute horizon driven by the forecast — closed-loop aware and offset-free (see below) | `src/wwtp/panda/` |
-| 4 | **Forecast-conditioned agents + uncertainty gate** | the action and critic networks are conditioned on a 6-D forecast context; the adaptive term is scaled by `1/(1+κ·(q90−q10)/q50)`, so low forecast confidence means falling back to the expert prior | `src/wwtp/panda/` |
+### Paper 1 — Wang, Li, Ren, Qiao (IEEE T-II, 2026)
+*Multiagent Adaptive Critic Control With Expert Knowledge for WWTPs*
 
-Full rationale, including the two design corrections that were needed to make
-the feed-forward work at all, is in [`docs/03_novelty.md`](docs/03_novelty.md).
+The plant has two things that must be held steady:
+
+- dissolved oxygen in tank 5 (`S_O,5`), adjusted with the air transfer rate `KLa_5`
+- nitrate in tank 2 (`S_NO,2`), adjusted with the internal recycle flow `Q_a`
+
+These two loops interfere with each other. More recycle flow brings nitrate
+back for denitrification, but it also drags oxygen-rich water backwards. More
+air changes how much nitrate there is to recycle in the first place.
+
+What the paper does about it:
+
+- Treat the plant as two connected subsystems and give each one its own agent,
+  so each agent only has to learn one simple control law instead of a joint one.
+- Each agent's cost function includes **everyone's** tracking error, not just
+  its own. That is how the coupling is handled without ever having to model it.
+- The applied control is `u = a + b`, where `b` is a normal PID controller
+  (the "expert knowledge") and `a` is what the agent learns. The learned part
+  starts at exactly zero, so on day one the plant just runs on PID and nothing
+  risky happens.
+- The agent outputs an *increment* to the control, not the control itself, so a
+  disturbance only corrupts one small step.
+
+### Paper 2 — Du, Chen, Han, Qiao (Sci China Tech Sci, 2023)
+*Dissolved oxygen concentration control in WWTP based on reinforcement learning*
+
+This one asks a different question. Everyone else fixes the DO setpoint at
+2 mg/L and tries to track it accurately. Du et al. point out that tracking a
+fixed number is the wrong goal — the influent changes all day, so sometimes
+2 mg/L is more oxygen than you need and you are just paying for air.
+
+So they throw the setpoint away. A DDPG agent writes increments straight onto
+`KLa_5` and lets DO float wherever the trade-off puts it:
+
+- **state** `[S_S,5, S_O,5, S_NH,5]` — the three tank-5 concentrations that
+  actually drive the oxygen balance
+- **action** the increment on `KLa_5`
+- **reward A** (they call it DDPG-A): `-(max(NH_e - 4, 0) + 0.38 max(N_tot,e - 18, 0))`
+  — only cares about effluent quality
+- **reward B** (DDPG-B): `-(AE + 0.42 max(NH_e - 4, 0))` — also pays for the air
+- network: actor 3→256→256→1, critic 4→256→256→1, γ=0.99, batch 256,
+  buffer 30000, soft update 0.001
+
+They train on week 1 of the BSM1 influent file and test on week 2. DDPG-B cuts
+aeration energy by 5–7% versus PID while effluent still passes.
+
+The reason this works is a conflict in the plant: **more oxygen lowers effluent
+ammonia but raises effluent total nitrogen.** You cannot minimise both. Our
+simulator reproduces this (see `docs/04_second_paper.md`).
+
+---
+
+## What we are trying to do
+
+Paper 1 gives a good *tracking* controller. Paper 2 gives a good *goal* —
+spend less energy, keep the effluent legal. Put together:
+
+- paper 2's job (decide how much air to use), run with
+- paper 1's ideas (expert prior so it is safe from step one, incremental action,
+  cost that accounts for the other loop), and
+- our own change to the RL network, which is the actual novelty.
+
+Our change, in one line: **the agent in paper 2 can only react to what has
+already happened to the plant. We give it a forecast of what is coming, and we
+make it care about the worst case instead of only the average.**
+
+Concretely, four modifications (details in `docs/03_novelty.md`):
+
+1. **Forecast input.** A separate network predicts the next 2 hours of influent
+   (flow, ammonia, COD) with uncertainty, from 24 h of inlet history. Those
+   predictions go into the actor and critic. So the agent can cut air *before*
+   the load drops, instead of after.
+2. **Risk-aware critic.** Instead of one Q-value, the critic predicts the whole
+   distribution of returns (quantile regression) and the policy optimises the
+   bad tail (CVaR). Discharge limits are legal limits — the tail is what gets
+   you fined, not the mean.
+3. **Constraint instead of a guessed penalty weight.** Paper 2 hand-tunes
+   α2 = 0.38 and β2 = 0.42 by trial and error. We replace that with a Lagrange
+   multiplier that adapts itself until the violation rate hits a target you
+   actually specify.
+4. **Learned plant model for sample efficiency.** A GRU "digital twin" of the
+   plant generates extra training data, so the agent can learn inside the 7-day
+   online budget paper 2 allows.
+
+"PANDA-MAACC" is our name for the combined thing — paper 1's controller plus
+these prediction-driven changes. It is ours, not from either paper.
+
+---
+
+## Reproduce first
+
+Before claiming anything new we have to match what they published. Where we
+stand:
+
+| | paper 2 (dry weather) | ours |
+|---|---|---|
+| PID aeration energy | 3698.2 | 3719.7 |
+| Fuzzy aeration energy | 3697.1 | 3719.9 |
+| DO held at | 2.00 | 2.00 |
+
+0.6% apart on a plant model rebuilt from scratch — close enough to trust the
+comparisons. The DDPG reproduction is in progress; what we have found so far is
+in `STATUS.md` and it is not all good news, which is worth reading.
+
+---
 
 ## Layout
 
 ```
-src/wwtp/
-  bsm1/        ASM1 biokinetics, Takács clarifier, five-reactor plant, influent generator
-  baselines/   incremental PID (the paper's expert prior)
-  maacc/       faithful reproduction of the paper's algorithm
-  forecast/    probabilistic influent forecaster + online predictor
-  twin/        excitation data collection + neural digital twin
-  panda/       the PANDA-MAACC controller
-  envs.py      closed-loop harness;  metrics.py  IAE/ISE/DEVmax, BSM1 EQ and OCI
-experiments/   01 train forecaster · 02 train twin · 03 run the control benchmark
-docs/          paper summary · reproduction notes · the contribution
-tests/         28 tests: plant physics, critic convergence, learned-model sanity
-artifacts/     trained forecaster and twin checkpoints (≈1 MB, committed)
+src/wwtp/bsm1/        the plant: ASM1 biology, Takacs settler, 5 tanks, influent
+src/wwtp/baselines/   PID (expert prior from paper 1)
+src/wwtp/maacc/       paper 1 reproduced
+src/wwtp/rl/          paper 2 reproduced: environment, rewards, DDPG, PID/fuzzy
+src/wwtp/forecast/    the influent forecaster
+src/wwtp/twin/        the digital twin
+src/wwtp/panda/       our controller
+experiments/          numbered scripts, run them in order
+docs/                 one file per paper, plus the novelty and the results
+tests/                28 tests
 ```
 
-## Quick start
+## Running it
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests -q                      # ~6 min, mostly simulation
+python -m pytest tests -q
 
-# the checkpoints in artifacts/ are already trained; to rebuild them:
-python experiments/01_train_forecaster.py      # ~10 min CPU
-python experiments/02_train_twin.py            # ~40 min CPU (data collection dominates)
-
-python experiments/03_run_control.py --seeds 3 # closed-loop benchmark
+python experiments/01_train_forecaster.py     # ~10 min
+python experiments/02_train_twin.py           # ~40 min
+python experiments/03_run_control.py          # paper 1 benchmark
 ```
-
-## Status
-
-**This is work in progress.** The simulator, the reproduction, both learned
-models and the controller are complete and tested; the final benchmark sweep
-and the figures are not. Read [`STATUS.md`](STATUS.md) before continuing — it
-lists exactly what is done, what is not, what the numbers currently say, and
-the next concrete step.

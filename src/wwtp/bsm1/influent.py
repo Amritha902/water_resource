@@ -85,6 +85,22 @@ def _diurnal(t: np.ndarray, amp: float, phase: float) -> np.ndarray:
     return 1.0 + amp * shape
 
 
+def _pollutograph(t: np.ndarray, amp: float, phase: float,
+                  sharpness: float, floor: float) -> np.ndarray:
+    """Sharpened daily load pattern, mean value 1.
+
+    A municipal pollutograph is markedly peakier than the hydrograph -- the
+    morning and evening load peaks are narrow and the night-time load does
+    not fall to zero.  Raising the diurnal shape to a power above one
+    sharpens the peaks, and the floor keeps the trough physical.  Matching
+    this peak-to-mean ratio matters: with a flat pollutograph the BSM1
+    discharge limits never bind and the energy/quality trade-off that
+    Du et al. (2023) exploit disappears.
+    """
+    y = np.maximum(_diurnal(t, amp, phase), floor) ** sharpness
+    return y / y.mean()
+
+
 def _weekly(t: np.ndarray, weekend_drop: float) -> np.ndarray:
     """Weekday/weekend modulation; the series starts on a Monday."""
     day = np.floor(np.mod(t, 7.0)).astype(int)
@@ -116,7 +132,8 @@ def _storm_event(t: np.ndarray, start: float, duration: float,
 def _build(time_days: np.ndarray, weather: str, *,
            flow_amp: float, load_amp: float, weekend_drop: float,
            phase: float, load_scale: float, events: list[tuple],
-           noise: float, rng: np.random.Generator | None) -> InfluentSeries:
+           noise: float, rng: np.random.Generator | None,
+           load_sharpness: float = 1.6) -> InfluentSeries:
     t = time_days
     base_flow = DRY_AVERAGE_FLOW * _diurnal(t, flow_amp, phase) * _weekly(t, weekend_drop)
 
@@ -136,8 +153,9 @@ def _build(time_days: np.ndarray, weather: str, *,
 
     flow = base_flow + wet_flow
 
-    # pollutant mass loads: diurnal, sharper than the flow, plus first flush
-    load_shape = _diurnal(t, load_amp, phase - 0.02) * _weekly(t, 0.6 * weekend_drop)
+    # pollutant mass loads: sharper than the flow, plus first flush
+    load_shape = (_pollutograph(t, load_amp, phase - 0.02, load_sharpness, 0.22)
+                  * _weekly(t, 0.6 * weekend_drop))
     if rng is not None and noise > 0:
         n = len(t)
         # smooth multiplicative noise (AR(1)) so the series stays realistic
@@ -182,8 +200,9 @@ def canonical_scenario(weather: str, days: float = 14.0,
     else:
         raise ValueError(f"unknown weather condition: {weather!r}")
 
-    return _build(t, weather, flow_amp=0.28, load_amp=0.40, weekend_drop=0.18,
-                  phase=0.0, load_scale=1.0, events=events, noise=0.0, rng=None)
+    return _build(t, weather, flow_amp=0.30, load_amp=0.62, weekend_drop=0.18,
+                  phase=0.0, load_scale=1.0, events=events, noise=0.0, rng=None,
+                  load_sharpness=1.6)
 
 
 def random_scenario(rng: np.random.Generator, days: float = 14.0,
@@ -208,11 +227,12 @@ def random_scenario(rng: np.random.Generator, days: float = 14.0,
                            float(rng.uniform(15000.0, 42000.0))))
 
     return _build(t, weather,
-                  flow_amp=float(rng.uniform(0.18, 0.38)),
-                  load_amp=float(rng.uniform(0.28, 0.52)),
+                  flow_amp=float(rng.uniform(0.20, 0.40)),
+                  load_amp=float(rng.uniform(0.45, 0.80)),
                   weekend_drop=float(rng.uniform(0.08, 0.28)),
                   phase=float(rng.uniform(-0.06, 0.06)),
                   load_scale=float(rng.uniform(0.80, 1.25)),
                   events=events,
                   noise=float(rng.uniform(0.04, 0.12)),
-                  rng=rng)
+                  rng=rng,
+                  load_sharpness=float(rng.uniform(1.3, 2.0)))
