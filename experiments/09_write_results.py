@@ -133,8 +133,27 @@ def main() -> None:
         out += ["## Headline: energy saved, and at what cost to the limit", "",
                 "| weather | DDPG-B energy | DDPG-B NH>4 | PANDA-RL energy | "
                 "PANDA-RL NH>4 |", "|---|---|---|---|---|",
-                *lines, "",
-                "PANDA-RL's ammonium budget is 5% of the week and its total "
+                *lines, ""]
+
+        # The comparison that matters is not energy alone: say in numbers
+        # whether the published reward buys its saving out of the limit.
+        p, b = _agg(rows, "dry", "PID"), _agg(rows, "dry", "DDPG-B")
+        if p and b and b["viol_NH"] > p["viol_NH"] * 1.3:
+            out += [
+                f"**Where DDPG-B's saving comes from.** On dry weather it "
+                f"exceeds the 4 g N/m3 ammonium limit "
+                f"{100 * b['viol_NH']:.0f}% of the week against PID's "
+                f"{100 * p['viol_NH']:.0f}%. That is not a bug in the "
+                f"reproduction -- it is what eq. (23) asks for. With "
+                f"`beta2 = 0.42` per mg/L of excess against a full-aeration "
+                f"penalty of 1.0, a long run of small exceedances is cheaper "
+                f"than the air it saves, so the agent takes it. The weight is "
+                f"doing the job of a constraint without being one, which is "
+                f"exactly what the Lagrangian formulation in "
+                f"`docs/03_novelty.md` replaces: there the operator states the "
+                f"rate they will accept and the weight is found for them.", ""]
+
+        out += ["PANDA-RL's ammonium budget is 5% of the week and its total "
                 "nitrogen budget 15%; the Lagrange multipliers are driven by "
                 "the measured rate, so those columns are the constraint the "
                 "operator asked for rather than a tuned penalty weight.", ""]
