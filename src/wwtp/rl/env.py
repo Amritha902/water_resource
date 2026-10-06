@@ -44,6 +44,14 @@ NITRATE_SETPOINT = 1.0
 @dataclass
 class AerationEnvConfig:
     dt_seconds: float = 45.0
+    #: control periods per agent decision.  Du et al. decide every 45 s
+    #: (``1``).  The effluent-ammonium consequence of an aeration change
+    #: arrives hours later, so at 45 s the critic has to carry value across
+    #: ~1000 steps with only ~13k transitions in the paper's 7-day online
+    #: budget, and in our reproduction it never learns.  Holding the action
+    #: for 20 periods (15 min) shortens the horizon in agent steps by the
+    #: same factor and is how an aeration set point is revised in practice.
+    action_interval: int = 1
     da_max: float = 6.0                 # max |increment| on KLa_5 per step
     kla0: float = 84.0
     warmup_days: float = 1.0
@@ -153,7 +161,12 @@ class AerationEnv:
 
     # -- MDP step ----------------------------------------------------------
     def step(self, action: float) -> tuple[np.ndarray, dict, bool]:
-        """Apply an increment to ``KLa_5`` and advance one control period."""
+        """Apply the action and advance one agent decision interval.
+
+        The returned ``info`` holds the *means* over the interval for every
+        reward-relevant quantity, plus the per-period effluent samples that
+        the effluent-quality index is accumulated from.
+        """
         cfg = self.cfg
         a = float(np.clip(action, -1.0, 1.0))
         if cfg.action_mode == "absolute":
@@ -161,28 +174,49 @@ class AerationEnv:
         else:
             self.kla = float(np.clip(self.kla + a * cfg.da_max, *KLA5_BOUNDS))
 
+        acc: dict[str, list[float]] = {k: [] for k in
+                                       ("S_NH", "N_tot", "COD", "BOD5", "TSS",
+                                        "S_NO", "AE", "PE", "S_O5", "S_NO2",
+                                        "KLa5", "aeration_fraction", "q_in")}
+        eff_samples: list[np.ndarray] = []
+        q_eff_samples: list[float] = []
         j = min(self.k0 + self.k, self.series.n_steps - 1)
-        if cfg.control_nitrate:
-            s_no2 = float(self.plant.z[1, asm1.S_NO])
-            self.q_a = float(self.nitrate_pid(
-                np.array([cfg.nitrate_setpoint - s_no2]))[0])
 
-        kla_applied, qa_applied = self.kla, self.q_a
-        if cfg.actuator_noise_std is not None:
-            noise = self.rng.normal(0.0, cfg.actuator_noise_std)
-            kla_applied = float(np.clip(self.kla + noise[0], *KLA5_BOUNDS))
-            qa_applied = float(np.clip(self.q_a + noise[1], *QA_BOUNDS))
+        for _ in range(max(cfg.action_interval, 1)):
+            j = min(self.k0 + self.k, self.series.n_steps - 1)
+            if cfg.control_nitrate:
+                s_no2 = float(self.plant.z[1, asm1.S_NO])
+                self.q_a = float(self.nitrate_pid(
+                    np.array([cfg.nitrate_setpoint - s_no2]))[0])
 
-        self._advance(j, kla_applied, qa_applied)
-        self.k += 1
+            kla_applied, qa_applied = self.kla, self.q_a
+            if cfg.actuator_noise_std is not None:
+                noise = self.rng.normal(0.0, cfg.actuator_noise_std)
+                kla_applied = float(np.clip(self.kla + noise[0], *KLA5_BOUNDS))
+                qa_applied = float(np.clip(self.q_a + noise[1], *QA_BOUNDS))
 
-        info = self.effluent()
-        info.update(AE=self.aeration_energy(), PE=self.pumping_energy(),
-                    S_O5=float(self.plant.z[OBS_REACTOR, asm1.S_O]),
-                    S_NO2=float(self.plant.z[1, asm1.S_NO]),
-                    KLa5=self.kla, Q_a=self.q_a,
-                    aeration_fraction=self.aeration_fraction,
-                    q_in=float(self.series.flow[j]),
+            self._advance(j, kla_applied, qa_applied)
+            self.k += 1
+
+            e = self.effluent()
+            for key, value in e.items():
+                acc[key].append(value)
+            acc["AE"].append(self.aeration_energy())
+            acc["PE"].append(self.pumping_energy())
+            acc["S_O5"].append(float(self.plant.z[OBS_REACTOR, asm1.S_O]))
+            acc["S_NO2"].append(float(self.plant.z[1, asm1.S_NO]))
+            acc["KLa5"].append(self.kla)
+            acc["aeration_fraction"].append(self.aeration_fraction)
+            acc["q_in"].append(float(self.series.flow[j]))
+            eff_samples.append(self.plant.z_effluent.copy())
+            q_eff_samples.append(max(float(self.series.flow[j]) - self.plant.p.q_w, 0.0))
+            if self.k >= self.n_steps:
+                break
+
+        info = {k: float(np.mean(v)) for k, v in acc.items() if v}
+        info.update(NH_peak=float(np.max(acc["S_NH"])),
+                    TN_peak=float(np.max(acc["N_tot"])),
+                    eff_samples=eff_samples, q_eff_samples=q_eff_samples,
                     inlet=np.array([self.series.flow[j],
                                     self.series.composition[j, asm1.S_NH],
                                     self.series.composition[j, asm1.S_S]]),
