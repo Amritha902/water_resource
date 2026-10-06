@@ -136,16 +136,37 @@ oxygen, less effluent ammonium, more total nitrogen — and a test asserts all
 three signs. With `dyna_ratio > 0` it supplies synthetic batches alongside
 the real ones, each carrying its own reward and constraint costs.
 
-It does buy sample efficiency, and that is also how it bites. At the same
-number of *real* interactions the model-based arm reached aeration energy
-3004 against 3272 for the model-free arm — but it ran effluent ammonium to
-8.0 g N/m³ against 4.8, because three synthetic batches per real one gives
-the policy roughly four times the gradient steps while the Lagrange
-multiplier was still being stepped once per episode. The policy outruns the
-constraint. Fixed with an intra-episode dual (`lambda_every`), which is a
-general point about constrained model-based RL rather than a quirk of this
-plant: accelerating the policy without accelerating the dual turns a
-constrained problem into an unconstrained one for as long as the lag lasts.
+It does buy sample efficiency, and that is also how it bites. Over eight
+training weeks on dry weather, at the same number of *real* interactions
+(`experiments/10_dyna_ablation.py`):
+
+| arm | AE [kWh/d] | time above 4 g N/m³ | mean `S_O,5` | λ |
+|---|---|---|---|---|
+| `dyna=0` | 3749.4 | 14.1% | 2.23 | 6.59 |
+| `dyna=3` | 3204.9 | **66.8%** | 0.94 | 10.8 |
+| `dyna=3` + intra-episode dual | 3084.7 | **68.0%** | 0.53 | 8.32 |
+
+The model clearly accelerates learning of the objective — 545 kWh/d less
+aeration at equal real experience — and just as clearly breaks the
+constraint, because three synthetic batches per real one give the policy
+roughly four times the gradient steps while the multiplier is not
+accelerated with it. Accelerating the policy without accelerating the dual
+turns a constrained problem into an unconstrained one for as long as the lag
+lasts.
+
+**The intra-episode dual did not fix it.** That is what the third row says,
+and it is worth being precise about why rather than quietly retuning. The
+online dual took 268 steps of `0.05` against the episode dual's 8 steps of
+`2.0` — a total movement budget of 8.1 against 9.6, so it was if anything
+*slower*, and λ ended lower (8.32 against 10.8). On top of that the rate
+estimate the dual reacts to is built from **real** transitions only, while
+the policy learns from four times as many, so the dual's information rate is
+unchanged even when its step count is not.
+
+The principled correction is to scale the dual step with `dyna_ratio` so the
+multiplier moves at the same rate as the policy, rather than at the rate of
+the environment. That is a one-line change and an untested hypothesis, so it
+is recorded here as the next experiment and not as a result.
 
 One hard lesson from building the existing twin is worth repeating, because it
 applies to any model fitted here: a twin identified on data collected **under
@@ -166,7 +187,7 @@ One line per modification, so nothing has to be inferred from the prose.
 | 1 | forecast-conditioned actor and critic | **supported** | with 2, below |
 | 2 | distributional critic + CVaR objective | **supported** | `12_weight_sweep.py`: same objective, same swept weight, arms differ only in the network. PANDA-fw's Pareto front sits ~29 kWh/d below DDPG-B's at matched violation rate, and all four per-point gaps are positive (+51, +25, +35, +3). |
 | 3 | discharge limits as Lagrangian constraints | **mechanism works, not yet converged** | `11_budget_frontier.py`: a 40% budget is met almost exactly (40.2%), and the multipliers move the right way as the budget loosens. But at one seed and twenty training weeks the budget does not reliably index the operating point — one of four runs comes out dominated, and the full-benchmark PANDA-RL runs at a 5% budget are mixed. The dual needs more steps than the episode boundary gives it. |
-| 4 | twin-assisted (Dyna) updates | **effect confirmed, with a caveat it caused** | `10_dyna_ablation.py`: at equal real interactions the model-based arm reached 3004 kWh/d against 3272, but ran ammonium to 8.0 g N/m³ against 4.8 because the policy outran the once-per-episode dual. Fixed with `lambda_every`. |
+| 4 | twin-assisted (Dyna) updates | **sample efficiency confirmed; it breaks the constraint and the attempted fix did not work** | `10_dyna_ablation.py`: at equal real interactions the model-based arm cut aeration from 3749 to 3205 kWh/d, but took the ammonium violation rate from 14.1% to 66.8%. The intra-episode dual (`lambda_every`) was meant to fix that and did not — 68.0%. Diagnosis and the proposed correction are in §4. |
 
 Modifications 1 and 2 cannot be separated by the experiments run so far —
 they are enabled together in `PANDA-fw`. Separating them needs two more arms
