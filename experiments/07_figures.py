@@ -255,17 +255,31 @@ def fig_frontier(frontier: list[dict], rows: list[dict], out: Path) -> None:
     fr = sorted(frontier, key=lambda r: r["viol_NH"])
     if not fr:
         return
-    x = [100.0 * r["viol_NH"] for r in fr]
-    y = [r["AE"] for r in fr]
 
-    fig, ax = plt.subplots(figsize=(6.4, 4.2))
+    def dominated(r):
+        return any(o["viol_NH"] <= r["viol_NH"] and o["AE"] <= r["AE"]
+                   and (o["viol_NH"] < r["viol_NH"] or o["AE"] < r["AE"])
+                   for o in fr if o is not r)
+
+    # Only the Pareto-efficient runs are joined up.  Joining every point
+    # would draw a frontier that the data does not support.
+    front = [r for r in fr if not dominated(r)]
+    bad = [r for r in fr if dominated(r)]
+
+    fig, ax = plt.subplots(figsize=(6.6, 4.3))
     colour = style.color_for("PANDA-RL")
-    ax.plot(x, y, color=colour, lw=1.8, marker="o", ms=6, zorder=3,
+    ax.plot([100.0 * r["viol_NH"] for r in front], [r["AE"] for r in front],
+            color=colour, lw=1.8, marker="o", ms=6, zorder=3,
             markeredgecolor=style.SURFACE, markeredgewidth=1.5,
-            label="PANDA-RL (budget swept)")
-    for r, xi, yi in zip(fr, x, y):
-        ax.annotate(f"budget {100 * r['nh_budget']:.0f}%", xy=(xi, yi),
-                    xytext=(6, -11), textcoords="offset points", fontsize=7.5,
+            label="PANDA-RL (Pareto-efficient runs)")
+    if bad:
+        ax.scatter([100.0 * r["viol_NH"] for r in bad], [r["AE"] for r in bad],
+                   s=52, facecolor="none", edgecolor=colour, linewidth=1.5,
+                   zorder=3, label="dominated run (not converged)")
+    for r in fr:
+        ax.annotate(f"budget {100 * r['nh_budget']:.0f}%",
+                    xy=(100.0 * r["viol_NH"], r["AE"]), xytext=(6, -11),
+                    textcoords="offset points", fontsize=7.5,
                     color=style.INK_MUTED)
 
     for method, marker in (("PID", "s"), ("DDPG-B", "D")):
@@ -285,11 +299,12 @@ def fig_frontier(frontier: list[dict], rows: list[dict], out: Path) -> None:
     ax.set_xlabel("time above the 4 g N/m$^3$ ammonium limit [% of week]")
     ax.set_ylabel("aeration energy [kWh/d]")
     ax.set_title("What the aeration saving actually costs")
-    ax.legend(loc="upper right")
-    fig.text(0.0, -0.04,
-             "Down is cheaper, left is cleaner. A method is only better than "
-             "another if it is down-and-left of it.",
-             fontsize=8, color=style.INK_MUTED)
+    ax.legend(loc="lower left", fontsize=8)
+    fig.text(0.01, -0.09,
+             "Down is cheaper, left is cleaner; a method beats another only "
+             "if it sits down-and-left of it.\nThe budget labels are what was "
+             "asked for, the position is what was achieved.",
+             fontsize=8, color=style.INK_MUTED, linespacing=1.5)
     fig.tight_layout()
     fig.savefig(out / "fig6_frontier.png", bbox_inches="tight")
     plt.close(fig)

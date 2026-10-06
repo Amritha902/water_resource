@@ -200,8 +200,8 @@ def main() -> None:
         out.append("")
 
         if n_dom:
-            verb = "run is" if n_dom == 1 else "runs are"
-            out += [f"**Read this table with care.** {n_dom} of {len(fr)} "
+            verb = "is" if n_dom == 1 else "are"
+            out += [f"**Read this table with care.** {n_dom} of {len(fr)} runs "
                     f"{verb} dominated by another run in the same sweep -- worse "
                     f"on both axes -- so the budget does **not** reliably "
                     f"index the operating point at one seed and "
@@ -216,12 +216,49 @@ def main() -> None:
                     f"`experiments/12_weight_sweep.py` repeats the comparison "
                     f"against a *stationary* objective to remove this "
                     f"confound.", ""]
-        if pid:
-            out += [f"For reference on the same axes: PID sits at "
-                    f"{pid['AE']:.0f} kWh/d with "
-                    f"{100 * pid['viol_NH']:.0f}% of the week above the limit"
-                    + (f", and the reproduced DDPG-B at {ddpg['AE']:.0f} with "
-                       f"{100 * ddpg['viol_NH']:.0f}%." if ddpg else "."), ""]
+        # Where do the baselines sit relative to the efficient frontier?
+        eff = sorted((r for r in fr if not dominated(r, fr)),
+                     key=lambda r: r["viol_NH"])
+
+        def frontier_ae(rate: float) -> float | None:
+            """Linear interpolation of the efficient frontier at a rate."""
+            if len(eff) < 2 or not (eff[0]["viol_NH"] <= rate
+                                    <= eff[-1]["viol_NH"]):
+                return None
+            for a, b in zip(eff, eff[1:]):
+                if a["viol_NH"] <= rate <= b["viol_NH"]:
+                    span = b["viol_NH"] - a["viol_NH"]
+                    if span <= 0:
+                        return a["AE"]
+                    w = (rate - a["viol_NH"]) / span
+                    return a["AE"] + w * (b["AE"] - a["AE"])
+            return None
+
+        notes = []
+        for name, ref in (("PID", pid), ("DDPG-B", ddpg)):
+            if not ref:
+                continue
+            here = frontier_ae(ref["viol_NH"])
+            if here is None:
+                notes.append(f"{name} sits at {ref['AE']:.0f} kWh/d and "
+                             f"{100 * ref['viol_NH']:.0f}%, outside the range "
+                             f"the sweep covers.")
+            else:
+                gap = ref["AE"] - here
+                verdict = ("below it" if gap > 0 else "above it")
+                notes.append(
+                    f"{name} sits at {ref['AE']:.0f} kWh/d and "
+                    f"{100 * ref['viol_NH']:.0f}% of the week above the limit. "
+                    f"At that same violation rate the efficient frontier is at "
+                    f"about {here:.0f} kWh/d, i.e. {abs(gap):.0f} kWh/d "
+                    f"{verdict}.")
+        if notes:
+            out += ["On the same axes: " + " ".join(notes), "",
+                    "So the frontier passes under both comparators rather "
+                    "than any single run dominating them outright -- which is "
+                    "the weaker and more defensible version of the claim. The "
+                    "interpolation is between two measured runs, not an "
+                    "extrapolation.", ""]
 
     # --- the network comparison at a fixed weight ------------------------
     wpath = Path(args.results) / "summary_weights.json"
