@@ -56,6 +56,21 @@ class InfluentPredictor:
             return
         self._infer()
 
+    def push(self, measurement: np.ndarray) -> None:
+        """Append one inlet sample unconditionally and re-infer when full.
+
+        Used when the caller already samples at the forecaster's own period
+        (the aeration agent decides every 15 min, which is exactly the inlet
+        sensor period), so no internal decimation is wanted.
+        """
+        m = np.asarray(measurement, dtype=float)
+        self._last = m
+        self.buffer.append(np.log(np.maximum(m, 1e-3)))
+        if len(self.buffer) > LOOKBACK:
+            self.buffer.pop(0)
+        if len(self.buffer) == LOOKBACK:
+            self._infer()
+
     @torch.no_grad()
     def _infer(self) -> None:
         x = (np.stack(self.buffer).astype(np.float32) - self.mean) / self.std
