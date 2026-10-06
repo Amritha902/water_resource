@@ -274,7 +274,7 @@ def test_aeration_corpus_excites_the_actuator_open_loop():
 
 def test_dyna_produces_well_formed_synthetic_transitions():
     from wwtp.rl.twin import AerationTwin
-    agent = PandaRLAgent(PandaRLConfig(n_obs=4, n_env_obs=4, warmup_steps=1,
+    agent = PandaRLAgent(PandaRLConfig(n_obs=4, warmup_steps=1,
                                        batch_size=8, dyna_ratio=2),
                          twin=AerationTwin())
     x = np.random.default_rng(0).random(4)
@@ -292,7 +292,7 @@ def test_dyna_produces_well_formed_synthetic_transitions():
 
 def test_dyna_updates_run_alongside_the_real_ones():
     from wwtp.rl.twin import AerationTwin
-    agent = PandaRLAgent(PandaRLConfig(n_obs=4, n_env_obs=4, warmup_steps=1,
+    agent = PandaRLAgent(PandaRLConfig(n_obs=4, warmup_steps=1,
                                        batch_size=8, dyna_ratio=3),
                          twin=AerationTwin())
     x = np.random.default_rng(1).random(4)
