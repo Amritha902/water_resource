@@ -23,6 +23,30 @@ PAPER_DRY = {"PID": dict(AE=3698.20, EQ=6226.48, S_NH=2.34, N_tot=17.85),
              "Fuzzy": dict(AE=3697.12, EQ=6222.10, S_NH=2.33, N_tot=17.84)}
 
 
+def _pareto(runs: list[dict]) -> list[dict]:
+    """Runs not beaten on both axes (violation rate and aeration energy)."""
+    def beaten(r):
+        return any(o["viol_NH"] <= r["viol_NH"] and o["AE"] <= r["AE"]
+                   and (o["viol_NH"] < r["viol_NH"] or o["AE"] < r["AE"])
+                   for o in runs if o is not r)
+    return sorted((r for r in runs if not beaten(r)),
+                  key=lambda r: r["viol_NH"])
+
+
+def _interp_ae(front: list[dict], rate: float) -> float | None:
+    """Aeration energy of a frontier at a violation rate, by interpolation."""
+    if len(front) < 2 or not (front[0]["viol_NH"] <= rate
+                              <= front[-1]["viol_NH"]):
+        return None
+    for a, b in zip(front, front[1:]):
+        if a["viol_NH"] <= rate <= b["viol_NH"]:
+            span = b["viol_NH"] - a["viol_NH"]
+            if span <= 0:
+                return a["AE"]
+            return a["AE"] + (rate - a["viol_NH"]) / span * (b["AE"] - a["AE"])
+    return None
+
+
 def _agg(rows: list[dict], weather: str, method: str) -> dict | None:
     sel = [r for r in rows if r["weather"] == weather and r["method"] == method]
     if not sel:
@@ -279,25 +303,40 @@ def main() -> None:
                        f"{100 * r['viol_NH']:.1f}% | {r['AE']:.1f} | "
                        f"{r['S_O5_mean']:.2f} |")
         out.append("")
-        # who wins at each weight, on both axes
-        wins = {"PANDA-fw": 0, "DDPG-B": 0, "split": 0}
-        for beta2 in sorted({r["beta2"] for r in ws}):
-            pair = {r["arm"]: r for r in ws if r["beta2"] == beta2}
-            if len(pair) < 2:
-                continue
-            a, b = pair.get("PANDA-fw"), pair.get("DDPG-B")
-            if a["AE"] <= b["AE"] and a["viol_NH"] <= b["viol_NH"]:
-                wins["PANDA-fw"] += 1
-            elif b["AE"] <= a["AE"] and b["viol_NH"] <= a["viol_NH"]:
-                wins["DDPG-B"] += 1
-            else:
-                wins["split"] += 1
-        total = sum(wins.values())
-        if total:
-            out += [f"Pairwise at equal `beta2`, counting a win only when one "
-                    f"arm is no worse on **both** energy and violation rate: "
-                    f"PANDA-fw {wins['PANDA-fw']}, DDPG-B {wins['DDPG-B']}, "
-                    f"neither dominates in {wins['split']} of {total}.", ""]
+        # Comparing the two arms at equal beta2 is not the right test: the
+        # same weight lands them at different points on the same trade-off.
+        # Compare the frontiers each arm traces instead.
+        fronts = {arm: _pareto([r for r in ws if r["arm"] == arm])
+                  for arm in sorted({r["arm"] for r in ws})}
+        a_name, b_name = "PANDA-fw", "DDPG-B"
+        fa, fb = fronts.get(a_name, []), fronts.get(b_name, [])
+        if len(fa) >= 2 and len(fb) >= 2:
+            gaps = []
+            for r in fb:
+                here = _interp_ae(fa, r["viol_NH"])
+                if here is not None:
+                    gaps.append(r["AE"] - here)
+            if gaps:
+                mean_gap = float(np.mean(gaps))
+                direction = ("below" if mean_gap > 0 else "above")
+                out += [f"**Comparing the frontiers, not the pairs.** At equal "
+                        f"`beta2` the two arms do not land at the same "
+                        f"violation rate -- they slide to different points on "
+                        f"the same trade-off -- so the pairwise test is not "
+                        f"informative. Taking each arm's Pareto front over the "
+                        f"swept weights and measuring at DDPG-B's own "
+                        f"violation rates, the {a_name} front sits on average "
+                        f"{abs(mean_gap):.0f} kWh/d {direction} the "
+                        f"{b_name} front "
+                        f"({', '.join(f'{g:+.0f}' for g in gaps)} kWh/d at "
+                        f"each point). Positive means {a_name} is cheaper at "
+                        f"the same effluent risk.", ""]
+            if len(fa) < len([r for r in ws if r["arm"] == a_name]):
+                out += [f"({len([r for r in ws if r['arm'] == a_name]) - len(fa)}"
+                        f" of {a_name}'s runs and "
+                        f"{len([r for r in ws if r['arm'] == b_name]) - len(fb)}"
+                        f" of {b_name}'s are dominated within their own arm and "
+                        f"are excluded from the fronts.)", ""]
 
     # --- does the learned model buy sample efficiency? -------------------
     dpath = Path(args.results) / f"summary_{args.dyna_tag}.json"
