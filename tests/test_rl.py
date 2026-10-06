@@ -244,3 +244,68 @@ def test_panda_update_runs_and_reports_the_risk_measure():
     stats = agent.update()
     assert {"loss_critic", "loss_actor", "cvar", "loss_cost"} <= set(stats)
     assert np.isfinite(list(stats.values())).all()
+
+
+# -- the aeration twin and Dyna updates --------------------------------------
+
+def test_aeration_twin_is_a_residual_model():
+    from wwtp.rl.twin import AerationTwin
+    twin = AerationTwin()
+    obs = torch.rand(6, 3)
+    with torch.no_grad():
+        nxt, eff = twin(obs, torch.rand(6, 1), torch.rand(6, 3))
+    assert nxt.shape == (6, 3) and eff.shape == (6, 2)
+    # an untrained residual head leaves the state close to where it started
+    assert float((nxt - obs).abs().max()) < 2.0
+
+
+def test_aeration_corpus_excites_the_actuator_open_loop():
+    """A closed-loop corpus would leave KLa and DO almost uncorrelated."""
+    from wwtp.rl.twin import collect_corpus
+    corpus = collect_corpus(n_rollouts=1, seed=0, days=1.5)
+    u = corpus["u"][:, 0]
+    assert u.min() < 0.15 and u.max() > 0.85      # the whole range is visited
+    assert len(np.unique(np.round(u, 3))) > 5     # piecewise constant, not fixed
+    assert corpus["obs"].shape[1] == 3
+    assert np.all(np.isfinite(corpus["eff"]))
+
+
+def test_dyna_produces_well_formed_synthetic_transitions():
+    from wwtp.rl.twin import AerationTwin
+    agent = PandaRLAgent(PandaRLConfig(n_obs=4, n_env_obs=4, warmup_steps=1,
+                                       batch_size=8, dyna_ratio=2),
+                         twin=AerationTwin())
+    x = np.random.default_rng(0).random(4)
+    for _ in range(32):
+        agent.observe(x, 0.0, -0.4, x, False, cost=np.array([0.0, 0.0]),
+                      inlet=np.array([18000.0, 30.0, 70.0]))
+    o, a, r, o2, d, cost = agent._dyna_batch(7)
+    assert o.shape == (7, 4) and o2.shape == (7, 4)
+    assert cost.shape == (7, 2)
+    assert bool(((a >= -1.0) & (a <= 1.0)).all())
+    assert bool((r <= 0.0).all())                 # energy reward is never positive
+    assert bool((o2 >= 0.0).all())
+    assert torch.isfinite(torch.cat([o, a, r, o2, d, cost], dim=-1)).all()
+
+
+def test_dyna_updates_run_alongside_the_real_ones():
+    from wwtp.rl.twin import AerationTwin
+    agent = PandaRLAgent(PandaRLConfig(n_obs=4, n_env_obs=4, warmup_steps=1,
+                                       batch_size=8, dyna_ratio=3),
+                         twin=AerationTwin())
+    x = np.random.default_rng(1).random(4)
+    for _ in range(32):
+        agent.observe(x, 0.0, -0.4, x, False, cost=np.array([1.0, 0.0]),
+                      inlet=np.array([18000.0, 30.0, 70.0]))
+    stats = agent.update()
+    assert "loss_critic_dyna" in stats
+    assert np.isfinite(list(stats.values())).all()
+
+
+def test_dyna_is_off_without_a_twin():
+    agent = PandaRLAgent(PandaRLConfig(n_obs=4, warmup_steps=1, batch_size=8,
+                                       dyna_ratio=4))
+    x = np.random.default_rng(2).random(4)
+    for _ in range(32):
+        agent.observe(x, 0.0, -0.4, x, False, cost=np.array([0.0, 0.0]))
+    assert "loss_critic_dyna" not in agent.update()

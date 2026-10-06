@@ -65,6 +65,27 @@ def test_settler_thickens_sludge():
     assert plant.settler.x_underflow > 50.0 * plant.settler.x_effluent
 
 
+@pytest.mark.parametrize("days", [1.0, 2.5, 14.0])
+def test_random_scenarios_are_valid_at_any_horizon(days):
+    """Short horizons must not produce an inverted event window."""
+    rng = np.random.default_rng(0)
+    for _ in range(6):
+        s = influent.random_scenario(rng, days=days)
+        assert s.n_steps == int(round(days * 86400 / 45))
+        assert np.all(np.isfinite(s.flow)) and np.all(s.flow > 0.0)
+        assert np.all(np.isfinite(s.composition)) and np.all(s.composition >= 0.0)
+
+
+def test_pollutograph_peaks_match_bsm1_statistics():
+    """A flat load leaves both discharge limits permanently inactive."""
+    s = influent.canonical_scenario("dry")
+    nh = s.composition[:, asm1.S_NH]
+    load = nh * s.flow
+    assert 28.0 < nh.mean() < 34.0            # BSM1 dry average is 31.56
+    assert nh.max() > 40.0 and nh.min() < 15.0
+    assert load.max() / load.mean() > 1.4     # peakier than the hydrograph
+
+
 @pytest.mark.parametrize("weather", ["dry", "rain", "storm"])
 def test_influent_scenarios_have_plausible_statistics(weather):
     s = influent.canonical_scenario(weather)
