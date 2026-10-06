@@ -209,11 +209,23 @@ for four simulated weeks.
 | `03_run_control.py` | PID vs MAACC vs PANDA benchmark | long |
 | `04_collect_warning_data.py` | simulates the early-warning corpus | ~15 min |
 | `05_warning_benchmark.py` | trains + evaluates the early warning, writes figures | ~30 min |
-| `06_aeration_benchmark.py` | **the main one.** PID / fuzzy / DDPG-A / DDPG-B / PANDA-RL (+ ablations) over dry, rain and storm | ~2 h |
+| `06_aeration_benchmark.py` | PID / fuzzy / DDPG-A / DDPG-B / PANDA-RL (+ ablations) over dry, rain and storm | ~2 h |
 | `07_figures.py` | figures from the benchmark results | ~1 min |
+| `08_train_aeration_twin.py` | open-loop rollouts + the one-step aeration model used for Dyna | ~8 min |
+| `09_write_results.py` | renders `docs/05_results.md` from the stored results | seconds |
+| `10_dyna_ablation.py` | does the learned model buy sample efficiency? | ~25 min |
+| `11_budget_frontier.py` | sweeps the ammonium budget, traces the energy/violation frontier | ~25 min |
+| `12_weight_sweep.py` | **the decisive one.** Same reward, swept `beta2`, arms differ only in the network | ~45 min |
 
 ## 7. Tests — `tests/`
 
 Run `python -m pytest tests -q`. Each file guards one layer: plant physics,
 control loop, critic convergence, learned-model sanity, early-warning labels
 and metrics, and the aeration MDP plus both RL agents (`test_rl.py`).
+
+A note on what the tests are for. Several of them exist because something
+was wrong and was only found by looking: that the critic update of the first
+paper's eq. (15) diverges, that a twin fitted on closed-loop data learns a
+near-zero aeration gain, that a saturated `tanh` actor has no gradient to
+escape an actuator rail, that `random_scenario` built an inverted event
+window below four days. Each of those is now a test rather than a comment.
