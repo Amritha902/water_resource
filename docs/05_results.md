@@ -10,7 +10,8 @@ Protocol: learn on week 1 of each BSM1 influent file, evaluate with exploration 
 |---|---|---|---|---|---|---|---|---|
 | PID | 3719.7 | -- | 5411 | 2.00 | 1.96 | 16.62 | 12.2% | 45.1% |
 | Fuzzy | 3719.9 | -0.0% | 5412 | 2.00 | 1.96 | 16.62 | 12.3% | 45.1% |
-| DDPG-A | 3791.3 | -1.9% | 5514 | 2.41 | 2.22 | 16.65 | 17.9% | 39.7% |
+| DDPG-A | 3693.0 ± 98 | +0.7% | 5448 | 1.89 | 2.23 | 16.24 | 18.2% | 31.9% |
+| DDPG-B | 3429.5 | +7.8% | 5668 | 1.10 | 3.25 | 15.34 | 45.9% | 8.4% |
 
 ## Agreement with the published comparators
 
@@ -20,6 +21,16 @@ Dry weather. The plant here is rebuilt from the ASM1/BSM1 model definition, not 
 |---|---|---|---|
 | PID aeration energy | 3698.2 | 3719.7 | +0.6% |
 | fuzzy aeration energy | 3697.1 | 3719.9 | +0.6% |
+
+## Headline: energy saved, and at what cost to the limit
+
+| weather | DDPG-B energy | DDPG-B NH>4 | PANDA-RL energy | PANDA-RL NH>4 |
+|---|---|---|---|---|
+| dry | +7.8% | 45.9% | -- | -- |
+
+**Where DDPG-B's saving comes from.** On dry weather it exceeds the 4 g N/m3 ammonium limit 46% of the week against PID's 12%. That is not a bug in the reproduction -- it is what eq. (23) asks for. With `beta2 = 0.42` per mg/L of excess against a full-aeration penalty of 1.0, a long run of small exceedances is cheaper than the air it saves, so the agent takes it. The weight is doing the job of a constraint without being one, which is exactly what the Lagrangian formulation in `docs/03_novelty.md` replaces: there the operator states the rate they will accept and the weight is found for them.
+
+PANDA-RL's ammonium budget is 5% of the week and its total nitrogen budget 15%; the Lagrange multipliers are driven by the measured rate, so those columns are the constraint the operator asked for rather than a tuned penalty weight.
 
 ## Caveats
 
