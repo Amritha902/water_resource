@@ -311,6 +311,63 @@ def fig_frontier(frontier: list[dict], rows: list[dict], out: Path) -> None:
     print("  fig6_frontier.png")
 
 
+def fig_weight_sweep(ws: list[dict], out: Path) -> None:
+    """Two frontiers, one per network, traced by sweeping the reward weight.
+
+    Both arms optimise the same objective; only the network differs.  The
+    arm whose frontier sits lower-left is better at every effluent risk the
+    sweep covers.
+    """
+    arms = sorted({r["arm"] for r in ws})
+    if len(arms) < 2:
+        return
+
+    def pareto(runs):
+        def beaten(r):
+            return any(o["viol_NH"] <= r["viol_NH"] and o["AE"] <= r["AE"]
+                       and (o["viol_NH"] < r["viol_NH"] or o["AE"] < r["AE"])
+                       for o in runs if o is not r)
+        return sorted((r for r in runs if not beaten(r)),
+                      key=lambda r: r["viol_NH"])
+
+    palette = {"DDPG-B": style.color_for("DDPG-B"),
+               "PANDA-fw": style.color_for("PANDA-RL")}
+    fig, ax = plt.subplots(figsize=(6.6, 4.3))
+    for arm in arms:
+        runs = [r for r in ws if r["arm"] == arm]
+        front = pareto(runs)
+        colour = palette.get(arm, style.INK_SECONDARY)
+        ax.plot([100 * r["viol_NH"] for r in front], [r["AE"] for r in front],
+                color=colour, lw=1.8, marker="o", ms=6, zorder=3,
+                markeredgecolor=style.SURFACE, markeredgewidth=1.5, label=arm)
+        for r in front:
+            ax.annotate(f"$\\beta_2$={r['beta2']}",
+                        xy=(100 * r["viol_NH"], r["AE"]), xytext=(5, -11),
+                        textcoords="offset points", fontsize=7.5,
+                        color=style.INK_MUTED)
+        off = [r for r in runs if r not in front]
+        if off:
+            ax.scatter([100 * r["viol_NH"] for r in off], [r["AE"] for r in off],
+                       s=46, facecolor="none", edgecolor=colour, linewidth=1.4,
+                       zorder=2)
+        if front:
+            _label_last(ax, [100 * r["viol_NH"] for r in front],
+                        [r["AE"] for r in front], arm, colour)
+
+    ax.set_xlabel("time above the 4 g N/m$^3$ ammonium limit [% of week]")
+    ax.set_ylabel("aeration energy [kWh/d]")
+    ax.set_title("Same objective, same swept weight -- only the network differs")
+    ax.legend(loc="lower left", fontsize=8)
+    fig.text(0.01, -0.09,
+             "Hollow markers are runs dominated within their own arm.\n"
+             "The lower-left frontier is cheaper at the same effluent risk.",
+             fontsize=8, color=style.INK_MUTED, linespacing=1.5)
+    fig.tight_layout()
+    fig.savefig(out / "fig7_weight_sweep.png", bbox_inches="tight")
+    plt.close(fig)
+    print("  fig7_weight_sweep.png")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--results", default="results")
@@ -341,6 +398,9 @@ def main() -> None:
         fig_ablation(rows, out)
         if frontier:
             fig_frontier(frontier, rows, out)
+    wpath = res / "summary_weights.json"
+    if wpath.exists():
+        fig_weight_sweep(json.loads(wpath.read_text()), out)
     if curves:
         fig_learning_curves(curves, out)
     if traces:
