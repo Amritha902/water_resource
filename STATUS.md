@@ -17,12 +17,16 @@ what is left.
 | Paper 2 — Figure 4 physics reproduced | **done** |
 | Paper 2 — PID and fuzzy comparators | **done**, within 0.6% of published |
 | Paper 2 — DDPG reproduced | **done**, after three corrections (below) |
-| PANDA-RL (our modified network) | **implemented, learning** |
-| Full benchmark across all weathers and seeds | **not run yet** |
+| PANDA-RL (our modified network) | **implemented and evaluated** |
+| Aeration twin (for Dyna) | **trained** — DO MAE 0.114 mg/L, effluent NH MAE 0.052 mg/L per 15-min step, and it recovered the Figure-4 trade-off from data |
+| Benchmark, dry weather (all 5 methods, 2 seeds) | **done** |
+| Benchmark, rain and storm | **partial** — the run was killed at job 13/24 by background-task cleanup; rain has PID/fuzzy/DDPG-A, storm not started |
+| Energy/violation frontier | **running** |
+| Dyna sample-efficiency ablation | **script written, not yet run** |
 | Figures | **not done** |
-| `docs/05_results.md` | **not written** |
+| `docs/05_results.md` | **generated** from the benchmark output |
 
-33 tests pass, 1 skipped.
+57 tests pass, 1 skipped (34 of them in `tests/test_rl.py`).
 
 ## Reproducing paper 2 — the numbers
 
@@ -32,13 +36,43 @@ Dry weather, evaluation week, means. PID and fuzzy hold DO at 2 mg/L.
 |---|---|---|
 | PID aeration energy | 3698.2 | 3719.7 |
 | Fuzzy aeration energy | 3697.1 | 3719.9 |
-| DDPG-B aeration energy | 3433 (−7.2%) | 3512 (−5.6%) |
-| DDPG-B mean `S_O,5` | 1.032 | 1.074 |
+| DDPG-B aeration energy | 3433 (−7.2%) | 3429–3504 (−5.8 to −7.8%) |
+| DDPG-B mean `S_O,5` | 1.032 | 1.10–1.16 |
 
-So the central claim of paper 2 — let DO float and you save 5–7% of the
-aeration energy — reproduces on an independently built plant. Effluent quality
-moves the way they report too: our DDPG-B gives EQ 5530 against PID's 5411, a
-slight increase, which is their finding that EQ and AE are coupled.
+The comparators are 0.6% apart and the central claim reproduces: let DO float
+and 5–8% of the aeration energy is available.
+
+## But the saving is not free, and that is the real result
+
+The benchmark also records what the paper's tables do not: how often the
+effluent is out of consent.
+
+| dry weather | AE | saving vs PID | time above 4 g N/m³ |
+|---|---|---|---|
+| PID (fixed 2 mg/L) | 3719.7 | — | **12.2%** |
+| DDPG-B seed 0 | 3429.5 | +7.8% | **45.9%** |
+| DDPG-B seed 1 | 3503.8 | +5.8% | 30.4% |
+| PANDA-RL seed 0 (5% budget) | 3597.9 | +3.3% | 23.1% |
+| PANDA-RL seed 1 (5% budget) | 3754.4 | −0.9% | 14.0% |
+
+DDPG-B buys its energy by exceeding the ammonium limit three to four times as
+often as PID. That is not a reproduction artefact — it is what eq. (23) asks
+for: at `β₂ = 0.42` per mg/L of excess against a full-aeration penalty of 1.0,
+a long run of small exceedances is cheaper than the air it saves.
+
+PANDA-RL at a 5% budget halves the violation rate and saves correspondingly
+less, and it does **not** reach 5% — the multiplier was still climbing at
+12–14 of a 30 cap. That is informative, not broken: PID itself violates 12% of
+the time, so a 5% budget needs *more* aeration than PID and there is no energy
+to save there at all.
+
+So a single number is the wrong deliverable. The question a constrained
+formulation can answer, and a fixed penalty weight cannot, is: **at a violation
+rate the operator will accept, how much energy is actually available?**
+`experiments/11_budget_frontier.py` sweeps the budget and traces that curve.
+First point in: at a 5% budget the agent settles at 12.3% violations — PID's
+own rate — with aeration energy 3664.5, i.e. **1.5% cheaper than PID at
+matched effluent risk**. The rest of the curve is in `docs/05_results.md`.
 
 ## Three corrections needed to get there
 
@@ -92,7 +126,16 @@ the problems above:
    operator says "ammonia over 4 mg/L at most 5% of the time" instead of
    guessing paper 2's `0.38` and `0.42`. More than one limit can be active —
    paper 2's reward B had to drop total nitrogen to stay tractable.
-4. **Twin-assisted updates.** Hook present, off by default, not yet evaluated.
+4. **Twin-assisted updates (Dyna).** Implemented and partly evaluated. At the
+   same number of *real* interactions the model-based arm learns the objective
+   much faster — aeration energy 3004 against 3272 — but it broke the
+   constraint, running effluent ammonium to 8.0 g N/m³ against 4.8. The cause
+   is a rate mismatch: with three synthetic batches per real one the policy
+   takes roughly four times the gradient steps, and a multiplier stepped only
+   at the episode boundary cannot keep up. Fixed with an intra-episode dual
+   (`lambda_every`), which is a general point about constrained model-based
+   RL rather than a quirk of this plant. `experiments/10_dyna_ablation.py`
+   runs the three-arm comparison.
 
 It reduces exactly to DDPG with one quantile, CVaR α = 1, no constraints and
 no forecast, so every component can be ablated. `experiments/06_aeration_benchmark.py`
@@ -100,15 +143,16 @@ has the ablations wired up (`--ablations`).
 
 ## Next steps, in order
 
-1. Run `experiments/06_aeration_benchmark.py --ablations --seeds 3` across all
-   three weathers. ~2 h. This is the headline table and it does not exist yet.
-2. Write `docs/05_results.md` from it.
-3. Figures: learning curves, a DO/`KLa_5` trajectory with the forecast overlaid,
-   the AE/EQ trade-off, and the ablation bars. A validated colour palette is
-   already in `src/wwtp/utils/style.py`.
-4. Build the aeration twin (`AerationTwin`) and turn on `dyna_ratio` so the
-   sample-efficiency claim in point 4 above can actually be tested. Without
-   this the fourth modification is unproven.
+1. Finish the frontier sweep (running) and regenerate `docs/05_results.md`.
+2. Re-run rain and storm for DDPG-B and PANDA-RL, in chunks small enough to
+   survive. Use `--weathers rain storm` with a separate `--tag` and let
+   `09_write_results.py` merge; the traces and curves of the killed run are
+   gone but every summary row was written incrementally.
+3. Run `experiments/10_dyna_ablation.py` for the three-arm sample-efficiency
+   table.
+4. Figures: `experiments/07_figures.py` (add `--dose-response` for the slow
+   Figure-4 reproduction).
+5. Full test suite.
 
 ## Honest caveats
 
