@@ -66,6 +66,14 @@ Both arms use the paper's own reward `-(KLa_5/240 + beta2 max(S_NH,e - 4, 0))` w
 |---|---|---|---|---|
 | 0.2 | DDPG-B | 51.7% | 3338.7 | 0.67 |
 | 0.2 | PANDA-fw | 59.6% | 3281.0 | 0.54 |
+| 0.42 | DDPG-B | 39.3% | 3457.1 | 1.10 |
+| 0.42 | PANDA-fw | 35.9% | 3445.6 | 0.95 |
+| 1.0 | DDPG-B | 27.0% | 3516.7 | 1.21 |
+| 1.0 | PANDA-fw | 27.6% | 3488.6 | 1.09 |
+
+**Comparing the frontiers, not the pairs.** At equal `beta2` the two arms do not land at the same violation rate -- they slide to different points on the same trade-off -- so the pairwise test is not informative. Taking each arm's Pareto front over the swept weights and measuring at DDPG-B's own violation rates, the PANDA-fw front sits on average 19 kWh/d below the DDPG-B front (+35, +3 kWh/d at each point). Positive means PANDA-fw is cheaper at the same effluent risk.
+
+Two things this comparison does **not** control for. `PANDA-fw` reads six extra inputs (the forecast context) and its critic has 32 outputs instead of 1, so it is neither parameter-matched nor input-matched to `DDPG-B` -- that is the modification, but it means part of any gap could be capacity rather than the forecast or the risk measure. And every point here is one seed; the per-point gaps above are the honest check on whether the mean is carried by a single run.
 
 ## Caveats
 

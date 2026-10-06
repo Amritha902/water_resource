@@ -203,11 +203,10 @@ def main() -> None:
                 "mean S$_{O,5}$ | $\\lambda$ NH | |",
                 "|---|---|---|---|---|---|---|"]
 
-        def dominated(r, others):
-            """True if some other run is no worse on both axes and better on one."""
-            return any(o["viol_NH"] <= r["viol_NH"] and o["AE"] <= r["AE"]
-                       and (o["viol_NH"] < r["viol_NH"] or o["AE"] < r["AE"])
-                       for o in others if o is not r)
+        front_set = {id(r) for r in _pareto(fr)}
+
+        def dominated(r, others=None):
+            return id(r) not in front_set
 
         n_dom = 0
         for r in sorted(fr, key=lambda x: x["nh_budget"]):
@@ -241,22 +240,10 @@ def main() -> None:
                     f"against a *stationary* objective to remove this "
                     f"confound.", ""]
         # Where do the baselines sit relative to the efficient frontier?
-        eff = sorted((r for r in fr if not dominated(r, fr)),
-                     key=lambda r: r["viol_NH"])
+        eff = _pareto(fr)
 
         def frontier_ae(rate: float) -> float | None:
-            """Linear interpolation of the efficient frontier at a rate."""
-            if len(eff) < 2 or not (eff[0]["viol_NH"] <= rate
-                                    <= eff[-1]["viol_NH"]):
-                return None
-            for a, b in zip(eff, eff[1:]):
-                if a["viol_NH"] <= rate <= b["viol_NH"]:
-                    span = b["viol_NH"] - a["viol_NH"]
-                    if span <= 0:
-                        return a["AE"]
-                    w = (rate - a["viol_NH"]) / span
-                    return a["AE"] + w * (b["AE"] - a["AE"])
-            return None
+            return _interp_ae(eff, rate)
 
         notes = []
         for name, ref in (("PID", pid), ("DDPG-B", ddpg)):
