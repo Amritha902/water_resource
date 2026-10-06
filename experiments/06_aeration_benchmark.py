@@ -160,11 +160,14 @@ def main() -> None:
               f"TN={row['N_tot']:.2f} violNH={row['viol_NH']:.3f} "
               f"violTN={row['viol_TN']:.3f}", flush=True)
 
+        # written after every job, so an interrupted run still leaves
+        # usable results behind
         (out / f"summary_{args.tag}.json").write_text(
             json.dumps(rows, indent=2, default=float))
-
-    (out / f"traces_{args.tag}.json").write_text(json.dumps(traces, default=float))
-    (out / f"curves_{args.tag}.json").write_text(json.dumps(curves, default=float))
+        (out / f"traces_{args.tag}.json").write_text(
+            json.dumps(traces, default=float))
+        (out / f"curves_{args.tag}.json").write_text(
+            json.dumps(curves, default=float))
 
     try:
         import pandas as pd
