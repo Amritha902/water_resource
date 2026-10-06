@@ -14,8 +14,12 @@ each run has a well-defined target.  The two arms differ *only* in the
 network:
 
 ``DDPG-B``      the published agent, scalar critic, no forecast
-``PANDA-fw``    forecast-conditioned actor and critic, distributional critic
-                with a CVaR objective -- modifications 1 and 2, nothing else
+``PANDA-fw``    forecast *and* CVaR -- modifications 1 and 2 together
+``PANDA-fcast`` forecast only, scalar critic -- modification 1 alone
+``PANDA-cvar``  CVaR only, no forecast -- modification 2 alone
+
+The last two exist because ``PANDA-fw`` enables both changes at once, so a
+gap between it and ``DDPG-B`` cannot be attributed to either one.
 
 Sweeping ``beta2`` traces a frontier for each.  If modifications 1 and 2 earn
 their place, PANDA-fw's frontier sits below-and-left of DDPG-B's: less energy
@@ -60,7 +64,8 @@ def main() -> None:
     ap.add_argument("--weather", default="dry")
     ap.add_argument("--weights", type=float, nargs="*",
                     default=list(DEFAULT_WEIGHTS))
-    ap.add_argument("--arms", nargs="*", default=["DDPG-B", "PANDA-fw"])
+    ap.add_argument("--arms", nargs="*", default=["DDPG-B", "PANDA-fw"],
+                    help="any of DDPG-B, PANDA-fw, PANDA-fcast, PANDA-cvar")
     ap.add_argument("--episodes", type=int, default=20)
     ap.add_argument("--seeds", type=int, default=1)
     ap.add_argument("--threads", type=int, default=4)
@@ -81,13 +86,23 @@ def main() -> None:
         reward = make_reward(beta2)
         for arm in args.arms:
             for seed in range(args.seeds):
+                fc = str(art / "forecaster.pt")
                 if arm == "DDPG-B":
                     agent = DDPGAgent(DDPGConfig(seed=seed, **base))
-                elif arm == "PANDA-fw":
-                    # modifications 1 and 2 only: no constraints, no Dyna
+                elif arm == "PANDA-fw":          # modifications 1 + 2
                     agent = PandaRLAgent(
                         PandaRLConfig(seed=seed, constraints=(), **base),
-                        forecaster=str(art / "forecaster.pt"))
+                        forecaster=fc)
+                elif arm == "PANDA-fcast":       # modification 1 alone
+                    agent = PandaRLAgent(
+                        PandaRLConfig(seed=seed, constraints=(),
+                                      n_quantiles=1, cvar_alpha=1.0, **base),
+                        forecaster=fc)
+                elif arm == "PANDA-cvar":        # modification 2 alone
+                    agent = PandaRLAgent(
+                        PandaRLConfig(seed=seed, constraints=(),
+                                      use_forecast=False, **base),
+                        forecaster=None)
                 else:
                     raise ValueError(arm)
 
