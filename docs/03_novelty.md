@@ -157,6 +157,26 @@ plant moves by several mg/L; differentiating it moved the actuator the wrong
 way. The fix is 60% open-loop PRBS excitation, and the gain signs are now
 asserted in `tests/test_learned_models.py`.
 
+## What is demonstrated, and what is not
+
+One line per modification, so nothing has to be inferred from the prose.
+
+| # | modification | status | evidence |
+|---|---|---|---|
+| 1 | forecast-conditioned actor and critic | **supported** | with 2, below |
+| 2 | distributional critic + CVaR objective | **supported** | `12_weight_sweep.py`: same objective, same swept weight, arms differ only in the network. PANDA-fw's Pareto front sits ~29 kWh/d below DDPG-B's at matched violation rate, and all four per-point gaps are positive (+51, +25, +35, +3). |
+| 3 | discharge limits as Lagrangian constraints | **mechanism works, not yet converged** | `11_budget_frontier.py`: a 40% budget is met almost exactly (40.2%), and the multipliers move the right way as the budget loosens. But at one seed and twenty training weeks the budget does not reliably index the operating point — one of four runs comes out dominated, and the full-benchmark PANDA-RL runs at a 5% budget are mixed. The dual needs more steps than the episode boundary gives it. |
+| 4 | twin-assisted (Dyna) updates | **effect confirmed, with a caveat it caused** | `10_dyna_ablation.py`: at equal real interactions the model-based arm reached 3004 kWh/d against 3272, but ran ammonium to 8.0 g N/m³ against 4.8 because the policy outran the once-per-episode dual. Fixed with `lambda_every`. |
+
+Modifications 1 and 2 cannot be separated by the experiments run so far —
+they are enabled together in `PANDA-fw`. Separating them needs two more arms
+(forecast-only, CVaR-only) and is the obvious next experiment.
+
+Two things the network comparison does not control for, repeated here
+because they bound the claim: `PANDA-fw` reads six extra inputs and its
+critic has 32 outputs against one, so it is neither parameter- nor
+input-matched to `DDPG-B`; and every point is a single seed.
+
 ## Everything is ablatable
 
 `PandaRLAgent` reduces exactly to the paper's DDPG with `n_quantiles = 1`,
