@@ -20,6 +20,7 @@ the controllers, then the learned models that sit on top.
          forecast/  influent forecaster (what is about to arrive)
          twin/      digital twin (how the plant will respond)
          warning/   effluent-ammonium early warning (will we violate?)
+         rl/        aeration agents: how much oxygen to use at all
 ```
 
 `envs.py` is the harness that wires one controller to the plant, runs the
@@ -177,7 +178,29 @@ early enough for an operator to act.
 
 ---
 
-## 5. Scripts — `experiments/`
+## 5. The aeration RL layer — `src/wwtp/rl/`
+
+This is paper 2's problem and our modified agent. Paper 1 asks "hold DO at
+its set point"; paper 2 asks "how much oxygen should we be using at all",
+which is where the energy is. Nothing here tracks a set point.
+
+| file | what it is | input → output |
+|---|---|---|
+| `env.py` | **The aeration MDP.** State `[S_S,5, S_O,5, S_NH,5]`, action writes `KLa_5`, one step advances the plant and returns the effluent and energy over the interval. `Q_a` stays on paper 1's nitrate controller, identically for every method, so only aeration is being judged. Switches for the three corrections: `obs_mode` (`"paper"` or `"augmented"`, which appends `KLa_5/240` to restore the Markov property), `action_mode` (`"incremental"` as published, or `"absolute"`), and `action_interval` (control periods per decision). | action in [-1, 1] → next observation, info dict |
+| `rewards.py` | **The two published reward functions.** `reward_eq` is their eq. (19), effluent quality only; `reward_ae_eq` is eq. (23), energy plus ammonium. Coefficients are the published `0.38` and `0.42`. The one judgement call — what units `AE` enters the reward in — is argued in the module docstring. | info dict → scalar |
+| `baselines.py` | **The comparators.** Incremental PID with their gains (Kp 200, Ki 15, Kd 2) and a Mamdani fuzzy controller, both holding DO at 2 mg/L. Both land within 0.6% of the published aeration energy. | observation → action |
+| `ddpg.py` | **The published agent.** Actor `3-256-256-1` (ReLU, tanh), critic `4-256-256-1`, γ 0.99, batch 256, buffer 30 000, soft update 0.001. Plus the three fixes the reproduction needed: reward scaling by `1-γ`, actor weight decay, and a penalty on the pre-tanh output so a saturated policy is not stuck at an actuator rail. | transitions → policy |
+| `panda_rl.py` | **Our agent.** Same skeleton, four changes: the actor and critic also read the 6-D influent forecast; the critic emits 32 return quantiles and the actor maximises their CVaR instead of the mean; each discharge limit gets a cost critic and a Lagrange multiplier driven by dual ascent on the measured violation rate; and a hook for twin-generated synthetic updates. Reduces exactly to DDPG when all four are switched off. | transitions → policy |
+| `train.py` | **The protocol.** Learn on week 1 of an influent file, evaluate with exploration off on week 2, report means over that week — Du et al. Sec. 4.1. Carries the forecast context and per-constraint costs through the buffer and runs the dual ascent at the end of each episode. | agent + influent → history, summary |
+
+**The three corrections** are the substance of the reproduction and are
+explained in `docs/04_second_paper.md` §5: the published observation is not
+Markov because the actuator is a hidden integrator; a 45 s decision interval
+puts the ammonium consequence outside the agent's horizon while the energy
+saving is immediate; and at γ = 0.99 the critic's `dQ/da` has the wrong sign
+for four simulated weeks.
+
+## 6. Scripts — `experiments/`
 
 | script | does | time (4 CPU) |
 |---|---|---|
@@ -186,9 +209,11 @@ early enough for an operator to act.
 | `03_run_control.py` | PID vs MAACC vs PANDA benchmark | long |
 | `04_collect_warning_data.py` | simulates the early-warning corpus | ~15 min |
 | `05_warning_benchmark.py` | trains + evaluates the early warning, writes figures | ~30 min |
+| `06_aeration_benchmark.py` | **the main one.** PID / fuzzy / DDPG-A / DDPG-B / PANDA-RL (+ ablations) over dry, rain and storm | ~2 h |
+| `07_figures.py` | figures from the benchmark results | ~1 min |
 
-## 6. Tests — `tests/`
+## 7. Tests — `tests/`
 
 Run `python -m pytest tests -q`. Each file guards one layer: plant physics,
 control loop, critic convergence, learned-model sanity, early-warning labels
-and metrics.
+and metrics, and the aeration MDP plus both RL agents (`test_rl.py`).
