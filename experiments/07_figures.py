@@ -332,6 +332,7 @@ def fig_weight_sweep(ws: list[dict], out: Path) -> None:
 
     palette = {"DDPG-B": style.color_for("DDPG-B"),
                "PANDA-fw": style.color_for("PANDA-RL")}
+    any_dominated = False
     fig, ax = plt.subplots(figsize=(6.6, 4.3))
     for arm in arms:
         runs = [r for r in ws if r["arm"] == arm]
@@ -346,6 +347,7 @@ def fig_weight_sweep(ws: list[dict], out: Path) -> None:
                         textcoords="offset points", fontsize=7.5,
                         color=style.INK_MUTED)
         off = [r for r in runs if r not in front]
+        any_dominated = any_dominated or bool(off)
         if off:
             ax.scatter([100 * r["viol_NH"] for r in off], [r["AE"] for r in off],
                        s=46, facecolor="none", edgecolor=colour, linewidth=1.4,
@@ -358,10 +360,12 @@ def fig_weight_sweep(ws: list[dict], out: Path) -> None:
     ax.set_ylabel("aeration energy [kWh/d]")
     ax.set_title("Same objective, same swept weight -- only the network differs")
     ax.legend(loc="lower left", fontsize=8)
-    fig.text(0.01, -0.09,
-             "Hollow markers are runs dominated within their own arm.\n"
-             "The lower-left frontier is cheaper at the same effluent risk.",
-             fontsize=8, color=style.INK_MUTED, linespacing=1.5)
+    caption = "The lower-left frontier is cheaper at the same effluent risk."
+    if any_dominated:
+        caption = ("Hollow markers are runs dominated within their own arm.\n"
+                   + caption)
+    fig.text(0.01, -0.09, caption, fontsize=8, color=style.INK_MUTED,
+             linespacing=1.5)
     fig.tight_layout()
     fig.savefig(out / "fig7_weight_sweep.png", bbox_inches="tight")
     plt.close(fig)
