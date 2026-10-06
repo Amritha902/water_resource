@@ -35,7 +35,7 @@ def _label_last(ax, x, y, text, color) -> None:
         return
     ax.annotate(text, xy=(x[-1], y[-1]), xytext=(4, 0),
                 textcoords="offset points", color=color, fontsize=8,
-                va="center", fontweight="semibold")
+                va="center", fontweight="bold")
 
 
 def fig_dose_response(out: Path) -> None:
@@ -95,7 +95,7 @@ def fig_dose_response(out: Path) -> None:
     ax.set_ylim(0, max(cod) * 1.25)
 
     fig.suptitle("The conflict paper 2 exploits, reproduced on our plant",
-                 fontsize=11, fontweight="semibold", y=1.02)
+                 fontsize=11, fontweight="bold", y=1.02)
     fig.tight_layout()
     fig.savefig(out / "fig1_dose_response.png", bbox_inches="tight")
     plt.close(fig)
@@ -154,7 +154,7 @@ def fig_tradeoff(rows: list[dict], out: Path) -> None:
         ax.set_xlabel("aeration energy [kWh/d]  (lower is better)")
         ax.set_ylabel("effluent quality index  (lower is better)")
     fig.suptitle("Energy against effluent quality", fontsize=11,
-                 fontweight="semibold", y=1.03)
+                 fontweight="bold", y=1.03)
     fig.tight_layout()
     fig.savefig(out / "fig3_tradeoff.png", bbox_inches="tight")
     plt.close(fig)
@@ -235,7 +235,7 @@ def fig_ablation(rows: list[dict], out: Path) -> None:
                          textcoords="offset points", fontsize=8,
                          color=style.INK_MUTED)
     fig.suptitle("Which part of PANDA-RL does the work", fontsize=11,
-                 fontweight="semibold", y=1.03)
+                 fontweight="bold", y=1.03)
     fig.tight_layout()
     fig.savefig(out / "fig5_ablation.png", bbox_inches="tight")
     plt.close(fig)

@@ -61,7 +61,7 @@ def apply() -> None:
         "axes.labelcolor": INK_SECONDARY,
         "axes.titlecolor": INK,
         "axes.titlesize": 11,
-        "axes.titleweight": "semibold",
+        "axes.titleweight": "bold",
         "axes.labelsize": 9,
         "axes.spines.top": False,
         "axes.spines.right": False,
