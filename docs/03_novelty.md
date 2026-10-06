@@ -107,20 +107,45 @@ a violation rate, which keeps `lambda` interpretable. The operator specifies
 - several limits can be active at once, where paper 2's reward B had to drop
   the total-nitrogen term because a single scalar reward could not carry both.
 
-We can see the mechanism work. On dry weather the agent first goes after
+We can watch the mechanism work. On dry weather the agent first goes after
 energy hard and lands at aeration energy 3289 with mean effluent ammonium
-4.68 g N/m³ — infeasible. The multiplier rises, and five training weeks later
-it sits at 3458 with ammonium 3.13, i.e. **7.0% below the PID comparator and
-inside the limit**, against 5.6% for the reproduced DDPG-B.
+4.68 g N/m³ — infeasible — and the multiplier then climbs until it pulls the
+policy back inside. Sweeping the budget traces an energy/violation frontier
+(`experiments/11_budget_frontier.py`); at a 40 % budget the agent lands at
+40.2 %, i.e. it hits what it was asked for, and the resulting frontier passes
+below both PID and the reproduced DDPG-B. The numbers are in
+`docs/05_results.md` and are regenerated from the stored results rather than
+quoted here, so they cannot go stale.
 
-## 4. Twin-assisted updates (implemented, unproven)
+Two honest qualifications, both also in the results document. At a 5 % budget
+the agent **cannot** reach its target: PID itself exceeds the ammonium limit
+12 % of the time at a fixed 2 mg/L, so a 5 % budget needs *more* aeration
+than PID and there is no energy to save there at all. And at one seed and
+twenty training weeks the budget does not reliably index the operating point —
+one of the four sweep runs is dominated by another, which is why the
+comparison is also run against a *stationary* objective in
+`experiments/12_weight_sweep.py`.
 
-A GRU digital twin of the plant (`src/wwtp/twin/`) can supply synthetic
-transitions so the critic gets the data it needs without running them on the
-plant. The hook is in place (`dyna_ratio`) and defaults to off, because the
-twin currently models the *tracking* pair `(S_O,5, S_NO,2)` rather than the
-aeration MDP's state. Until an `AerationTwin` is fitted, this fourth claim is
-unproven and is reported as such in `STATUS.md`.
+## 4. Twin-assisted (Dyna) updates
+
+`wwtp.rl.twin.AerationTwin` is a one-step model of the aeration MDP, fitted
+on 16 128 open-loop transitions and accurate to 0.114 mg/L on dissolved
+oxygen and 0.052 mg/L on effluent ammonium per 15-minute step. It recovered
+the Figure-4 trade-off from data rather than being told it — more air, more
+oxygen, less effluent ammonium, more total nitrogen — and a test asserts all
+three signs. With `dyna_ratio > 0` it supplies synthetic batches alongside
+the real ones, each carrying its own reward and constraint costs.
+
+It does buy sample efficiency, and that is also how it bites. At the same
+number of *real* interactions the model-based arm reached aeration energy
+3004 against 3272 for the model-free arm — but it ran effluent ammonium to
+8.0 g N/m³ against 4.8, because three synthetic batches per real one gives
+the policy roughly four times the gradient steps while the Lagrange
+multiplier was still being stepped once per episode. The policy outruns the
+constraint. Fixed with an intra-episode dual (`lambda_every`), which is a
+general point about constrained model-based RL rather than a quirk of this
+plant: accelerating the policy without accelerating the dual turns a
+constrained problem into an unconstrained one for as long as the lag lasts.
 
 One hard lesson from building the existing twin is worth repeating, because it
 applies to any model fitted here: a twin identified on data collected **under
