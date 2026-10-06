@@ -41,6 +41,20 @@ Dry weather. The plant here is rebuilt from the ASM1/BSM1 model definition, not 
 
 PANDA-RL's ammonium budget is 5% of the week and its total nitrogen budget 15%; the Lagrange multipliers are driven by the measured rate, so those columns are the constraint the operator asked for rather than a tuned penalty weight.
 
+## The energy / violation frontier
+
+A single operating point cannot settle whether letting dissolved oxygen float saves anything, because the saving and the violation rate move together. A constrained formulation can answer the question a fixed penalty weight cannot: at a violation rate the operator will accept, how much energy is actually available? Each row is one PANDA-RL run with its ammonium budget set to the sweep value; the Lagrange multiplier finds the weight that delivers it.
+
+| NH budget | achieved NH>4 | AE [kWh/d] | saving vs PID | mean S$_{O,5}$ | $\lambda$ NH | |
+|---|---|---|---|---|---|---|
+| 5% | 12.3% | 3664.5 | +1.5% | 1.77 | 8.4 |  |
+| 15% | 17.1% | 3931.8 | -5.7% | 2.78 | 7.2 | dominated |
+| 25% | 8.9% | 3821.1 | -2.7% | 2.48 | 4.1 |  |
+
+**Read this table with care.** 1 of 3 run is dominated by another run in the same sweep -- worse on both axes -- so the budget does **not** reliably index the operating point at one seed and 20 training weeks. The multipliers themselves move the right way as the budget loosens, so the dual is working; what is not converged is the policy. A dominated point with a *high* mean `S_O,5` and a high violation rate is the signature of an oscillating policy -- over-aerating on average while under-aerating at the load peaks, which is exactly the failure a forecast is supposed to remove. `experiments/12_weight_sweep.py` repeats the comparison against a *stationary* objective to remove this confound.
+
+For reference on the same axes: PID sits at 3720 kWh/d with 12% of the week above the limit, and the reproduced DDPG-B at 3467 with 38%.
+
 ## Caveats
 
 - Absolute index values are not directly comparable with either paper's tables, for the reasons above. Every claim here is a comparison between methods on the *same* simulator.

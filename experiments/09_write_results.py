@@ -176,22 +176,91 @@ def main() -> None:
                 "run with its ammonium budget set to the sweep value; the "
                 "Lagrange multiplier finds the weight that delivers it.", "",
                 "| NH budget | achieved NH>4 | AE [kWh/d] | saving vs PID | "
-                "mean S$_{O,5}$ | $\\lambda$ NH |",
-                "|---|---|---|---|---|---|"]
+                "mean S$_{O,5}$ | $\\lambda$ NH | |",
+                "|---|---|---|---|---|---|---|"]
+
+        def dominated(r, others):
+            """True if some other run is no worse on both axes and better on one."""
+            return any(o["viol_NH"] <= r["viol_NH"] and o["AE"] <= r["AE"]
+                       and (o["viol_NH"] < r["viol_NH"] or o["AE"] < r["AE"])
+                       for o in others if o is not r)
+
+        n_dom = 0
         for r in sorted(fr, key=lambda x: x["nh_budget"]):
             saving = ("--" if pid is None else
                       f"{100.0 * (pid['AE'] - r['AE']) / pid['AE']:+.1f}%")
+            flag = ""
+            if dominated(r, fr):
+                flag = "dominated"
+                n_dom += 1
             out.append(
                 f"| {100 * r['nh_budget']:.0f}% | {100 * r['viol_NH']:.1f}% | "
                 f"{r['AE']:.1f} | {saving} | {r['S_O5_mean']:.2f} | "
-                f"{r['lambda'][0]:.1f} |")
+                f"{r['lambda'][0]:.1f} | {flag} |")
         out.append("")
+
+        if n_dom:
+            verb = "run is" if n_dom == 1 else "runs are"
+            out += [f"**Read this table with care.** {n_dom} of {len(fr)} "
+                    f"{verb} dominated by another run in the same sweep -- worse "
+                    f"on both axes -- so the budget does **not** reliably "
+                    f"index the operating point at one seed and "
+                    f"{fr[0]['episodes']} training weeks. The multipliers "
+                    f"themselves move the right way as the budget loosens, so "
+                    f"the dual is working; what is not converged is the "
+                    f"policy. A dominated point with a *high* mean "
+                    f"`S_O,5` and a high violation rate is the signature of an "
+                    f"oscillating policy -- over-aerating on average while "
+                    f"under-aerating at the load peaks, which is exactly the "
+                    f"failure a forecast is supposed to remove. "
+                    f"`experiments/12_weight_sweep.py` repeats the comparison "
+                    f"against a *stationary* objective to remove this "
+                    f"confound.", ""]
         if pid:
             out += [f"For reference on the same axes: PID sits at "
                     f"{pid['AE']:.0f} kWh/d with "
                     f"{100 * pid['viol_NH']:.0f}% of the week above the limit"
                     + (f", and the reproduced DDPG-B at {ddpg['AE']:.0f} with "
                        f"{100 * ddpg['viol_NH']:.0f}%." if ddpg else "."), ""]
+
+    # --- the network comparison at a fixed weight ------------------------
+    wpath = Path(args.results) / "summary_weights.json"
+    if wpath.exists():
+        ws = json.loads(wpath.read_text())
+        out += ["## The network changes, isolated", "",
+                "Both arms use the paper's own reward "
+                "`-(KLa_5/240 + beta2 max(S_NH,e - 4, 0))` with no Lagrange "
+                "multiplier, and `beta2` is swept. A fixed weight is a "
+                "stationary objective, so every run has a well-defined "
+                "target. The arms differ **only** in the network: `DDPG-B` is "
+                "the published agent, `PANDA-fw` adds forecast conditioning "
+                "and the distributional CVaR critic and nothing else.", "",
+                "| beta2 | arm | NH>4 | AE [kWh/d] | mean S$_{O,5}$ |",
+                "|---|---|---|---|---|"]
+        for r in sorted(ws, key=lambda x: (x["beta2"], x["arm"])):
+            out.append(f"| {r['beta2']} | {r['arm']} | "
+                       f"{100 * r['viol_NH']:.1f}% | {r['AE']:.1f} | "
+                       f"{r['S_O5_mean']:.2f} |")
+        out.append("")
+        # who wins at each weight, on both axes
+        wins = {"PANDA-fw": 0, "DDPG-B": 0, "split": 0}
+        for beta2 in sorted({r["beta2"] for r in ws}):
+            pair = {r["arm"]: r for r in ws if r["beta2"] == beta2}
+            if len(pair) < 2:
+                continue
+            a, b = pair.get("PANDA-fw"), pair.get("DDPG-B")
+            if a["AE"] <= b["AE"] and a["viol_NH"] <= b["viol_NH"]:
+                wins["PANDA-fw"] += 1
+            elif b["AE"] <= a["AE"] and b["viol_NH"] <= a["viol_NH"]:
+                wins["DDPG-B"] += 1
+            else:
+                wins["split"] += 1
+        total = sum(wins.values())
+        if total:
+            out += [f"Pairwise at equal `beta2`, counting a win only when one "
+                    f"arm is no worse on **both** energy and violation rate: "
+                    f"PANDA-fw {wins['PANDA-fw']}, DDPG-B {wins['DDPG-B']}, "
+                    f"neither dominates in {wins['split']} of {total}.", ""]
 
     # --- does the learned model buy sample efficiency? -------------------
     dpath = Path(args.results) / f"summary_{args.dyna_tag}.json"
