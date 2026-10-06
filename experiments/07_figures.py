@@ -135,9 +135,15 @@ def fig_learning_curves(curves: dict, out: Path) -> None:
 
 def fig_tradeoff(rows: list[dict], out: Path) -> None:
     """Energy against effluent quality. Direct labels, no colour-only identity."""
-    fig, axes = plt.subplots(1, 3, figsize=(11, 3.4), sharey=False)
-    for ax, weather in zip(axes, ("dry", "rain", "storm")):
-        for method in ORDER:
+    weathers = [w for w in ("dry", "rain", "storm")
+                if any(r["weather"] == w for r in rows)]
+    fig, axes = plt.subplots(1, len(weathers), figsize=(3.7 * len(weathers), 3.4),
+                             squeeze=False)
+    axes = axes[0]
+    # PID and fuzzy land on top of each other, so stagger the label offsets
+    offsets = [(6, 5), (6, -11), (-10, 7), (6, 5), (6, -11)]
+    for ax, weather in zip(axes, weathers):
+        for idx, method in enumerate(ORDER):
             sel = [r for r in rows if r["weather"] == weather
                    and r["method"] == method]
             if not sel:
@@ -147,7 +153,8 @@ def fig_tradeoff(rows: list[dict], out: Path) -> None:
             colour = style.color_for(method)
             ax.scatter([x], [y], s=70, color=colour, zorder=3,
                        edgecolor=style.SURFACE, linewidth=1.5)
-            ax.annotate(method, xy=(x, y), xytext=(6, 4),
+            ax.annotate(method, xy=(x, y),
+                        xytext=offsets[idx % len(offsets)],
                         textcoords="offset points", fontsize=8,
                         color=style.INK_SECONDARY)
         ax.set_title(f"{weather} weather")
@@ -377,6 +384,9 @@ def main() -> None:
     ap.add_argument("--results", default="results")
     ap.add_argument("--out", default="docs/figures")
     ap.add_argument("--tag", default="aeration")
+    ap.add_argument("--extra-tags", nargs="*",
+                    default=["aeration_rs", "aeration_storm_base"],
+                    help="further benchmark summaries to merge in")
     ap.add_argument("--frontier-tag", default="frontier")
     ap.add_argument("--dose-response", action="store_true",
                     help="also regenerate the Figure-4 sweep (slow)")
@@ -395,6 +405,17 @@ def main() -> None:
         return json.loads(path.read_text()) if path.exists() else None
 
     rows, traces, curves = load("summary"), load("traces"), load("curves")
+    # The benchmark was finished under several tags; merge them exactly as
+    # 09_write_results.py does, or the figures silently miss whole weathers.
+    if rows:
+        for extra in args.extra_tags:
+            epath = res / f"summary_{extra}.json"
+            if not epath.exists():
+                continue
+            seen = {(r["weather"], r["method"], r["seed"]) for r in rows}
+            rows += [r for r in json.loads(epath.read_text())
+                     if (r["weather"], r["method"], r["seed"]) not in seen]
+        print(f"  {len(rows)} runs after merging")
     fpath = res / f"summary_{args.frontier_tag}.json"
     frontier = json.loads(fpath.read_text()) if fpath.exists() else None
     if rows:
