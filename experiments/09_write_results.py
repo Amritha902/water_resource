@@ -60,6 +60,8 @@ def main() -> None:
     ap.add_argument("--results", default="results")
     ap.add_argument("--out", default="docs/05_results.md")
     ap.add_argument("--tag", default="aeration")
+    ap.add_argument("--frontier-tag", default="frontier")
+    ap.add_argument("--dyna-tag", default="dyna")
     args = ap.parse_args()
 
     path = Path(args.results) / f"summary_{args.tag}.json"
@@ -158,6 +160,62 @@ def main() -> None:
                 "the measured rate, so those columns are the constraint the "
                 "operator asked for rather than a tuned penalty weight.", ""]
 
+    # --- the energy / violation frontier ---------------------------------
+    fpath = Path(args.results) / f"summary_{args.frontier_tag}.json"
+    if fpath.exists():
+        fr = json.loads(fpath.read_text())
+        pid = _agg(rows, "dry", "PID")
+        ddpg = _agg(rows, "dry", "DDPG-B")
+        out += ["## The energy / violation frontier", "",
+                "A single operating point cannot settle whether letting "
+                "dissolved oxygen float saves anything, because the saving "
+                "and the violation rate move together. A constrained "
+                "formulation can answer the question a fixed penalty weight "
+                "cannot: at a violation rate the operator will accept, how "
+                "much energy is actually available? Each row is one PANDA-RL "
+                "run with its ammonium budget set to the sweep value; the "
+                "Lagrange multiplier finds the weight that delivers it.", "",
+                "| NH budget | achieved NH>4 | AE [kWh/d] | saving vs PID | "
+                "mean S$_{O,5}$ | $\\lambda$ NH |",
+                "|---|---|---|---|---|---|"]
+        for r in sorted(fr, key=lambda x: x["nh_budget"]):
+            saving = ("--" if pid is None else
+                      f"{100.0 * (pid['AE'] - r['AE']) / pid['AE']:+.1f}%")
+            out.append(
+                f"| {100 * r['nh_budget']:.0f}% | {100 * r['viol_NH']:.1f}% | "
+                f"{r['AE']:.1f} | {saving} | {r['S_O5_mean']:.2f} | "
+                f"{r['lambda'][0]:.1f} |")
+        out.append("")
+        if pid:
+            out += [f"For reference on the same axes: PID sits at "
+                    f"{pid['AE']:.0f} kWh/d with "
+                    f"{100 * pid['viol_NH']:.0f}% of the week above the limit"
+                    + (f", and the reproduced DDPG-B at {ddpg['AE']:.0f} with "
+                       f"{100 * ddpg['viol_NH']:.0f}%." if ddpg else "."), ""]
+
+    # --- does the learned model buy sample efficiency? -------------------
+    dpath = Path(args.results) / f"summary_{args.dyna_tag}.json"
+    if dpath.exists():
+        dy = json.loads(dpath.read_text())
+        out += ["## Does the learned plant model buy sample efficiency?", "",
+                "Same number of *real* interactions in every arm; only the "
+                "number of synthetic batches the twin supplies per real batch "
+                "changes.", "",
+                "| arm | AE [kWh/d] | NH>4 | mean S$_{O,5}$ | wall time |",
+                "|---|---|---|---|---|"]
+        for r in dy:
+            out.append(f"| {r['arm']} | {r['AE']:.1f} | "
+                       f"{100 * r['viol_NH']:.1f}% | {r['S_O5_mean']:.2f} | "
+                       f"{r['wall_seconds']:.0f}s |")
+        out += ["",
+                "The model does accelerate learning of the objective, and "
+                "that is the problem it also creates: with three synthetic "
+                "batches per real one the policy takes roughly four times the "
+                "gradient steps, so a Lagrange multiplier stepped only at the "
+                "episode boundary cannot keep up and the agent runs well past "
+                "its budget until the dual catches up. The third arm steps "
+                "the dual inside the episode instead.", ""]
+
     out += ["## Caveats", "",
             "- Absolute index values are not directly comparable with either "
             "paper's tables, for the reasons above. Every claim here is a "
@@ -167,6 +225,13 @@ def main() -> None:
             "- The forecaster is trained on synthetic influent from the same "
             "generator that produces these evaluation profiles. The three "
             "canonical profiles are held out of its training set.",
+            "- In the per-weather tables above, PANDA-RL is run at a 5% "
+            "ammonium budget and does **not** reach it: the multiplier is "
+            "still climbing when training stops. That is informative rather "
+            "than broken -- PID itself exceeds the limit 12% of the time at a "
+            "fixed 2 mg/L, so a 5% budget needs *more* aeration than PID and "
+            "there is no energy to save there. The frontier section is the "
+            "honest version of this result.",
             ""]
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
