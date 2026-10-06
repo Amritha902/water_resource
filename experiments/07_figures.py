@@ -338,7 +338,9 @@ def fig_weight_sweep(ws: list[dict], out: Path) -> None:
                       key=lambda r: r["viol_NH"])
 
     palette = {"DDPG-B": style.color_for("DDPG-B"),
-               "PANDA-fw": style.color_for("PANDA-RL")}
+               "PANDA-fw": style.color_for("PANDA-RL"),
+               "PANDA-fcast": style.SERIES["PID"],
+               "PANDA-cvar": style.SERIES["PANDA"]}
     any_dominated = False
     fig, ax = plt.subplots(figsize=(6.6, 4.3))
     for arm in arms:
@@ -365,7 +367,8 @@ def fig_weight_sweep(ws: list[dict], out: Path) -> None:
 
     ax.set_xlabel("time above the 4 g N/m$^3$ ammonium limit [% of week]")
     ax.set_ylabel("aeration energy [kWh/d]")
-    ax.set_title("Same objective, same swept weight -- only the network differs")
+    ax.set_title("Same objective, same swept weight -- only the network differs",
+                 fontsize=10.5)
     ax.legend(loc="lower left", fontsize=8)
     caption = "The lower-left frontier is cheaper at the same effluent risk."
     if any_dominated:
@@ -425,7 +428,13 @@ def main() -> None:
             fig_frontier(frontier, rows, out)
     wpath = res / "summary_weights.json"
     if wpath.exists():
-        fig_weight_sweep(json.loads(wpath.read_text()), out)
+        ws = json.loads(wpath.read_text())
+        spath = res / "summary_weights_split.json"
+        if spath.exists():
+            seen = {(r["arm"], r["beta2"], r["seed"]) for r in ws}
+            ws += [r for r in json.loads(spath.read_text())
+                   if (r["arm"], r["beta2"], r["seed"]) not in seen]
+        fig_weight_sweep(ws, out)
     if curves:
         fig_learning_curves(curves, out)
     if traces:
