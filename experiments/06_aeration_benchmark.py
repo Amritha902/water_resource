@@ -26,8 +26,6 @@ import json
 import sys
 from pathlib import Path
 
-import numpy as np
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import torch
@@ -36,7 +34,7 @@ from wwtp.bsm1 import influent
 from wwtp.rl.baselines import FuzzyAeration, PIDAeration
 from wwtp.rl.ddpg import DDPGAgent, DDPGConfig
 from wwtp.rl.env import AerationEnvConfig
-from wwtp.rl.panda_rl import DEFAULT_CONSTRAINTS, PandaRLAgent, PandaRLConfig
+from wwtp.rl.panda_rl import PandaRLAgent, PandaRLConfig
 from wwtp.rl.rewards import REWARDS, RewardSpec
 from wwtp.rl.train import evaluate, train
 
