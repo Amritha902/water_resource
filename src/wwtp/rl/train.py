@@ -30,6 +30,7 @@ def evaluate(agent, series: InfluentSeries, reward: RewardSpec,
     obs = env.reset()
     if hasattr(agent, "reset"):
         agent.reset()
+    ctx = agent.context() if hasattr(agent, "context") else np.zeros(0)
 
     rows: list[dict] = []
     eff: list[np.ndarray] = []
@@ -38,8 +39,11 @@ def evaluate(agent, series: InfluentSeries, reward: RewardSpec,
     trace: dict[str, list] = {k: [] for k in
                               ("t", "S_O5", "KLa5", "S_NH", "N_tot", "q_in")}
     while True:
-        action = agent.act(obs, info=None, explore=False)
+        action = agent.act(np.concatenate([obs, ctx]), info=None, explore=False)
         obs, info, done = env.step(action)
+        if hasattr(agent, "push_inlet"):
+            agent.push_inlet(info["inlet"])
+            ctx = agent.context()
         rewards.append(reward(info))
         rows.append(info)
         eff.extend(info["eff_samples"])
@@ -87,16 +91,27 @@ def train(agent, series: InfluentSeries, reward: RewardSpec,
                           days=train_days, seed=seed + ep)
         obs = env.reset()
         agent.reset()
+        ctx = agent.context() if hasattr(agent, "context") else np.zeros(0)
         frac = ep / max(episodes - 1, 1)
         sigma = (c.ou_sigma + frac * (c.ou_sigma_final - c.ou_sigma)
                  if sigma_schedule else c.ou_sigma)
         ep_reward, n_decisions = 0.0, 0
+        cost_sum: dict[str, float] = {}
         while True:
-            action = agent.act(obs, info=None, explore=True, sigma=sigma)
+            x = np.concatenate([obs, ctx])
+            action = agent.act(x, info=None, explore=True, sigma=sigma)
             nxt, info, done = env.step(action)
             r = reward(info)
-            agent.observe(obs, action, r, nxt, done)
+            cost = (agent.constraint_costs(info)
+                    if hasattr(agent, "constraint_costs") else np.zeros(0))
+            if hasattr(agent, "push_inlet"):
+                agent.push_inlet(info["inlet"])
+                ctx = agent.context()
+            agent.observe(x, action, r, np.concatenate([nxt, ctx]), done,
+                          cost=cost if cost.size else None)
             agent.update()
+            for con, value in zip(getattr(agent, "constraints", ()), cost):
+                cost_sum[con.key] = cost_sum.get(con.key, 0.0) + float(value)
             obs = nxt
             ep_reward += r
             n_decisions += 1
@@ -104,6 +119,11 @@ def train(agent, series: InfluentSeries, reward: RewardSpec,
                 break
         record = {"episode": ep, "sigma": sigma, "decisions": n_decisions,
                   "train_reward": ep_reward / max(n_decisions, 1)}
+        # dual ascent on the Lagrange multipliers, from the measured rates
+        rate_stats = {f"rate_{k}": v / max(n_decisions, 1)
+                      for k, v in cost_sum.items()}
+        if hasattr(agent, "end_episode"):
+            record.update(agent.end_episode(rate_stats))
         if (ep + 1) % eval_every == 0 or ep == episodes - 1:
             ev = evaluate(agent, series, reward, cfg, seed=seed)["summary"]
             record.update({f"eval_{k}": v for k, v in ev.items()})

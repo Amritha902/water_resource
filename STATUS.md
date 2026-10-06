@@ -1,107 +1,128 @@
-# Status — where this repository stands
+# Status
 
-Last updated at the end of the first working session. Read this before
-picking the work back up.
+Read this before continuing. It says what works, what the numbers are, and
+what is left.
 
-## Done and tested
+## Where things stand
 
-| Piece | State | Evidence |
+| Piece | State |
+|---|---|
+| BSM1 plant (ASM1 biology, Takács clarifier, 5 tanks, influent generator) | **done**, validated against published BSM1 steady state |
+| Paper 1 (MAACC) reproduced | **done** |
+| Paper 1 — correction to the critic update in eq. (15) | **done**, reproduced by a test |
+| Influent forecaster (TCN, quantiles + weather regime) | **trained** |
+| Digital twin (GRU) | **trained** |
+| Twin — correction for closed-loop identification bias | **done**, asserted by a test |
+| Effluent-ammonium early warning | **done** (added in a parallel session) |
+| Paper 2 — Figure 4 physics reproduced | **done** |
+| Paper 2 — PID and fuzzy comparators | **done**, within 0.6% of published |
+| Paper 2 — DDPG reproduced | **done**, after three corrections (below) |
+| PANDA-RL (our modified network) | **implemented, learning** |
+| Full benchmark across all weathers and seeds | **not run yet** |
+| Figures | **not done** |
+| `docs/05_results.md` | **not written** |
+
+33 tests pass, 1 skipped.
+
+## Reproducing paper 2 — the numbers
+
+Dry weather, evaluation week, means. PID and fuzzy hold DO at 2 mg/L.
+
+| | paper | ours |
 |---|---|---|
-| ASM1 + Takács clarifier + 5-reactor BSM1 plant | **done** | `tests/test_bsm1.py` — open-loop steady state matches published BSM1 (`S_O,5 ≈ 0.49`, `S_NO,2 ≈ 3.66`), both control gains have the right sign, settler thickens >50× |
-| Dry / rain / storm influent generator | **done** | mean flow 17.5–18.3 k m³/d, COD load ≈ 6.8 t/d, storm peak 38 k m³/d — all in the documented BSM1 range |
-| Incremental PID expert prior (paper's gains) | **done** | `tests/test_control_loop.py` |
-| MAACC reproduction | **done** | `tests/test_control_loop.py` — starts exactly at the prior (`a_0 = 0`), learned term stays bounded |
-| **Correction: eq. (15) critic update diverges** | **done** | `tests/test_critic_update.py` — the literal update blows up to >10⁴ on a problem whose true `Q(0) = 0.9`; the TD(0) direction converges. Written up in `docs/02_reproduction.md` |
-| Probabilistic influent forecaster | **trained** | 99 200 windows, validation pinball 0.0418, weather-regime accuracy **95.3 %**; `artifacts/forecaster.pt` |
-| Neural digital twin | **trained** | free-running RMSE **0.28 mg/L** over a 4.8 h horizon; `artifacts/twin.pt` |
-| **Correction: closed-loop identification bias in the twin** | **done** | first twin had a near-zero aeration gain (40 → 220 1/d moved DO by 0.05 mg/L). Refit with 60 % open-loop PRBS excitation; now 20 → 240 1/d moves DO 0.24 → 1.69 mg/L and the cross-couplings have the right signs. Asserted in `tests/test_learned_models.py` |
-| PANDA controller (all four components) | **implemented, runs end to end** | `src/wwtp/panda/controller.py` |
-| Docs: paper summary, reproduction notes, contribution | **done** | `docs/01`–`docs/03` |
+| PID aeration energy | 3698.2 | 3719.7 |
+| Fuzzy aeration energy | 3697.1 | 3719.9 |
+| DDPG-B aeration energy | 3433 (−7.2%) | 3512 (−5.6%) |
+| DDPG-B mean `S_O,5` | 1.032 | 1.074 |
 
-28 tests pass.
+So the central claim of paper 2 — let DO float and you save 5–7% of the
+aeration energy — reproduces on an independently built plant. Effluent quality
+moves the way they report too: our DDPG-B gives EQ 5530 against PID's 5411, a
+slight increase, which is their finding that EQ and AE are coupled.
 
-## Not done
+## Three corrections needed to get there
 
-1. **The full benchmark sweep** (`experiments/03_run_control.py`) has never
-   been run to completion — only spot checks on single scenarios.
-2. **Figures** — `src/wwtp/utils/style.py` holds a validated colour palette
-   (three-slot categorical, checked against the colour-vision and contrast
-   gates), but no figure script has been written.
-3. **`docs/04_results.md`** — does not exist yet; it needs the sweep.
-4. **Realistic-instrumentation operating condition** — see below. This was
-   the next step when the session ended and the code change is *not* in the
-   repository.
+The published recipe does not learn in our reproduction — it collapses to zero
+aeration and stays there. Each of these is documented in
+`docs/04_second_paper.md` §5 and implemented in `src/wwtp/rl/`:
 
-## What the numbers currently say — read this honestly
+1. **The observation is not Markov.** State is `[S_S,5, S_O,5, S_NH,5]` but the
+   action is an *increment* on `KLa_5`, so the actuator position is a hidden
+   integrator — once DO saturates near zero the agent cannot tell `KLa_5 = 0`
+   from `KLa_5 = 20`. The correlated OU exploration noise it inherits from
+   DDPG pins the actuator at a rail within the first few hundred steps.
+   *Fix:* append `KLa_5 / 240` to the observation, or use an absolute action.
 
-Spot checks on the canonical storm profile with the paper's noise protocol
-(3 %-of-range actuator noise) plus DO/nitrate sensor noise, 14 days,
-burn-in 1 day:
+2. **The decision interval fights the plant's time constants.** At 45 s with
+   γ = 0.99 the horizon is ~75 min. Effluent ammonium responds to an aeration
+   change over hours, so the penalty for cutting air falls outside the horizon
+   while the energy saving is immediate — cutting aeration looks free.
+   *Fix:* hold each action for 20 periods (15 min).
 
-| controller | IAE `S_O,5` | IAE `S_NO,2` | DEVmax `S_NO,2` |
-|---|---|---|---|
-| PID (expert prior) | 0.0335 | 0.0624 | 0.635 |
-| MAACC (reproduction) | 0.0338 | 0.0649 | 0.787 |
-| PANDA (current form) | 0.0357 | 0.0666 | 0.629 |
+3. **The value scale makes the critic slow and its gradient wrong for weeks.**
+   With γ = 0.99 the critic must learn values near −250 from rewards near
+   −2.5. Instrumenting it shows `dQ/da` has the **wrong sign** for four
+   simulated weeks; by then the tanh actor has saturated at a rail where its
+   gradient nearly vanishes, and the evaluation freezes — we observed the exact
+   same evaluation at episodes 4, 9 and 14.
+   *Fix:* scale the reward by `1 − γ`, weight-decay the actor, and penalise the
+   actor's pre-tanh output so a saturated policy can relax back.
 
-**Neither MAACC nor PANDA currently beats a well-tuned PID on this
-simulator.** That is the honest state and it must not be written up as
-anything else. Two findings explain it, and both are worth keeping:
+With all three applied the agent converges in about 15 simulated weeks of
+interaction. That is far more than the "7 days of online interactive learning"
+the paper describes, and the gap is the honest motivation for the twin-assisted
+updates in our own agent.
 
-1. **MAACC ≈ PID is structural, not a tuning failure.** The expert prior is
-   an *incremental* PID, so it has integral action, and it absorbs any
-   slowly varying additive correction the actor learns within a few control
-   periods. The tracking error therefore carries almost no information about
-   `a`, and the only utility term that still depends on `a` is the effort
-   penalty, whose minimiser is `a = 0`. The learned term is close to
-   unidentifiable from tracking error alone. (With a *de-tuned* prior — 25 %
-   of the published gains — MAACC does recover a few percent, ~4 % on both
-   IAE channels in a spot check, but seed variance is comparable to the
-   effect.)
+## PANDA-RL — what it changes
 
-2. **There is no headroom left to win in the idealised setting.** With
-   instantaneous actuation and clean sensors the PID's `IAE_SO5` is dominated
-   by white actuator noise, which *no* predictor can help with, and the
-   effluent quality index barely moves between weather conditions
-   (EQ 5029 storm vs 4770 dry, zero ammonium violations). Anticipation has
-   nothing to buy.
+`src/wwtp/rl/panda_rl.py`. Four changes to the network, each aimed at one of
+the problems above:
 
-## The next concrete step
+1. **Forecast input.** Actor and critic also see a 6-D context from the
+   influent forecaster (predicted relative change in flow / ammonia / COD,
+   forecast uncertainty, P(wet weather)). The policy becomes
+   disturbance-scheduled instead of pure state feedback, so the agent does not
+   have to wait hours to find out what its own action did.
+2. **Distributional critic + CVaR.** 32 return quantiles, quantile Huber loss,
+   and the actor maximises the mean of the worst 30% of returns instead of the
+   expectation. A discharge consent constrains the tail, not the average.
+3. **Constraints instead of guessed weights.** Reward keeps only
+   `−KLa_5/240`. Each discharge limit gets its own cost critic and Lagrange
+   multiplier, updated by dual ascent on the measured violation rate. The
+   operator says "ammonia over 4 mg/L at most 5% of the time" instead of
+   guessing paper 2's `0.38` and `0.42`. More than one limit can be active —
+   paper 2's reward B had to drop total nitrogen to stay tractable.
+4. **Twin-assisted updates.** Hook present, off by default, not yet evaluated.
 
-Add a **realistic-instrumentation** operating condition to
-`run_closed_loop` and make it the headline benchmark:
+It reduces exactly to DDPG with one quantile, CVaR α = 1, no constraints and
+no forecast, so every component can be ablated. `experiments/06_aeration_benchmark.py`
+has the ablations wired up (`--ablations`).
 
-* `slew_rate` — max actuator change per 45 s period (blowers and recycle
-  pumps cannot step; suggested `[6 1/d, 2200 m³/d]`, i.e. full travel in
-  ~20–30 min);
-* `sensor_tau_seconds` — first-order probe lag (DO ≈ 120 s);
-* `analyzer_period_seconds` — zero-order hold on the nitrate reading
-  (sequential analysers have 5–15 min cycle times, so `S_NO,2` is *stale*
-  between cycles).
+## Next steps, in order
 
-This is the regime where feedback provably cannot keep up and a forecast can,
-and it is what real plants have. The rationale is already written into the
-`docs/`; the harness change was drafted and not applied, so
-`src/wwtp/envs.py` is at its pre-change state.
+1. Run `experiments/06_aeration_benchmark.py --ablations --seeds 3` across all
+   three weathers. ~2 h. This is the headline table and it does not exist yet.
+2. Write `docs/05_results.md` from it.
+3. Figures: learning curves, a DO/`KLa_5` trajectory with the forecast overlaid,
+   the AE/EQ trade-off, and the ablation bars. A validated colour palette is
+   already in `src/wwtp/utils/style.py`.
+4. Build the aeration twin (`AerationTwin`) and turn on `dyna_ratio` so the
+   sample-efficiency claim in point 4 above can actually be tested. Without
+   this the fourth modification is unproven.
 
-Expected shape of the result, to be confirmed rather than assumed: PID
-degrades sharply (rate-limited response to storm onset), PANDA degrades much
-less because the feed-forward starts moving before the rate limit binds. If
-that does **not** materialise, report it — the two structural findings above
-stand on their own and are a legitimate contribution.
+## Honest caveats
 
-## Two things already established that should survive any rewrite
-
-Both are corrections to published/standard practice, both are reproduced by
-tests, and both cost real debugging time:
-
-* **`docs/02_reproduction.md` §3** — equation (15) of the base paper descends
-  the Bellman residual in the direction that corrects the *later* prediction.
-  For slowly varying states the recursion has homogeneous gain
-  `1 + l_c (1 − λ)‖ϑ‖² > 1` and diverges. Theorem 1 is not contradicted: it
-  bounds the weight error (UUB), and a bound can be large.
-* **`docs/03_novelty.md` §3.2** — a digital twin identified on closed-loop
-  (PID-controlled) data learns a near-zero aeration gain, because the
-  controller raises `KLa_5` exactly when demand rises. Differentiating such a
-  twin moves the actuator the wrong way. Open-loop PRBS excitation is not
-  optional.
+* The plant is a faithful re-implementation, not the official BSM1 code, and
+  the influent is statistically equivalent rather than identical. Absolute
+  index values are not directly comparable with either paper's tables — every
+  claim here is a comparison between methods on the *same* simulator.
+* The forecaster is trained on synthetic influent from the same generator that
+  produces the evaluation profiles. The three canonical profiles are held out,
+  which is the strongest statement this repo can make; real-plant accuracy is
+  unknown.
+* DDPG on this problem is seed-sensitive. Every seed gets reported, not the
+  best one.
+* The paper-1 anticipatory feed-forward (`src/wwtp/panda/`) did **not** beat
+  PID in the idealised tracking setting. That is written up as a negative
+  result in `docs/02_reproduction.md` and `docs/03_novelty.md`; paper 2's
+  framing is where the real headroom turned out to be.
