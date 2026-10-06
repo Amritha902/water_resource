@@ -95,9 +95,11 @@ Concretely, four modifications (details in `docs/03_novelty.md`):
    α2 = 0.38 and β2 = 0.42 by trial and error. We replace that with a Lagrange
    multiplier that adapts itself until the violation rate hits a target you
    actually specify.
-4. **Learned plant model for sample efficiency.** A GRU "digital twin" of the
-   plant generates extra training data, so the agent can learn inside the 7-day
-   online budget paper 2 allows.
+4. **Learned plant model for sample efficiency.** A one-step model of the plant
+   generates extra training data (Dyna), so the agent needs fewer weeks of real
+   interaction. The model is accurate to 0.11 mg/L on DO and 0.05 mg/L on
+   effluent ammonia per 15-minute step, and it recovered the Figure-4 trade-off
+   from data rather than being told it.
 
 "PANDA-MAACC" is our name for the combined thing — paper 1's controller plus
 these prediction-driven changes. It is ours, not from either paper.
@@ -109,15 +111,38 @@ these prediction-driven changes. It is ours, not from either paper.
 Before claiming anything new we have to match what they published. Where we
 stand:
 
-| | paper 2 (dry weather) | ours |
+| dry weather, evaluation week | paper 2 | ours |
 |---|---|---|
 | PID aeration energy | 3698.2 | 3719.7 |
 | Fuzzy aeration energy | 3697.1 | 3719.9 |
-| DO held at | 2.00 | 2.00 |
+| DDPG-B aeration energy | 3433 (−7.2%) | 3512 (−5.6%) |
+| DDPG-B mean `S_O,5` | 1.032 | 1.074 |
 
-0.6% apart on a plant model rebuilt from scratch — close enough to trust the
-comparisons. The DDPG reproduction is in progress; what we have found so far is
-in `STATUS.md` and it is not all good news, which is worth reading.
+The comparators are 0.6% apart on a plant rebuilt from scratch, and the central
+claim — let DO float and you save 5–7% of the aeration energy — reproduces.
+Effluent quality moves the way they report too: our DDPG-B gives EQ 5530
+against PID's 5411, the EQ/AE coupling their Table 2 shows.
+
+We also reproduced their Figure 4 on our plant: effluent total nitrogen rises
+with DO while ammonia falls, and COD/BOD/TSS stay flat. That conflict is the
+thing the whole RL design exists to resolve.
+
+**But the published recipe does not learn as written.** It collapses to zero
+aeration and stays there. Three reasons, all found by instrumenting it and all
+written up in `docs/04_second_paper.md` §5:
+
+1. the state `[S_S,5, S_O,5, S_NH,5]` plus an *incremental* action makes the
+   actuator position a hidden integrator, so the MDP is not Markov;
+2. at 45 s per decision with γ=0.99 the horizon is 75 min, but ammonia responds
+   to aeration over hours — so the energy saving is immediate and the penalty
+   lands outside the horizon;
+3. with γ=0.99 the critic must learn values ~100× the reward, and its `dQ/da`
+   has the **wrong sign** for four simulated weeks, by which time the tanh actor
+   has saturated where its gradient vanishes.
+
+Fixing those three is what makes the numbers above possible, and each one also
+points at one of our modifications. Results for every method and weather are in
+`docs/05_results.md`.
 
 ---
 
