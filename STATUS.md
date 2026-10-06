@@ -13,7 +13,7 @@ what is left.
 | Influent forecaster (TCN, quantiles + weather regime) | **trained** |
 | Digital twin (GRU) | **trained** |
 | Twin — correction for closed-loop identification bias | **done**, asserted by a test |
-| Effluent-ammonium early warning | **code done** (added in a parallel session); its network is still untrained, so `test_trained_warning_responds_to_the_analyser` skips. Training was started and stopped at epoch 7/12 to free CPU for the forecast-vs-CVaR split, which was the higher-value run. To finish: `python experiments/04_collect_warning_data.py && python experiments/05_warning_benchmark.py` (~45 min on an idle box). |
+| Effluent-ammonium early warning | **done** (code from a parallel session, trained here). 126 min median lead time on held-out episodes at ~1.2 false alarms/day, against 96 min for gradient boosting, 36 min for an analyser trend and *negative* lead for a threshold alarm. No test skips any more. |
 | Paper 2 — Figure 4 physics reproduced | **done** |
 | Paper 2 — PID and fuzzy comparators | **done**, within 0.6% of published |
 | Paper 2 — DDPG reproduced | **done**, after three corrections (below) |
@@ -27,7 +27,7 @@ what is left.
 | Figures | **done** — `docs/figures/`, built by `07_figures.py` |
 | `docs/05_results.md` | **generated** from the benchmark output |
 
-71 tests pass, 1 skipped (the early-warning end-to-end check, see above).
+**72 tests pass, none skipped.**
 
 ## Reproducing paper 2 — the numbers
 
@@ -150,12 +150,10 @@ has the ablations wired up (`--ablations`).
 2. **More seeds.** Every frontier and sweep point is a single seed. The
    per-point gaps are reported so the reader can see whether a mean is
    carried by one run, but 3-5 seeds would settle it.
-3. **Train the early-warning network** so the last skipped test runs:
-   `python experiments/04_collect_warning_data.py && python experiments/05_warning_benchmark.py`.
-4. **Longer training for the Lagrangian arm.** At twenty training weeks the
+3. **Longer training for the Lagrangian arm.** At twenty training weeks the
    dual has not converged, which is why the budget does not reliably index
    the operating point and why PANDA-RL's benchmark rows are mixed.
-5. Parameter- and input-matched controls for the network comparison, so the
+4. Parameter- and input-matched controls for the network comparison, so the
    +29 kWh/d cannot be attributed to capacity.
 
 ## Honest caveats
