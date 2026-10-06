@@ -1,168 +1,164 @@
-# PANDA-MAACC: the contribution
+# The contribution: PANDA-RL
 
-**P**redictive **AN**ticipatory **D**isturbance-**A**ware multiagent adaptive
-critic control.
+Short version: **paper 2's agent can only react to what has already happened
+to the plant, it is told how to weigh energy against discharge limits by two
+hand-tuned numbers, and it optimises the average outcome. We give it a
+forecast, let it discover the weights itself from a violation budget, and make
+it optimise the bad tail instead of the average.**
 
-## 1. The gap, stated precisely
+Everything here is in `src/wwtp/rl/panda_rl.py` and is tested in
+`tests/test_rl.py`.
 
-MAACC — and every reinforcement-learning WWTP controller it is compared
-against — closes the loop on the tracking error `z_k = s_k - r_k`. A storm
-raises the influent flow, the flow washes substrate through the reactors,
-the oxygen uptake rate and the nitrate load change, `z_k` moves, and only
-*then* does the controller respond. The disturbance is always one plant time
-constant ahead of the controller.
+## Why these four changes and not others
 
-But the influent is **measured** at the inlet, and it is **predictable**:
-municipal sewage has a strong diurnal and weekly signature, and wet-weather
-events announce themselves in the flow signal minutes before their load
-reaches the aerated zone. None of that information is in the loop.
+The modifications are not a wish list. Each one is aimed at a specific problem
+that reproducing paper 2 actually exposed (`docs/04_second_paper.md` §5):
 
-Section 4 of `docs/02_reproduction.md` adds a second, sharper reason to care:
-because the expert prior has integral action, a learned correction driven by
-tracking error alone is close to *unidentifiable* — the prior absorbs it. To
-make the learned component earn its place it must be given information the
-prior does not have. A forecast is exactly that.
+| problem found in reproduction | modification |
+|---|---|
+| the reward that should punish under-aeration arrives hours after the action, so cutting air looks free | **forecast input** — the agent is told what load is coming instead of discovering it by waiting |
+| `alpha2 = 0.38` and `beta2 = 0.42` are set "by trial and error", and reward B had to drop total nitrogen entirely to stay tractable | **Lagrange multipliers** — the operator states a violation budget, the weights are learned |
+| a scalar critic maximises the mean return, but a discharge consent is about the tail | **distributional critic + CVaR** |
+| the agent needs ~15 simulated weeks of interaction; the paper allows 7 days | **twin-assisted updates** (implemented, not yet evaluated) |
 
-## 2. The control law
+The control law keeps paper 1's safety idea intact: the policy's final layer
+is initialised small so the untrained agent holds the actuator where it is,
+which is the same safeguard paper 1 gets by zeroing its action-network outer
+weights (its eqs. 7–8).
 
-```
-u_{k,i}  =  b_{k,i}  +  g_{k,i} · a_{k,i}  +  f_{k,i}
-            ^^^^^^^     ^^^^^^^^^^^^^^^^     ^^^^^^^
-            expert      gated adaptive       anticipatory
-            prior       critic term          feed-forward
-```
+## 1. Forecast-conditioned actor and critic
 
-Setting `g ≡ 1` and `f ≡ 0` recovers eq. (7) of the paper exactly, so PANDA
-is a strict generalisation and every stability argument that holds for MAACC
-holds for the `g = 1, f = 0` restriction. The gate and the feed-forward are
-both explicitly bounded (`g ∈ (0, 1]`, `|f| ≤ f_max`), so the applied input
-stays within the same admissible set the paper's Lyapunov analysis assumes,
-and the prior remains the fallback whenever the learned layer is switched off.
+A separate network (`src/wwtp/forecast/`) reads 24 h of inlet history — flow,
+ammonium and readily biodegradable COD, the three measurements a real plant
+already has at the inlet — and predicts the next 2 h. It is a dilated causal
+TCN with two heads:
 
-## 3. The four learned components
+- a **quantile head** giving the 10/50/90 % quantiles of every channel at each
+  of eight 15-minute horizons, trained with the pinball loss, monotone by
+  construction;
+- a **weather-regime head** classifying dry / rain / storm, which doubles as an
+  interpretable storm alarm for the operator.
 
-### 3.1 Probabilistic multi-horizon influent forecaster
-
-`src/wwtp/forecast/` — a dilated causal TCN over 24 h of inlet history
-(flow, ammonium, readily-biodegradable COD at 15 min resolution) with
-
-* a **quantile head** emitting the 10/50/90 % quantiles of every channel for
-  each of the next eight 15-minute steps, trained with the pinball loss and
-  with monotone quantiles enforced by construction (cumulative softplus), and
-* an auxiliary **weather-regime head** (dry / rain / storm) which doubles as
-  an interpretable storm alarm for the operator.
-
-Trained on 160 randomised 14-day influent realisations; the three canonical
-BSM1 profiles are held out, so every control result is an out-of-sample
-evaluation of the forecaster.
-
-### 3.2 Neural digital twin of the closed loop
-
-`src/wwtp/twin/` — a GRU residual model on a 6-minute grid
-
-```
-h_t = GRU([s_t, u_t, d_t], h_{t-1})
-s_{t+1} = s_t + g(h_t)          NH_eff,t = q(h_t)
-```
-
-The recurrent state stands in for everything the controller cannot measure —
-biomass inventories, sludge blanket, reactors 1-4 — which is precisely the
-unknown interconnection term `G_i(s_k)` of eq. (4). The paper charges the
-agents for `G_i` through the utility but never predicts it; the twin does.
-Trained with scheduled sampling so it is fit for free-running rollouts, not
-just one-step prediction.
-
-**This is where the first hard lesson was.** The twin was first identified on
-data collected under the PID with a dither. The resulting model had a
-near-zero aeration gain: holding `KLa_5` at 40 versus 220 changed the
-predicted `S_O,5` by 0.05 mg/L, where the real plant moves by several mg/L.
-The cause is classical closed-loop identification bias — with the PID in the
-loop, `KLa_5` rises exactly when the oxygen demand rises, so aeration and
-dissolved oxygen are almost uncorrelated in the data. Differentiating that
-twin moved the actuator the wrong way and the controller was *worse* than
-PID. The fix is 60 % open-loop amplitude-modulated PRBS rollouts, where the
-control is resampled across the full admissible range independently of the
-plant state. The gain sign is asserted in `tests/`.
-
-### 3.3 Anticipatory feed-forward by differentiating the twin
-
-Every 8 control periods the controller solves, by gradient descent through
-the twin,
-
-```
-min_f  sum_h gamma^h || (s_h - r) ⊙ w ||^2
-       +  w_NH sum_h gamma^h relu(NH_h - NH_limit)^2      <- discharge risk
-       +  rho || f ||^2                                   <- effort
-```
-
-over a 48-minute horizon driven by the **forecast** influent `d̂`.
-
-**This is where the second hard lesson was.** The obvious formulation — roll
-the twin forward with the control held constant and cancel the predicted
-deviation — grossly over-compensates, because the PID will have reacted long
-before the horizon ends. That variant was measurably worse than plain PID.
-The solve therefore carries a **differentiable copy of the incremental PID
-inside the rollout**, so the twin predicts what the *closed loop* will do,
-and `f` is only the residual move feedback cannot deliver in time. With the
-effort penalty this drives `f → 0` whenever the prior already suffices, so
-the feed-forward never fights the integral action.
-
-The ammonium head makes the same rollout a **predictive discharge-violation
-early warning**: `P(NH_eff > 4 g N/m³)` over the next 48 min, which enters the
-objective as a one-sided risk penalty and is logged for the operator.
-
-### 3.4 Forecast-conditioned agents and an uncertainty gate
-
-The action and critic networks of both agents are conditioned on a six-
-dimensional forecast context
+Both the actor and the critic additionally receive
 
 ```
 c_k = [ dQ/Q at 30 min, dQ/Q at 2 h, dNH/NH at 2 h, dCOD/COD at 2 h,
         relative flow uncertainty, P(rain) + P(storm) ]
 ```
 
-so the policy `pi_i(z_{k,i}, c_k)` is a *disturbance-scheduled* controller
-rather than a pure error feedback. This is the minimal change to the paper's
-architecture that makes the learned term identifiable: `c_k` is information
-the PID prior genuinely does not have.
+so the policy is `mu(s_k, c_k)` — a *disturbance-scheduled* law rather than
+pure state feedback. It can cut aeration before the load falls and raise it
+before the load arrives, instead of finding out hours later.
 
-Finally the adaptive term is gated by forecast confidence,
+Trained on 160 randomised 14-day influent realisations. The three canonical
+BSM1 profiles are held out, so every control result is an out-of-sample test
+of the forecaster. Validation weather-regime accuracy is 95%.
+
+## 2. Distributional critic with a CVaR objective
+
+The critic outputs 32 quantiles of the return distribution `Z(s, a)` instead
+of a single expected value, trained with the quantile Huber loss against the
+distributional Bellman target `r + gamma Z'(s', mu'(s'))`. The actor then
+maximises
 
 ```
-g_k = 1 / (1 + kappa · (q90 - q10)/q50)
+CVaR_alpha[ Z(s, mu(s)) ]      alpha = 0.3
 ```
 
-so when the forecaster is unsure the controller retreats towards the
-industrially validated prior. That is the same design philosophy as the
-paper's expert-knowledge term, extended to run-time rather than only to
-initialisation.
+the mean of the worst 30% of returns, rather than the expectation.
 
-## 4. Why this is a contribution and not a wrapper
+Why this matters here and not everywhere: a discharge consent is a limit on
+*occurrences*, not on an average. A policy that maximises the mean will
+happily accept a rare large exceedance if it buys enough energy on the typical
+day. Optimising the tail does not. The expectation is recovered exactly at
+`alpha = 1`, which is the `PANDA-noCVaR` ablation.
 
-* The paper's utility charges each agent for the coupling term `G_i` but
-  never predicts it. The twin predicts it, and its gradient is what sets the
-  feed-forward — so the coupling is *used*, not merely paid for.
-* The paper's expert prior fixes the controller's behaviour at `k = 0`. The
-  uncertainty gate extends that idea to every `k`: expert knowledge becomes
-  the run-time fallback, with a learned, calibrated trigger.
-* The incremental control strategy of eq. (8) is justified in the paper by
-  its robustness to disturbance, while admitting it is slower to respond.
-  The feed-forward removes exactly that cost, because the slow channel no
-  longer has to wait for the error to appear.
-* Nothing here needs a state that a real plant cannot measure. Inlet flow,
-  ammonium and COD are standard instruments; the twin's recurrent state is
-  driven entirely by measured signals.
+## 3. Discharge limits as constraints, not guessed weights
 
-## 5. Honest limitations
+The reward keeps only the term that is genuinely an objective:
 
-* The forecaster is trained on synthetic influent from the same generator
-  that produces the evaluation profiles. Its accuracy on real plant data is
-  unknown; the held-out canonical profiles are the strongest statement this
-  repository can make.
-* The feed-forward solve adds roughly 8× the compute of MAACC per control
-  period — trivial for a 45-second process loop, but it is not free.
-* No formal stability proof is offered for the full law. The bounded gate and
-  bounded feed-forward keep the input in the admissible set, and the prior
-  remains stabilising, but that is an argument, not a theorem. Extending
-  Theorem 1 to the context-augmented networks is the obvious next piece of
-  work.
+```
+r_k = - KLa_5 / 240
+```
+
+(`AE` is affine in `KLa_5` because BSM1 fixes the other four transfer
+coefficients, so this *is* aeration energy up to an affine transform.)
+
+Each discharge limit becomes a constraint with its own cost critic `Q_c` and
+multiplier `lambda`, and the actor maximises
+
+```
+CVaR[Z(s, mu(s))]  -  sum_k lambda_k Q_c,k(s, mu(s))
+```
+
+Each multiplier is updated by dual ascent on the measured violation rate at
+the end of every training week:
+
+```
+lambda  <-  clip( lambda + eta (rate - budget),  0,  lambda_max )
+```
+
+Because the cost critic is scaled by `1 - gamma`, its output reads directly as
+a violation rate, which keeps `lambda` interpretable. The operator specifies
+*"ammonium above 4 g N/m³ at most 5% of the time, total nitrogen above
+18 g N/m³ at most 15%"* and the trade-off weights follow. Two consequences:
+
+- the `0.38` and `0.42` of eqs. (19) and (23) disappear;
+- several limits can be active at once, where paper 2's reward B had to drop
+  the total-nitrogen term because a single scalar reward could not carry both.
+
+We can see the mechanism work. On dry weather the agent first goes after
+energy hard and lands at aeration energy 3289 with mean effluent ammonium
+4.68 g N/m³ — infeasible. The multiplier rises, and five training weeks later
+it sits at 3458 with ammonium 3.13, i.e. **7.0% below the PID comparator and
+inside the limit**, against 5.6% for the reproduced DDPG-B.
+
+## 4. Twin-assisted updates (implemented, unproven)
+
+A GRU digital twin of the plant (`src/wwtp/twin/`) can supply synthetic
+transitions so the critic gets the data it needs without running them on the
+plant. The hook is in place (`dyna_ratio`) and defaults to off, because the
+twin currently models the *tracking* pair `(S_O,5, S_NO,2)` rather than the
+aeration MDP's state. Until an `AerationTwin` is fitted, this fourth claim is
+unproven and is reported as such in `STATUS.md`.
+
+One hard lesson from building the existing twin is worth repeating, because it
+applies to any model fitted here: a twin identified on data collected **under
+feedback** learns a near-zero aeration gain. With the PID in the loop, `KLa_5`
+rises exactly when the oxygen demand rises, so aeration and dissolved oxygen
+are almost uncorrelated in the data. Our first twin changed its predicted
+`S_O,5` by 0.05 mg/L between `KLa_5 = 40` and `KLa_5 = 220`, where the real
+plant moves by several mg/L; differentiating it moved the actuator the wrong
+way. The fix is 60% open-loop PRBS excitation, and the gain signs are now
+asserted in `tests/test_learned_models.py`.
+
+## Everything is ablatable
+
+`PandaRLAgent` reduces exactly to the paper's DDPG with `n_quantiles = 1`,
+`cvar_alpha = 1`, no constraints and no forecast — asserted by
+`test_panda_reduces_to_ddpg_when_every_component_is_ablated`.
+`experiments/06_aeration_benchmark.py --ablations` runs the three
+single-component removals.
+
+## Honest limitations
+
+- The forecaster is trained on synthetic influent from the same generator that
+  produces the evaluation profiles. Held-out profiles are the strongest claim
+  this repo can make; accuracy on real plant data is unknown.
+- No stability theorem is offered. Paper 1's Theorem 1 covers its own shallow
+  networks; nothing here extends it to a deep distributional critic.
+- The fourth modification is not yet evaluated (above).
+- DDPG on this problem is seed-sensitive, so every seed is reported rather
+  than the best one.
+
+## The other thing we tried, which did not work
+
+`docs/06_tracking_layer_feedforward.md` describes an anticipatory feed-forward
+term added to paper 1's *tracking* controller, where the twin is
+differentiated through the forecast to pre-empt disturbances. It did **not**
+beat a well-tuned PID. The write-up explains why — with an incremental PID
+prior in the loop, integral action absorbs any slowly varying learned
+correction, and in the idealised tracking setting the remaining error is
+dominated by actuator noise that no predictor can help with. That negative
+result is what pushed the work to paper 2's framing, where the headroom is
+real.

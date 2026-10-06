@@ -132,7 +132,9 @@ src/wwtp/forecast/    the influent forecaster
 src/wwtp/twin/        the digital twin
 src/wwtp/panda/       our controller
 experiments/          numbered scripts, run them in order
-docs/                 one file per paper, plus the novelty and the results
+docs/                 00 code walkthrough · 01 paper 1 · 02 paper 1 reproduction
+                      03 our contribution · 04 paper 2 + reproduction findings
+                      06 a negative result we kept
 tests/                28 tests
 ```
 
@@ -145,4 +147,9 @@ python -m pytest tests -q
 python experiments/01_train_forecaster.py     # ~10 min
 python experiments/02_train_twin.py           # ~40 min
 python experiments/03_run_control.py          # paper 1 benchmark
+python experiments/06_aeration_benchmark.py   # paper 2 + ours  (the main one)
+python experiments/07_figures.py              # figures from the results
 ```
+
+Checkpoints for the forecaster and the twin are committed in `artifacts/`, so
+you can skip steps 01 and 02.

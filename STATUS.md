@@ -123,6 +123,6 @@ has the ablations wired up (`--ablations`).
 * DDPG on this problem is seed-sensitive. Every seed gets reported, not the
   best one.
 * The paper-1 anticipatory feed-forward (`src/wwtp/panda/`) did **not** beat
-  PID in the idealised tracking setting. That is written up as a negative
-  result in `docs/02_reproduction.md` and `docs/03_novelty.md`; paper 2's
-  framing is where the real headroom turned out to be.
+  PID in the idealised tracking setting. It is written up as a negative result
+  in `docs/06_tracking_layer_feedforward.md`; paper 2's framing is where the
+  real headroom turned out to be.
