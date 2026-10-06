@@ -116,7 +116,6 @@ class PandaRLConfig(DDPGConfig):
     use_forecast: bool = True
     lr_cost: float = 3e-4
     dyna_ratio: int = 0                # synthetic batches per real batch
-    n_env_obs: int = 3                 # env observation width, before the context
 
 
 class _CostBuffer:
@@ -316,7 +315,7 @@ class PandaRLAgent(DDPGAgent):
         decision it barely moves, and the twin cannot predict it anyway.
         """
         c = self.cfg_panda
-        k = c.n_env_obs
+        k = c.n_obs                     # env observation width, context follows
         idx = self.rng.integers(0, self.buffer.size, size=n)
         x = self.buffer.obs[idx]
         inlet = self.inlets[idx]
