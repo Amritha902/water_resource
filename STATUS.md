@@ -13,7 +13,7 @@ what is left.
 | Influent forecaster (TCN, quantiles + weather regime) | **trained** |
 | Digital twin (GRU) | **trained** |
 | Twin — correction for closed-loop identification bias | **done**, asserted by a test |
-| Effluent-ammonium early warning | **code done** (added in a parallel session); its network was never trained, so `test_trained_warning_responds_to_the_analyser` skips. Fix: `python experiments/04_collect_warning_data.py && python experiments/05_warning_benchmark.py` (~45 min). Queued. |
+| Effluent-ammonium early warning | **code done** (added in a parallel session); its network is still untrained, so `test_trained_warning_responds_to_the_analyser` skips. Training was started and stopped at epoch 7/12 to free CPU for the forecast-vs-CVaR split, which was the higher-value run. To finish: `python experiments/04_collect_warning_data.py && python experiments/05_warning_benchmark.py` (~45 min on an idle box). |
 | Paper 2 — Figure 4 physics reproduced | **done** |
 | Paper 2 — PID and fuzzy comparators | **done**, within 0.6% of published |
 | Paper 2 — DDPG reproduced | **done**, after three corrections (below) |
