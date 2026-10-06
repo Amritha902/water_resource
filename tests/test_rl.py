@@ -1,5 +1,7 @@
 """Tests for the aeration MDP, the reward functions and both RL agents."""
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -309,3 +311,36 @@ def test_dyna_is_off_without_a_twin():
     for _ in range(32):
         agent.observe(x, 0.0, -0.4, x, False, cost=np.array([0.0, 0.0]))
     assert "loss_critic_dyna" not in agent.update()
+
+
+AERATION_TWIN = (Path(__file__).resolve().parents[1]
+                 / "artifacts" / "aeration_twin.pt")
+
+
+@pytest.mark.skipif(not AERATION_TWIN.exists(),
+                    reason="run experiments/08_train_aeration_twin.py")
+def test_trained_aeration_twin_learned_the_figure_4_trade_off():
+    """Aeration up => DO up, effluent ammonium down, total nitrogen up.
+
+    Closed-loop identification bias would flatten or invert the first of
+    these, and differentiating such a model moves the actuator the wrong way.
+    """
+    from wwtp.rl.twin import D_SCALE, EFF_SCALE, load_aeration_twin
+
+    twin = load_aeration_twin(AERATION_TWIN)
+    obs = torch.tensor([[1.0 / 3, 1.0 / 4, 2.0 / 5]], dtype=torch.float32)
+    d = (torch.tensor([[18446.0, 31.6, 69.5]], dtype=torch.float32)
+         / torch.tensor(D_SCALE, dtype=torch.float32))
+
+    def at(kla):
+        with torch.no_grad():
+            o2, e = twin(obs, torch.tensor([[kla / 240.0]],
+                                           dtype=torch.float32), d.float())
+        return (float(o2[0, 1]) * 4.0, float(e[0, 0]) * EFF_SCALE[0],
+                float(e[0, 1]) * EFF_SCALE[1])
+
+    low_do, low_nh, low_tn = at(20.0)
+    high_do, high_nh, high_tn = at(220.0)
+    assert high_do - low_do > 1.0, "aeration gain flattened or inverted"
+    assert high_nh < low_nh, "more air must lower effluent ammonium"
+    assert high_tn > low_tn, "more air must raise effluent total nitrogen"
