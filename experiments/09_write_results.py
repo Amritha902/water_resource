@@ -331,6 +331,15 @@ def main() -> None:
                         f"({', '.join(f'{g:+.0f}' for g in gaps)} kWh/d at "
                         f"each point). Positive means {a_name} is cheaper at "
                         f"the same effluent risk.", ""]
+            out += ["Two things this comparison does **not** control for. "
+                    "`PANDA-fw` reads six extra inputs (the forecast context) "
+                    "and its critic has 32 outputs instead of 1, so it is "
+                    "neither parameter-matched nor input-matched to `DDPG-B` "
+                    "-- that is the modification, but it means part of any gap "
+                    "could be capacity rather than the forecast or the risk "
+                    "measure. And every point here is one seed; the per-point "
+                    "gaps above are the honest check on whether the mean is "
+                    "carried by a single run.", ""]
             if len(fa) < len([r for r in ws if r["arm"] == a_name]):
                 out += [f"({len([r for r in ws if r['arm'] == a_name]) - len(fa)}"
                         f" of {a_name}'s runs and "
