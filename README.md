@@ -146,6 +146,42 @@ points at one of our modifications. Results for every method and weather are in
 
 ---
 
+## What came out of it
+
+Full numbers in [`docs/05_results.md`](docs/05_results.md), which is generated
+from the stored results so it cannot drift from them. Three things worth
+knowing up front.
+
+**1. Paper 2's saving reproduces — and it is not free.** DDPG-B saves 5.8–7.8%
+of the aeration energy on dry weather, close to their reported 7.2%. It does
+that by exceeding the 4 g N/m³ ammonia limit **30–46% of the week**, against
+12% for the PID comparator. That is not a bug in the reproduction; it is what
+their eq. (23) asks for, because at `β₂ = 0.42` a long run of small
+exceedances is cheaper than the air it saves. Their tables report energy and
+effluent averages but not how often the limit is broken.
+
+**2. The network changes are worth their place.** Sweeping the reward weight
+with both arms optimising the same objective, and the arms differing *only* in
+the network, PANDA's Pareto front sits about **29 kWh/d below** the published
+DDPG's at matched violation rate — and all four per-point gaps are positive,
+so it is not one lucky run.
+
+![weight sweep](docs/figures/fig7_weight_sweep.png)
+
+**3. Asking for a violation budget instead of guessing a weight works, but
+needs longer training.** Sweeping the budget traces an energy/violation
+frontier that passes under both PID and DDPG-B. A 40% budget is met almost
+exactly (40.2%). But at one seed and twenty training weeks the dual has not
+converged, so the budget does not reliably index the operating point — one of
+four sweep runs is dominated by another.
+
+![frontier](docs/figures/fig6_frontier.png)
+
+A per-modification verdict table — what is demonstrated and what is not — is
+at the end of [`docs/03_novelty.md`](docs/03_novelty.md).
+
+---
+
 ## Layout
 
 ```
