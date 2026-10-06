@@ -84,6 +84,9 @@ def main() -> None:
     ap.add_argument("--results", default="results")
     ap.add_argument("--out", default="docs/05_results.md")
     ap.add_argument("--tag", default="aeration")
+    ap.add_argument("--extra-tags", nargs="*",
+                    default=["aeration_rs", "aeration_storm_base"],
+                    help="further benchmark summaries to merge in")
     ap.add_argument("--frontier-tag", default="frontier")
     ap.add_argument("--dyna-tag", default="dyna")
     args = ap.parse_args()
@@ -93,6 +96,17 @@ def main() -> None:
         print(f"no results at {path} -- run 06_aeration_benchmark.py first")
         return
     rows = json.loads(path.read_text())
+    # A benchmark run that was interrupted and finished under another tag
+    # still belongs in the same tables.  Later files win on a collision.
+    for extra in args.extra_tags:
+        epath = Path(args.results) / f"summary_{extra}.json"
+        if not epath.exists():
+            continue
+        seen = {(r["weather"], r["method"], r["seed"]) for r in rows}
+        added = [r for r in json.loads(epath.read_text())
+                 if (r["weather"], r["method"], r["seed"]) not in seen]
+        rows += added
+        print(f"  merged {len(added)} runs from summary_{extra}.json")
     weathers = [w for w in ("dry", "rain", "storm")
                 if any(r["weather"] == w for r in rows)]
     present = [m for m in ORDER if any(r["method"] == m for r in rows)]
