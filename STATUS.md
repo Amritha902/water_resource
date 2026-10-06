@@ -126,16 +126,16 @@ the problems above:
    operator says "ammonia over 4 mg/L at most 5% of the time" instead of
    guessing paper 2's `0.38` and `0.42`. More than one limit can be active —
    paper 2's reward B had to drop total nitrogen to stay tractable.
-4. **Twin-assisted updates (Dyna).** Implemented and partly evaluated. At the
-   same number of *real* interactions the model-based arm learns the objective
-   much faster — aeration energy 3004 against 3272 — but it broke the
-   constraint, running effluent ammonium to 8.0 g N/m³ against 4.8. The cause
-   is a rate mismatch: with three synthetic batches per real one the policy
-   takes roughly four times the gradient steps, and a multiplier stepped only
-   at the episode boundary cannot keep up. Fixed with an intra-episode dual
-   (`lambda_every`), which is a general point about constrained model-based
-   RL rather than a quirk of this plant. `experiments/10_dyna_ablation.py`
-   runs the three-arm comparison.
+4. **Twin-assisted updates (Dyna).** Evaluated, with a negative result on the
+   fix. At equal real interactions the model-based arm cuts aeration from
+   3749 to 3205 kWh/d — real sample efficiency — but takes the ammonium
+   violation rate from 14.1% to 66.8%, because four times the gradient steps
+   are not matched by four times the dual steps. The intra-episode dual was
+   meant to correct that and **did not** (68.0%): its 268 steps of 0.05 give
+   a smaller total movement budget than the episode dual's 8 steps of 2.0,
+   and the rate it reacts to is built from real transitions only. Scaling the
+   dual step with `dyna_ratio` is the proposed correction and is untested.
+   See `docs/03_novelty.md` §4.
 
 It reduces exactly to DDPG with one quantile, CVaR α = 1, no constraints and
 no forecast, so every component can be ablated. `experiments/06_aeration_benchmark.py`
