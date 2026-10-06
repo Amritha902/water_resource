@@ -66,7 +66,7 @@ def train_warning(train: WarningCorpus, val: WarningCorpus, norm: Normaliser,
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             opt.step()
             sched.step()
-            tot += float(loss) * len(xb)
+            tot += float(loss.detach()) * len(xb)
 
         lv, pe = predict(model, val.x, drop=drop)
         v_pin = float(pinball(torch.from_numpy(lv), torch.from_numpy(val.level)))
