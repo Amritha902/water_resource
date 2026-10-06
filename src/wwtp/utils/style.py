@@ -25,6 +25,19 @@ SERIES = {
 }
 REFERENCE = "#8a8880"          # set points and limits: neutral, not a series
 
+#: aeration methods (paper 2 and ours).  Five slots of the validated
+#: categorical palette; checked on the adjacent pairlist in light mode --
+#: worst CVD dE 9.1, worst normal-vision dE 19.6.  Aqua, yellow and magenta
+#: sit below 3:1 against the light surface, so every figure using them also
+#: carries a legend and direct labels: identity is never colour alone.
+AERATION = {
+    "PID": "#2a78d6",
+    "Fuzzy": "#eb6834",
+    "DDPG-A": "#1baf7a",
+    "DDPG-B": "#eda100",
+    "PANDA-RL": "#e87ba4",
+}
+
 ABLATION = {
     "PANDA-noFF": "#eda100",
     "PANDA-noCtx": "#e87ba4",
@@ -33,7 +46,10 @@ ABLATION = {
 
 
 def color_for(name: str) -> str:
-    return SERIES.get(name, ABLATION.get(name, INK_SECONDARY))
+    for table in (SERIES, AERATION, ABLATION):
+        if name in table:
+            return table[name]
+    return INK_SECONDARY
 
 
 def apply() -> None:
