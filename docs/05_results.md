@@ -80,15 +80,41 @@ Both arms use the paper's own reward `-(KLa_5/240 + beta2 max(S_NH,e - 4, 0))` w
 | 0.2 | DDPG-B | 51.7% | 3338.7 | 0.67 |
 | 0.2 | PANDA-fw | 59.6% | 3281.0 | 0.54 |
 | 0.42 | DDPG-B | 39.3% | 3457.1 | 1.10 |
+| 0.42 | PANDA-cvar | 37.7% | 3465.3 | 1.01 |
+| 0.42 | PANDA-fcast | 32.8% | 3487.9 | 1.20 |
 | 0.42 | PANDA-fw | 35.9% | 3445.6 | 0.95 |
 | 1.0 | DDPG-B | 27.0% | 3516.7 | 1.21 |
+| 1.0 | PANDA-cvar | 25.2% | 3510.5 | 1.08 |
+| 1.0 | PANDA-fcast | 25.5% | 3512.0 | 1.24 |
 | 1.0 | PANDA-fw | 27.6% | 3488.6 | 1.09 |
 | 2.5 | DDPG-B | 24.8% | 3553.2 | 1.43 |
+| 2.5 | PANDA-cvar | 22.4% | 3534.3 | 1.20 |
+| 2.5 | PANDA-fcast | 20.4% | 3593.8 | 1.54 |
 | 2.5 | PANDA-fw | 23.9% | 3506.4 | 1.13 |
 
-**Comparing the frontiers, not the pairs.** At equal `beta2` the two arms do not land at the same violation rate -- they slide to different points on the same trade-off -- so the pairwise test is not informative. Taking each arm's Pareto front over the swept weights and measuring at DDPG-B's own violation rates, the PANDA-fw front sits on average 29 kWh/d below the DDPG-B front (+51, +25, +35, +3 kWh/d at each point). Positive means PANDA-fw is cheaper at the same effluent risk.
+**Comparing the frontiers, not the pairs.** At equal `beta2` the arms do not land at the same violation rate -- they slide to different points on the same trade-off -- so a pairwise test is not informative. Each arm's Pareto front over the swept weights is measured against `DDPG-B`'s by interpolation at DDPG-B's own violation rates. Positive means cheaper at the same effluent risk.
+
+| arm | what it adds | mean gap vs DDPG-B | per point |
+|---|---|---|---|
+| `PANDA-fw` | forecast + CVaR (both) | +29 kWh/d | +51, +25, +35, +3 |
+| `PANDA-fcast` | forecast only | +19 kWh/d | +29, +10 |
+| `PANDA-cvar` | CVaR only | +26 kWh/d | +39, +13 |
+
+Reading across the rows: forecast-only gives +19 kWh/d, CVaR-only +26, and the two together +29. On this evidence the combination beats either change on its own, so neither is redundant. Every number is a single seed, so this separates the modifications only as far as one seed can.
 
 Two things this comparison does **not** control for. `PANDA-fw` reads six extra inputs (the forecast context) and its critic has 32 outputs instead of 1, so it is neither parameter-matched nor input-matched to `DDPG-B` -- that is the modification, but it means part of any gap could be capacity rather than the forecast or the risk measure. And every point here is one seed; the per-point gaps above are the honest check on whether the mean is carried by a single run.
+
+## Does the learned plant model buy sample efficiency?
+
+Same number of *real* interactions in every arm; only the number of synthetic batches the twin supplies per real batch changes.
+
+| arm | AE [kWh/d] | NH>4 | mean S$_{O,5}$ | wall time |
+|---|---|---|---|---|
+| dyna=0 | 3749.4 | 14.1% | 2.23 | 162s |
+| dyna=3 | 3204.9 | 66.8% | 0.94 | 429s |
+| dyna=3+online-dual | 3084.7 | 68.0% | 0.53 | 399s |
+
+The model does accelerate learning of the objective, and that is the problem it also creates: with three synthetic batches per real one the policy takes roughly four times the gradient steps, so a Lagrange multiplier stepped only at the episode boundary cannot keep up and the agent runs well past its budget until the dual catches up. The third arm steps the dual inside the episode instead.
 
 ## Caveats
 

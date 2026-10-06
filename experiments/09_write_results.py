@@ -289,6 +289,12 @@ def main() -> None:
     wpath = Path(args.results) / "summary_weights.json"
     if wpath.exists():
         ws = json.loads(wpath.read_text())
+        # the single-modification arms were swept separately
+        spath = Path(args.results) / "summary_weights_split.json"
+        if spath.exists():
+            seen = {(r["arm"], r["beta2"], r["seed"]) for r in ws}
+            ws += [r for r in json.loads(spath.read_text())
+                   if (r["arm"], r["beta2"], r["seed"]) not in seen]
         out += ["## The network changes, isolated", "",
                 "Both arms use the paper's own reward "
                 "`-(KLa_5/240 + beta2 max(S_NH,e - 4, 0))` with no Lagrange "
@@ -309,29 +315,58 @@ def main() -> None:
         # Compare the frontiers each arm traces instead.
         fronts = {arm: _pareto([r for r in ws if r["arm"] == arm])
                   for arm in sorted({r["arm"] for r in ws})}
-        a_name, b_name = "PANDA-fw", "DDPG-B"
-        fa, fb = fronts.get(a_name, []), fronts.get(b_name, [])
-        if len(fa) >= 2 and len(fb) >= 2:
-            gaps = []
-            for r in fb:
-                here = _interp_ae(fa, r["viol_NH"])
-                if here is not None:
-                    gaps.append(r["AE"] - here)
-            if gaps:
-                mean_gap = float(np.mean(gaps))
-                direction = ("below" if mean_gap > 0 else "above")
-                out += [f"**Comparing the frontiers, not the pairs.** At equal "
-                        f"`beta2` the two arms do not land at the same "
-                        f"violation rate -- they slide to different points on "
-                        f"the same trade-off -- so the pairwise test is not "
-                        f"informative. Taking each arm's Pareto front over the "
-                        f"swept weights and measuring at DDPG-B's own "
-                        f"violation rates, the {a_name} front sits on average "
-                        f"{abs(mean_gap):.0f} kWh/d {direction} the "
-                        f"{b_name} front "
-                        f"({', '.join(f'{g:+.0f}' for g in gaps)} kWh/d at "
-                        f"each point). Positive means {a_name} is cheaper at "
-                        f"the same effluent risk.", ""]
+        b_name = "DDPG-B"
+        fb = fronts.get(b_name, [])
+        labels = {"PANDA-fw": "forecast + CVaR (both)",
+                  "PANDA-fcast": "forecast only",
+                  "PANDA-cvar": "CVaR only"}
+        if len(fb) >= 2:
+            out += ["**Comparing the frontiers, not the pairs.** At equal "
+                    "`beta2` the arms do not land at the same violation rate "
+                    "-- they slide to different points on the same trade-off "
+                    "-- so a pairwise test is not informative. Each arm's "
+                    "Pareto front over the swept weights is measured against "
+                    "`DDPG-B`'s by interpolation at DDPG-B's own violation "
+                    "rates. Positive means cheaper at the same effluent "
+                    "risk.", "",
+                    "| arm | what it adds | mean gap vs DDPG-B | per point |",
+                    "|---|---|---|---|"]
+            for arm in ("PANDA-fw", "PANDA-fcast", "PANDA-cvar"):
+                fa = fronts.get(arm, [])
+                if len(fa) < 2:
+                    continue
+                gaps = [r["AE"] - _interp_ae(fa, r["viol_NH"]) for r in fb
+                        if _interp_ae(fa, r["viol_NH"]) is not None]
+                if not gaps:
+                    continue
+                out.append(
+                    f"| `{arm}` | {labels.get(arm, '')} | "
+                    f"{np.mean(gaps):+.0f} kWh/d | "
+                    f"{', '.join(f'{g:+.0f}' for g in gaps)} |")
+            out.append("")
+            # which modification carries it?
+            g = {}
+            for arm in ("PANDA-fw", "PANDA-fcast", "PANDA-cvar"):
+                fa = fronts.get(arm, [])
+                vals = [r["AE"] - _interp_ae(fa, r["viol_NH"]) for r in fb
+                        if len(fa) >= 2 and _interp_ae(fa, r["viol_NH"]) is not None]
+                if vals:
+                    g[arm] = float(np.mean(vals))
+            if len(g) == 3:
+                best = max(g, key=g.get)
+                both, fc, cv = g["PANDA-fw"], g["PANDA-fcast"], g["PANDA-cvar"]
+                if both >= max(fc, cv):
+                    verdict = ("the combination beats either change on its "
+                               "own, so neither is redundant")
+                else:
+                    verdict = (f"`{best}` alone matches or beats the "
+                               f"combination, so the other change is not "
+                               f"carrying the result")
+                out += [f"Reading across the rows: forecast-only gives "
+                        f"{fc:+.0f} kWh/d, CVaR-only {cv:+.0f}, and the two "
+                        f"together {both:+.0f}. On this evidence {verdict}. "
+                        f"Every number is a single seed, so this separates "
+                        f"the modifications only as far as one seed can.", ""]
             out += ["Two things this comparison does **not** control for. "
                     "`PANDA-fw` reads six extra inputs (the forecast context) "
                     "and its critic has 32 outputs instead of 1, so it is "
@@ -341,12 +376,15 @@ def main() -> None:
                     "measure. And every point here is one seed; the per-point "
                     "gaps above are the honest check on whether the mean is "
                     "carried by a single run.", ""]
-            if len(fa) < len([r for r in ws if r["arm"] == a_name]):
-                out += [f"({len([r for r in ws if r['arm'] == a_name]) - len(fa)}"
-                        f" of {a_name}'s runs and "
-                        f"{len([r for r in ws if r['arm'] == b_name]) - len(fb)}"
-                        f" of {b_name}'s are dominated within their own arm and "
-                        f"are excluded from the fronts.)", ""]
+            excluded = {arm: len([r for r in ws if r["arm"] == arm])
+                             - len(front)
+                        for arm, front in fronts.items()}
+            dropped = {a: n for a, n in excluded.items() if n}
+            if dropped:
+                out += ["(" + ", ".join(f"{n} of `{a}`'s runs"
+                                        for a, n in sorted(dropped.items()))
+                        + " are dominated within their own arm and are "
+                          "excluded from the fronts.)", ""]
 
     # --- does the learned model buy sample efficiency? -------------------
     dpath = Path(args.results) / f"summary_{args.dyna_tag}.json"
