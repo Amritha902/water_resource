@@ -110,7 +110,16 @@ class PandaRLConfig(DDPGConfig):
     cvar_alpha: float = 0.3            # fraction of the worst returns to optimise
     huber_kappa: float = 1.0
     constraints: tuple = DEFAULT_CONSTRAINTS
-    lambda_lr: float = 2.0
+    lambda_lr: float = 2.0             # per-episode dual step
+    #: optional intra-episode dual ascent, every this many agent decisions.
+    #: Needed whenever the policy gets more gradient steps than the episode
+    #: boundary provides dual steps -- with ``dyna_ratio = 3`` the policy
+    #: learns roughly four times faster and a once-per-week multiplier simply
+    #: cannot keep up: the agent drives aeration down and the constraint only
+    #: catches up an episode later.  See docs/03_novelty.md.
+    lambda_every: int = 0
+    lambda_lr_online: float = 0.05     # dual step for the intra-episode update
+    rate_ema_beta: float = 2e-3        # ~500-decision window on the violation rate
     lambda_init: float = 1.0
     lambda_max: float = 30.0
     use_forecast: bool = True
@@ -185,6 +194,9 @@ class PandaRLAgent(DDPGAgent):
         self.n_tail = max(int(round(c.cvar_alpha * c.n_quantiles)), 1)
         self.cost_scale = 1.0 - c.gamma
         self._ctx = np.zeros(self.n_context)
+        # running estimate of each violation rate, for the intra-episode dual
+        self._rate_ema = np.zeros(max(self.n_constraints, 1))
+        self._dual_steps = 0
 
     # -- forecast context --------------------------------------------------
     def reset(self) -> None:
@@ -217,6 +229,9 @@ class PandaRLAgent(DDPGAgent):
             self.costs.add(ptr, c.astype(np.float32) * self.cost_scale)
         if inlet is not None:
             self.inlets[ptr] = np.asarray(inlet, np.float32) / D_SCALE
+        if self.n_constraints and cost is not None:
+            beta = self.cfg_panda.rate_ema_beta
+            self._rate_ema = (1.0 - beta) * self._rate_ema + beta * np.asarray(cost)
 
     def _sample(self, n: int):
         idx = self.rng.integers(0, self.buffer.size, size=min(n, self.buffer.size))
@@ -372,7 +387,20 @@ class PandaRLAgent(DDPGAgent):
                 for _ in range(c.dyna_ratio):
                     syn = self._learn_batch(*self._dyna_batch(c.batch_size))
                 stats["loss_critic_dyna"] = syn["loss_critic"]
+
+            self._dual_steps += 1
+            if (self.n_constraints and c.lambda_every
+                    and self._dual_steps % c.lambda_every == 0):
+                self._dual_step(self._rate_ema, c.lambda_lr_online)
+                stats["lambda_0"] = float(self.lmbda[0])
         return stats
+
+    def _dual_step(self, rates, lr: float) -> None:
+        """One projected dual-ascent step on every multiplier."""
+        for i, con in enumerate(self.constraints):
+            self.lmbda[i] = float(np.clip(
+                self.lmbda[i] + lr * (float(rates[i]) - con.budget),
+                0.0, self.cfg_panda.lambda_max))
 
     # -- dual ascent on the multipliers -----------------------------------
     def end_episode(self, stats: dict) -> dict:
@@ -380,14 +408,16 @@ class PandaRLAgent(DDPGAgent):
         if not self.n_constraints:
             return {}
         c = self.cfg_panda
+        rates = np.array([float(stats.get(f"rate_{con.key}", 0.0))
+                          for con in self.constraints])
+        # when the intra-episode dual is running it already tracks the rate;
+        # stepping again here would double-count the same episode
+        if not c.lambda_every:
+            self._dual_step(rates, c.lambda_lr)
         out = {}
         for i, con in enumerate(self.constraints):
-            rate = float(stats.get(f"rate_{con.key}", 0.0))
-            self.lmbda[i] = float(np.clip(
-                self.lmbda[i] + c.lambda_lr * (rate - con.budget),
-                0.0, c.lambda_max))
-            out[f"lambda_{con.name}"] = self.lmbda[i]
-            out[f"rate_{con.name}"] = rate
+            out[f"lambda_{con.name}"] = float(self.lmbda[i])
+            out[f"rate_{con.name}"] = float(rates[i])
         return out
 
     # -- persistence -------------------------------------------------------
