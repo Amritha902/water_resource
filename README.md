@@ -160,11 +160,13 @@ their eq. (23) asks for, because at `β₂ = 0.42` a long run of small
 exceedances is cheaper than the air it saves. Their tables report energy and
 effluent averages but not how often the limit is broken.
 
-**2. The network changes are worth their place.** Sweeping the reward weight
-with both arms optimising the same objective, and the arms differing *only* in
-the network, PANDA's Pareto front sits about **29 kWh/d below** the published
-DDPG's at matched violation rate — and all four per-point gaps are positive,
-so it is not one lucky run.
+**2. The network changes are worth their place, and both of them count.**
+Sweeping the reward weight with every arm optimising the same objective, and
+the arms differing *only* in the network, PANDA's Pareto front sits about
+**29 kWh/d below** the published DDPG's at matched violation rate — all four
+per-point gaps positive, so it is not one lucky run. Running the two changes
+separately: the forecast alone gives +19 kWh/d, the risk-sensitive critic
+alone +26, and the two together +29. Neither is redundant.
 
 ![weight sweep](docs/figures/fig7_weight_sweep.png)
 
