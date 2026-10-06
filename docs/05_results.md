@@ -58,6 +58,15 @@ On the same axes: PID sits at 3720 kWh/d and 12% of the week above the limit. At
 
 So the frontier passes under both comparators rather than any single run dominating them outright -- which is the weaker and more defensible version of the claim. The interpolation is between two measured runs, not an extrapolation.
 
+## The network changes, isolated
+
+Both arms use the paper's own reward `-(KLa_5/240 + beta2 max(S_NH,e - 4, 0))` with no Lagrange multiplier, and `beta2` is swept. A fixed weight is a stationary objective, so every run has a well-defined target. The arms differ **only** in the network: `DDPG-B` is the published agent, `PANDA-fw` adds forecast conditioning and the distributional CVaR critic and nothing else.
+
+| beta2 | arm | NH>4 | AE [kWh/d] | mean S$_{O,5}$ |
+|---|---|---|---|---|
+| 0.2 | DDPG-B | 51.7% | 3338.7 | 0.67 |
+| 0.2 | PANDA-fw | 59.6% | 3281.0 | 0.54 |
+
 ## Caveats
 
 - Absolute index values are not directly comparable with either paper's tables, for the reasons above. Every claim here is a comparison between methods on the *same* simulator.
