@@ -20,13 +20,14 @@ what is left.
 | PANDA-RL (our modified network) | **implemented and evaluated** |
 | Aeration twin (for Dyna) | **trained** — DO MAE 0.114 mg/L, effluent NH MAE 0.052 mg/L per 15-min step, and it recovered the Figure-4 trade-off from data |
 | Benchmark, dry weather (all 5 methods, 2 seeds) | **done** |
-| Benchmark, rain and storm | **partial** — the run was killed at job 13/24 by background-task cleanup; rain has PID/fuzzy/DDPG-A, storm not started |
-| Energy/violation frontier | **running** |
-| Dyna sample-efficiency ablation | **script written, not yet run** |
-| Figures | **not done** |
+| Benchmark, rain and storm | **done** — the first run was killed at job 13/24 by background-task cleanup and was finished under separate tags, which the results generator merges |
+| Energy/violation frontier | **done** — 4 budget points, `11_budget_frontier.py` |
+| Network changes isolated (fixed-weight sweep) | **done** — `12_weight_sweep.py`, 14 runs over 4 arms |
+| Dyna sample-efficiency ablation | **done** — 3 arms, `10_dyna_ablation.py` |
+| Figures | **done** — `docs/figures/`, built by `07_figures.py` |
 | `docs/05_results.md` | **generated** from the benchmark output |
 
-57 tests pass, 1 skipped (34 of them in `tests/test_rl.py`).
+71 tests pass, 1 skipped (the early-warning end-to-end check, see above).
 
 ## Reproducing paper 2 — the numbers
 
@@ -143,16 +144,19 @@ has the ablations wired up (`--ablations`).
 
 ## Next steps, in order
 
-1. Finish the frontier sweep (running) and regenerate `docs/05_results.md`.
-2. Re-run rain and storm for DDPG-B and PANDA-RL, in chunks small enough to
-   survive. Use `--weathers rain storm` with a separate `--tag` and let
-   `09_write_results.py` merge; the traces and curves of the killed run are
-   gone but every summary row was written incrementally.
-3. Run `experiments/10_dyna_ablation.py` for the three-arm sample-efficiency
-   table.
-4. Figures: `experiments/07_figures.py` (add `--dose-response` for the slow
-   Figure-4 reproduction).
-5. Full test suite.
+1. **Scale the Dyna dual step with `dyna_ratio`.** The intra-episode dual did
+   not fix the constraint lag (68.0% against 66.8%); the diagnosis in
+   `docs/03_novelty.md` §4 says why and what to change. One line, untested.
+2. **More seeds.** Every frontier and sweep point is a single seed. The
+   per-point gaps are reported so the reader can see whether a mean is
+   carried by one run, but 3-5 seeds would settle it.
+3. **Train the early-warning network** so the last skipped test runs:
+   `python experiments/04_collect_warning_data.py && python experiments/05_warning_benchmark.py`.
+4. **Longer training for the Lagrangian arm.** At twenty training weeks the
+   dual has not converged, which is why the budget does not reliably index
+   the operating point and why PANDA-RL's benchmark rows are mixed.
+5. Parameter- and input-matched controls for the network comparison, so the
+   +29 kWh/d cannot be attributed to capacity.
 
 ## Honest caveats
 
