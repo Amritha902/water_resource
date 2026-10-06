@@ -107,8 +107,13 @@ def train(agent, series: InfluentSeries, reward: RewardSpec,
             if hasattr(agent, "push_inlet"):
                 agent.push_inlet(info["inlet"])
                 ctx = agent.context()
-            agent.observe(x, action, r, np.concatenate([nxt, ctx]), done,
-                          cost=cost if cost.size else None)
+            try:
+                agent.observe(x, action, r, np.concatenate([nxt, ctx]), done,
+                              cost=cost if cost.size else None,
+                              inlet=info["inlet"])
+            except TypeError:        # the base DDPG agent takes no inlet
+                agent.observe(x, action, r, np.concatenate([nxt, ctx]), done,
+                              cost=cost if cost.size else None)
             agent.update()
             for con, value in zip(getattr(agent, "constraints", ()), cost):
                 cost_sum[con.key] = cost_sum.get(con.key, 0.0) + float(value)

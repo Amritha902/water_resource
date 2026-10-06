@@ -214,16 +214,24 @@ def random_scenario(rng: np.random.Generator, days: float = 14.0,
     if weather is None:
         weather = str(rng.choice(["dry", "rain", "storm"], p=[0.4, 0.3, 0.3]))
 
+    # Event windows are clamped so short horizons stay valid -- the tests
+    # build 1-2 day scenarios, and an unclamped window gives an inverted
+    # uniform range there.
+    def _start(margin: float) -> float:
+        lo = min(0.4, 0.2 * days)
+        hi = max(days - margin, lo + 1e-3)
+        return float(rng.uniform(lo, hi))
+
     events: list[tuple] = []
     if weather == "rain":
         for _ in range(int(rng.integers(1, 3))):
-            events.append(("rain", float(rng.uniform(1.0, days - 3.0)),
-                           float(rng.uniform(0.9, 2.4)),
+            duration = float(np.clip(rng.uniform(0.9, 2.4), 0.1, 0.5 * days))
+            events.append(("rain", _start(1.5 * duration), duration,
                            float(rng.uniform(6000.0, 17000.0))))
     elif weather == "storm":
         for _ in range(int(rng.integers(1, 4))):
-            events.append(("storm", float(rng.uniform(1.0, days - 1.0)),
-                           float(rng.uniform(0.12, 0.40)),
+            duration = float(np.clip(rng.uniform(0.12, 0.40), 0.05, 0.3 * days))
+            events.append(("storm", _start(2.0 * duration), duration,
                            float(rng.uniform(15000.0, 42000.0))))
 
     return _build(t, weather,
