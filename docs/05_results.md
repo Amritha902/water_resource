@@ -50,10 +50,13 @@ A single operating point cannot settle whether letting dissolved oxygen float sa
 | 5% | 12.3% | 3664.5 | +1.5% | 1.77 | 8.4 |  |
 | 15% | 17.1% | 3931.8 | -5.7% | 2.78 | 7.2 | dominated |
 | 25% | 8.9% | 3821.1 | -2.7% | 2.48 | 4.1 |  |
+| 40% | 40.2% | 3391.3 | +8.8% | 0.97 | 2.9 |  |
 
-**Read this table with care.** 1 of 3 run is dominated by another run in the same sweep -- worse on both axes -- so the budget does **not** reliably index the operating point at one seed and 20 training weeks. The multipliers themselves move the right way as the budget loosens, so the dual is working; what is not converged is the policy. A dominated point with a *high* mean `S_O,5` and a high violation rate is the signature of an oscillating policy -- over-aerating on average while under-aerating at the load peaks, which is exactly the failure a forecast is supposed to remove. `experiments/12_weight_sweep.py` repeats the comparison against a *stationary* objective to remove this confound.
+**Read this table with care.** 1 of 4 runs is dominated by another run in the same sweep -- worse on both axes -- so the budget does **not** reliably index the operating point at one seed and 20 training weeks. The multipliers themselves move the right way as the budget loosens, so the dual is working; what is not converged is the policy. A dominated point with a *high* mean `S_O,5` and a high violation rate is the signature of an oscillating policy -- over-aerating on average while under-aerating at the load peaks, which is exactly the failure a forecast is supposed to remove. `experiments/12_weight_sweep.py` repeats the comparison against a *stationary* objective to remove this confound.
 
-For reference on the same axes: PID sits at 3720 kWh/d with 12% of the week above the limit, and the reproduced DDPG-B at 3467 with 38%.
+On the same axes: PID sits at 3720 kWh/d and 12% of the week above the limit. At that same violation rate the efficient frontier is at about 3670 kWh/d, i.e. 50 kWh/d below it. DDPG-B sits at 3467 kWh/d and 38% of the week above the limit. At that same violation rate the efficient frontier is at about 3411 kWh/d, i.e. 55 kWh/d below it.
+
+So the frontier passes under both comparators rather than any single run dominating them outright -- which is the weaker and more defensible version of the claim. The interpolation is between two measured runs, not an extrapolation.
 
 ## Caveats
 
