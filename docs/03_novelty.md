@@ -184,14 +184,15 @@ One line per modification, so nothing has to be inferred from the prose.
 
 | # | modification | status | evidence |
 |---|---|---|---|
-| 1 | forecast-conditioned actor and critic | **supported** | with 2, below |
-| 2 | distributional critic + CVaR objective | **supported** | `12_weight_sweep.py`: same objective, same swept weight, arms differ only in the network. PANDA-fw's Pareto front sits ~29 kWh/d below DDPG-B's at matched violation rate, and all four per-point gaps are positive (+51, +25, +35, +3). |
+| 1 | forecast-conditioned actor and critic | **supported, and separable** | `12_weight_sweep.py --arms PANDA-fcast`: forecast alone puts the front +19 kWh/d below DDPG-B's. |
+| 2 | distributional critic + CVaR objective | **supported, and separable** | `--arms PANDA-cvar`: CVaR alone gives +26 kWh/d. Both together give +29, so the combination beats either on its own and neither change is redundant. The headline run (`PANDA-fw`, both enabled) has all four per-point gaps positive: +51, +25, +35, +3. |
 | 3 | discharge limits as Lagrangian constraints | **mechanism works, not yet converged** | `11_budget_frontier.py`: a 40% budget is met almost exactly (40.2%), and the multipliers move the right way as the budget loosens. But at one seed and twenty training weeks the budget does not reliably index the operating point — one of four runs comes out dominated, and the full-benchmark PANDA-RL runs at a 5% budget are mixed. The dual needs more steps than the episode boundary gives it. |
 | 4 | twin-assisted (Dyna) updates | **sample efficiency confirmed; it breaks the constraint and the attempted fix did not work** | `10_dyna_ablation.py`: at equal real interactions the model-based arm cut aeration from 3749 to 3205 kWh/d, but took the ammonium violation rate from 14.1% to 66.8%. The intra-episode dual (`lambda_every`) was meant to fix that and did not — 68.0%. Diagnosis and the proposed correction are in §4. |
 
-Modifications 1 and 2 cannot be separated by the experiments run so far —
-they are enabled together in `PANDA-fw`. Separating them needs two more arms
-(forecast-only, CVaR-only) and is the obvious next experiment.
+Modifications 1 and 2 **have** now been separated, by running the
+forecast-only and CVaR-only arms through the same sweep: +19 and +26 kWh/d
+respectively against +29 for the two together. Each earns its place and the
+combination is better than either, on a single seed.
 
 Two things the network comparison does not control for, repeated here
 because they bound the claim: `PANDA-fw` reads six extra inputs and its
