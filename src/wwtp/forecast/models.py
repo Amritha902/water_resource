@@ -19,7 +19,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .dataset import CHANNELS, HORIZON, LOOKBACK, QUANTILES, REGIMES
+from .dataset import CHANNELS, HORIZON, QUANTILES, REGIMES
 
 
 class CausalBlock(nn.Module):

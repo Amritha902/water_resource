@@ -48,7 +48,7 @@ import numpy as np
 from ..baselines.pid_controller import PIDController
 from ..bsm1 import asm1
 from ..bsm1.influent import InfluentSeries, random_scenario
-from ..bsm1.plant import PlantParameters, SEC_PER_DAY
+from ..bsm1.plant import PlantParameters
 from ..envs import run_closed_loop
 from ..metrics import EFFLUENT_LIMITS
 

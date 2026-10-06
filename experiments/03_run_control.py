@@ -106,7 +106,6 @@ def main() -> None:
               f"DEV2={row['DEVmax_SNO2']:.3f} EQ={row['EQ']:.0f} "
               f"OCI={row['OCI']:.0f}", flush=True)
 
-        key = (cond, weather, name)
         if seed == 0 and cond in ("noisy", "detuned"):
             traces[f"{cond}|{weather}|{name}"] = {
                 "t": res.time_days[::20].tolist(),
