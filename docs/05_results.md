@@ -116,6 +116,50 @@ Same number of *real* interactions in every arm; only the number of synthetic ba
 
 The model does accelerate learning of the objective, and that is the problem it also creates: with three synthetic batches per real one the policy takes roughly four times the gradient steps, so a Lagrange multiplier stepped only at the episode boundary cannot keep up and the agent runs well past its budget until the dual catches up. The third arm steps the dual inside the episode instead.
 
+## Paper 1: the tracking benchmark
+
+`experiments/03_run_control.py`, 54 runs: three operating conditions x three weathers x three controllers x two seeds. `clean` is the idealised setting of the paper; `noisy` adds the paper's own supplementary protocol (zero-mean noise at 3 % of each actuator's upper bound) plus DO and nitrate sensor noise; `detuned` keeps that noise and drops the expert prior to 25 % of its published gains. Percentages are against the PID prior, positive meaning better.
+
+| condition | weather | controller | IAE `S_O,5` | IAE `S_NO,2` | vs PID (DO / NO3) |
+|---|---|---|---|---|---|
+| clean | dry | PID | 0.00760 | 0.00213 | -- |
+| clean | dry | MAACC | 0.00747 | 0.00315 | +1.7% / -48.1% |
+| clean | dry | PANDA | 0.00935 | 0.00329 | -23.0% / -54.8% |
+| clean | rain | PID | 0.00749 | 0.00229 | -- |
+| clean | rain | MAACC | 0.00737 | 0.00332 | +1.7% / -45.3% |
+| clean | rain | PANDA | 0.01581 | 0.00380 | -111.0% / -66.2% |
+| clean | storm | PID | 0.00779 | 0.04546 | -- |
+| clean | storm | MAACC | 0.00896 | 0.07670 | -15.1% / -68.7% |
+| clean | storm | PANDA | 0.02531 | 0.04837 | -225.0% / -6.4% |
+| noisy | dry | PID | 0.03408 | 0.08322 | -- |
+| noisy | dry | MAACC | 0.03476 | 0.05914 | -2.0% / +28.9% |
+| noisy | dry | PANDA | 0.04352 | 0.06984 | -27.7% / +16.1% |
+| noisy | rain | PID | 0.03411 | 0.07975 | -- |
+| noisy | rain | MAACC | 0.03477 | 0.06157 | -1.9% / +22.8% |
+| noisy | rain | PANDA | 0.04512 | 0.06937 | -32.3% / +13.0% |
+| noisy | storm | PID | 0.03411 | 0.12137 | -- |
+| noisy | storm | MAACC | 0.03649 | 0.13105 | -7.0% / -8.0% |
+| noisy | storm | PANDA | 0.04352 | 0.11431 | -27.6% / +5.8% |
+| detuned | dry | PID | 0.04853 | 0.06466 | -- |
+| detuned | dry | MAACC | 0.05162 | 0.06933 | -6.4% / -7.2% |
+| detuned | dry | PANDA | 0.05048 | 0.06998 | -4.0% / -8.2% |
+| detuned | rain | PID | 0.04844 | 0.06261 | -- |
+| detuned | rain | MAACC | 0.05423 | 0.06727 | -12.0% / -7.4% |
+| detuned | rain | PANDA | 0.05043 | 0.06756 | -4.1% / -7.9% |
+| detuned | storm | PID | 0.04866 | 0.10437 | -- |
+| detuned | storm | MAACC | 0.05480 | 0.14067 | -12.6% / -34.8% |
+| detuned | storm | PANDA | 0.05043 | 0.11444 | -3.7% / -9.7% |
+
+**Three readings, and two of them corrected what we had written.**
+
+1. *Under the paper's own noise protocol MAACC does beat the prior on the nitrate loop*, by 29 % on dry and 23 % on rain, and it lowers `DEVmax` on that loop too. Our earlier spot checks had not covered this condition and we had written that MAACC never reliably beats a well-tuned PID. That was too strong: it is the condition the paper itself emphasises, and in it the method works.
+
+2. *The de-tuned prior does **not** give the learned term room.* We had predicted it would -- the argument being that integral action in a well-tuned prior absorbs any learned correction, so weakening the prior should let the correction contribute. The data says the opposite: with the prior at 25 % of its gains, MAACC is worse than PID on every weather and both loops (-6 % to -35 %). A weaker prior leaves a larger error for the actor to chase, and chasing it with an incremental policy is evidently harder than leaving it alone. That hypothesis is withdrawn.
+
+3. *In the clean condition MAACC looks far worse on nitrate (-45 % to -69 %), but read the absolute numbers*: PID's IAE is 0.0021 against MAACC's 0.0032. Both are negligible next to the 0.06-0.13 of the noisy and de-tuned conditions. With no disturbance to reject there is nothing to learn and any exploration is pure cost, which is what the percentages are reporting.
+
+The tracking-layer feed-forward (`PANDA` here, not PANDA-RL) is consistently worse on dissolved oxygen (-4 % to -32 %) and mixed on nitrate -- better than PID under noise (+6 % to +16 %), worse elsewhere. The negative result in `docs/06_tracking_layer_feedforward.md` stands for the oxygen loop, which is what it was about.
+
 ## Caveats
 
 - Absolute index values are not directly comparable with either paper's tables, for the reasons above. Every claim here is a comparison between methods on the *same* simulator.

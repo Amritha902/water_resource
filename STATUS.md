@@ -8,7 +8,7 @@ what is left.
 | Piece | State |
 |---|---|
 | BSM1 plant (ASM1 biology, Takács clarifier, 5 tanks, influent generator) | **done**, validated against published BSM1 steady state |
-| Paper 1 (MAACC) reproduced | **done** |
+| Paper 1 (MAACC) reproduced | **done**, and benchmarked: 54 runs over 3 conditions x 3 weathers x 2 seeds. Under the paper's own noise protocol MAACC improves nitrate IAE by 23-29% against the PID prior. |
 | Paper 1 — correction to the critic update in eq. (15) | **done**, reproduced by a test |
 | Influent forecaster (TCN, quantiles + weather regime) | **trained** |
 | Digital twin (GRU) | **trained** |
@@ -168,7 +168,13 @@ has the ablations wired up (`--ablations`).
   unknown.
 * DDPG on this problem is seed-sensitive. Every seed gets reported, not the
   best one.
-* The paper-1 anticipatory feed-forward (`src/wwtp/panda/`) did **not** beat
-  PID in the idealised tracking setting. It is written up as a negative result
-  in `docs/06_tracking_layer_feedforward.md`; paper 2's framing is where the
-  real headroom turned out to be.
+* The paper-1 anticipatory feed-forward (`src/wwtp/panda/`) is worse than the
+  PID prior on dissolved oxygen in every condition (-4% to -32%), which is the
+  loop it was designed for, so that negative result stands. It is written up
+  in `docs/06_tracking_layer_feedforward.md`.
+* Two claims in earlier drafts were **withdrawn** when the full tracking
+  benchmark ran: that MAACC never reliably beats a well-tuned PID (it does,
+  under the paper's noise protocol, on the nitrate loop), and that a de-tuned
+  prior gives the learned term room (it does not -- MAACC is worse than PID
+  everywhere in that condition). Both are documented in
+  `docs/02_reproduction.md` and `docs/05_results.md`.

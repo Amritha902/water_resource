@@ -86,25 +86,34 @@ it starts exactly at the expert prior, the learned correction stays bounded,
 and training is stable in most seeds but not all — consistent with the
 paper's own "above 90 % success rate".
 
-Quantitatively, on this simulator **MAACC lands within a few percent of a
-well-tuned PID and does not reliably beat it** (see `docs/04_results.md`).
-The reason is structural and worth stating, because it is what motivates the
-extension:
+Quantitatively, the full benchmark (`experiments/03_run_control.py`, 54 runs,
+tabulated in `docs/05_results.md`) splits three ways, and two of its readings
+corrected what was written here earlier.
 
-> The expert prior is an *incremental* PID, so it has integral action. Any
-> slowly varying additive correction `a` the actor learns is absorbed by the
-> prior's integrator within a few control periods. The closed-loop tracking
-> error therefore carries almost no information about `a`, and the only term
-> in the utility that still depends on `a` is the effort penalty `R_i`, whose
-> minimiser is `a = 0`. **The learned term is close to unidentifiable from
-> tracking error alone.**
+**Under the paper's own noise protocol, MAACC works.** With 3 %-of-range
+actuator noise plus DO and nitrate sensor noise, MAACC improves the nitrate
+loop's IAE by 29 % on dry weather and 23 % on rain against the PID prior, and
+lowers `DEVmax` on that loop as well. An earlier draft of this file said
+MAACC "does not reliably beat" a well-tuned PID. That was based on spot
+checks that happened not to cover this condition, and it was too strong.
 
-Two consequences, both used in the experiments:
+**In the clean condition it is worse on nitrate, and that is not interesting.**
+PID's IAE there is 0.0021 against MAACC's 0.0032 — both negligible beside the
+0.06–0.13 of the noisy runs. With no disturbance to reject there is nothing to
+learn and exploration is pure cost.
 
-1. If the prior is *de-tuned* (25 % of the published gains — a plant that has
-   not been re-tuned in years), the learned term does have room, and MAACC
-   recovers part of the gap. That is reported as a separate operating
-   condition.
-2. If the learned component is given information the prior does **not** have
-   — namely what the influent is about to do — it becomes identifiable again
-   and genuinely useful. That is the extension.
+**The de-tuned prior does not help, which refutes a hypothesis stated here.**
+The earlier argument ran: the prior is an *incremental* PID, so it has
+integral action, and it absorbs any slowly varying additive correction the
+actor learns within a few control periods — therefore weakening the prior
+should give the learned term room. It does not. With the prior at 25 % of its
+published gains, MAACC is worse than PID on every weather and both loops, by
+6 % to 35 %. A weaker prior leaves a larger standing error for the actor to
+chase, and chasing it with an incremental policy turns out to be harder than
+leaving it alone. The hypothesis is withdrawn.
+
+What survives is the narrower observation, which still motivates the
+extension: a learned correction driven by tracking error alone has very
+little to work with when the prior is good, and the condition where it does
+earn its place is the one with real measurement noise — exactly where
+*anticipating* a disturbance should help more than reacting to it.
