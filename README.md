@@ -1,218 +1,163 @@
 # Water resource project — RL control of a wastewater treatment plant
 
-This repo has three parts:
-
-1. A simulation of the BSM1 wastewater treatment plant, written from scratch.
-2. Reproductions of the two papers we are building on.
-3. Our own change to the RL network, which is the new contribution.
-
-Nothing here is finished yet. `STATUS.md` says exactly what works, what the
-numbers are so far, and what is left.
+Two papers reproduced on a BSM1 plant built from scratch, plus our own change
+to the RL network. Every number below comes from `results/`, which is in the
+repo; `docs/05_results.md` is generated from those files by
+`experiments/09_write_results.py`, so nothing here is typed by hand.
 
 ---
 
-## The two papers
+## The plant, in one paragraph
 
-### Paper 1 — Wang, Li, Ren, Qiao (IEEE T-II, 2026)
+BSM1 is the standard benchmark plant: five tanks (two anoxic, three aerated)
+and a settling clarifier. Two things are controlled:
+
+- **dissolved oxygen in tank 5** (`S_O,5`), by the air transfer rate `KLa_5`
+- **nitrate in tank 2** (`S_NO,2`), by the internal recycle flow `Q_a`
+
+They interfere. More recycle brings nitrate back for denitrification but also
+drags oxygen-rich water backwards; more air changes how much nitrate exists to
+recycle in the first place.
+
+---
+
+## Base paper 1 — Wang, Li, Ren, Qiao (IEEE T-II, 2026)
+
 *Multiagent Adaptive Critic Control With Expert Knowledge for WWTPs*
 
-The plant has two things that must be held steady:
+What we understood it to do:
 
-- dissolved oxygen in tank 5 (`S_O,5`), adjusted with the air transfer rate `KLa_5`
-- nitrate in tank 2 (`S_NO,2`), adjusted with the internal recycle flow `Q_a`
+- Treat the plant as two coupled subsystems, one agent each, so each agent
+  learns one simple control law instead of a joint one.
+- Give each agent a cost that includes **everyone's** tracking error — that is
+  how the coupling is handled without ever modelling it.
+- Apply `u = a + b`, where `b` is a normal PID (the "expert knowledge") and `a`
+  is learned. The learned part starts at exactly zero, so day one is just PID
+  and nothing risky happens.
+- Emit an *increment* to the control rather than the control itself, so a
+  disturbance corrupts only one small step.
 
-These two loops interfere with each other. More recycle flow brings nitrate
-back for denitrification, but it also drags oxygen-rich water backwards. More
-air changes how much nitrate there is to recycle in the first place.
+## Base paper 2 — Du, Chen, Han, Qiao (Sci China Tech Sci, 2023)
 
-What the paper does about it:
-
-- Treat the plant as two connected subsystems and give each one its own agent,
-  so each agent only has to learn one simple control law instead of a joint one.
-- Each agent's cost function includes **everyone's** tracking error, not just
-  its own. That is how the coupling is handled without ever having to model it.
-- The applied control is `u = a + b`, where `b` is a normal PID controller
-  (the "expert knowledge") and `a` is what the agent learns. The learned part
-  starts at exactly zero, so on day one the plant just runs on PID and nothing
-  risky happens.
-- The agent outputs an *increment* to the control, not the control itself, so a
-  disturbance only corrupts one small step.
-
-### Paper 2 — Du, Chen, Han, Qiao (Sci China Tech Sci, 2023)
 *Dissolved oxygen concentration control in WWTP based on reinforcement learning*
 
-This one asks a different question. Everyone else fixes the DO setpoint at
+A different question, and the more useful one. Everyone else holds DO at
 2 mg/L and tries to track it accurately. Du et al. point out that tracking a
 fixed number is the wrong goal — the influent changes all day, so sometimes
-2 mg/L is more oxygen than you need and you are just paying for air.
+2 mg/L is more air than you need and you are simply paying for it.
 
 So they throw the setpoint away. A DDPG agent writes increments straight onto
 `KLa_5` and lets DO float wherever the trade-off puts it:
 
-- **state** `[S_S,5, S_O,5, S_NH,5]` — the three tank-5 concentrations that
-  actually drive the oxygen balance
-- **action** the increment on `KLa_5`
-- **reward A** (they call it DDPG-A): `-(max(NH_e - 4, 0) + 0.38 max(N_tot,e - 18, 0))`
-  — only cares about effluent quality
-- **reward B** (DDPG-B): `-(AE + 0.42 max(NH_e - 4, 0))` — also pays for the air
-- network: actor 3→256→256→1, critic 4→256→256→1, γ=0.99, batch 256,
-  buffer 30000, soft update 0.001
+- **state** `[S_S,5, S_O,5, S_NH,5]`, **action** the increment on `KLa_5`
+- **reward A** quality only; **reward B** adds the air: `-(AE + 0.42·max(NH_e − 4, 0))`
+- train on week 1 of the influent file, test on week 2
 
-They train on week 1 of the BSM1 influent file and test on week 2. DDPG-B cuts
-aeration energy by 5–7% versus PID while effluent still passes.
-
-The reason this works is a conflict in the plant: **more oxygen lowers effluent
-ammonia but raises effluent total nitrogen.** You cannot minimise both. Our
-simulator reproduces this (see `docs/04_second_paper.md`).
+It works because of a conflict in the plant: **more oxygen lowers effluent
+ammonia but raises effluent total nitrogen.** You cannot minimise both. We
+reproduced that conflict on our plant before trusting anything else.
 
 ---
 
 ## What we are trying to do
 
-Paper 1 gives a good *tracking* controller. Paper 2 gives a good *goal* —
-spend less energy, keep the effluent legal. Put together:
+Paper 1 gives a safe *controller*. Paper 2 gives the right *goal*. Our
+contribution is to the RL network itself:
 
-- paper 2's job (decide how much air to use), run with
-- paper 1's ideas (expert prior so it is safe from step one, incremental action,
-  cost that accounts for the other loop), and
-- our own change to the RL network, which is the actual novelty.
-
-Our change, in one line: **the agent in paper 2 can only react to what has
-already happened to the plant. We give it a forecast of what is coming, and we
-make it care about the worst case instead of only the average.**
-
-Concretely, four modifications (details in `docs/03_novelty.md`):
-
-1. **Forecast input.** A separate network predicts the next 2 hours of influent
-   (flow, ammonia, COD) with uncertainty, from 24 h of inlet history. Those
-   predictions go into the actor and critic. So the agent can cut air *before*
-   the load drops, instead of after.
-2. **Risk-aware critic.** Instead of one Q-value, the critic predicts the whole
-   distribution of returns (quantile regression) and the policy optimises the
-   bad tail (CVaR). Discharge limits are legal limits — the tail is what gets
-   you fined, not the mean.
-3. **Constraint instead of a guessed penalty weight.** Paper 2 hand-tunes
-   α2 = 0.38 and β2 = 0.42 by trial and error. We replace that with a Lagrange
-   multiplier that adapts itself until the violation rate hits a target you
-   actually specify.
-4. **Learned plant model for sample efficiency.** A one-step model of the plant
-   generates extra training data (Dyna), so the agent needs fewer weeks of real
-   interaction. The model is accurate to 0.11 mg/L on DO and 0.05 mg/L on
-   effluent ammonia per 15-minute step, and it recovered the Figure-4 trade-off
-   from data rather than being told it.
-
-"PANDA-MAACC" is our name for the combined thing — paper 1's controller plus
-these prediction-driven changes. It is ours, not from either paper.
+1. **Forecast input** — a separate network predicts the next 2 h of influent
+   with uncertainty; the actor and critic read it. The agent can cut air
+   *before* the load drops instead of after.
+2. **Risk-aware critic** — predicts the whole distribution of returns and
+   optimises the bad tail (CVaR), not the mean. A discharge limit is about
+   occurrences, not averages.
+3. **Constraints instead of guessed weights** — paper 2 hand-tunes `0.38` and
+   `0.42`. We replace them with Lagrange multipliers driven by a violation
+   rate the operator actually specifies.
+4. **Learned plant model** for sample efficiency (Dyna).
 
 ---
 
-## Reproduce first
+## Verified results
 
-Before claiming anything new we have to match what they published. Where we
-stand:
+**Reproduction.** Our comparators sit within 1.2 % of the published aeration
+energy, and paper 2's central claim holds:
 
-| dry weather, evaluation week | paper 2 | ours |
+| dry weather | paper 2 | ours |
 |---|---|---|
 | PID aeration energy | 3698.2 | 3719.7 |
 | Fuzzy aeration energy | 3697.1 | 3719.9 |
-| DDPG-B aeration energy | 3433 (−7.2%) | 3512 (−5.6%) |
-| DDPG-B mean `S_O,5` | 1.032 | 1.074 |
+| DDPG-B energy saving | −7.24 % | −6.8 % |
+| (rain) DDPG-B saving | −5.52 % | −4.9 % |
+| (storm) DDPG-B saving | −6.06 % | −5.0 % |
 
-The comparators are 0.6% apart on a plant rebuilt from scratch, and the central
-claim — let DO float and you save 5–7% of the aeration energy — reproduces.
-Effluent quality moves the way they report too: our DDPG-B gives EQ 5530
-against PID's 5411, the EQ/AE coupling their Table 2 shows.
+**But the saving is not free — this is the main finding.** The papers report
+energy and effluent averages, not how often the limit is broken:
 
-We also reproduced their Figure 4 on our plant: effluent total nitrogen rises
-with DO while ammonia falls, and COD/BOD/TSS stay flat. That conflict is the
-thing the whole RL design exists to resolve.
+| weather | DDPG-B saving | DDPG-B time above 4 g N/m³ | PID |
+|---|---|---|---|
+| dry | +6.8 % | 38.1 % | 12.2 % |
+| rain | +4.9 % | 35.2 % | 19.6 % |
+| storm | +5.0 % | 37.0 % | 23.2 % |
 
-**But the published recipe does not learn as written.** It collapses to zero
-aeration and stays there. Three reasons, all found by instrumenting it and all
-written up in `docs/04_second_paper.md` §5:
+**Our network change earns its place.** Same objective, same swept weight,
+arms differing *only* in the network. Each arm's Pareto front measured against
+DDPG-B's at matched violation rate (positive = cheaper at the same risk):
 
-1. the state `[S_S,5, S_O,5, S_NH,5]` plus an *incremental* action makes the
-   actuator position a hidden integrator, so the MDP is not Markov;
-2. at 45 s per decision with γ=0.99 the horizon is 75 min, but ammonia responds
-   to aeration over hours — so the energy saving is immediate and the penalty
-   lands outside the horizon;
-3. with γ=0.99 the critic must learn values ~100× the reward, and its `dQ/da`
-   has the **wrong sign** for four simulated weeks, by which time the tanh actor
-   has saturated where its gradient vanishes.
+| arm | what it adds | mean gap |
+|---|---|---|
+| forecast only | modification 1 | +19.5 kWh/d |
+| CVaR only | modification 2 | +25.9 kWh/d |
+| **both** | | **+28.6 kWh/d** |
 
-Fixing those three is what makes the numbers above possible, and each one also
-points at one of our modifications. Results for every method and weather are in
-`docs/05_results.md`.
+**Paper 1 works where the paper says it does.** Under its own noise protocol
+MAACC improves nitrate tracking by **+28.9 %** (dry) and **+22.8 %** (rain)
+against the PID prior.
 
----
-
-## What came out of it
-
-Full numbers in [`docs/05_results.md`](docs/05_results.md), which is generated
-from the stored results so it cannot drift from them. Three things worth
-knowing up front.
-
-**1. Paper 2's saving reproduces — and it is not free.** DDPG-B saves 5.8–7.8%
-of the aeration energy on dry weather, close to their reported 7.2%. It does
-that by exceeding the 4 g N/m³ ammonia limit **30–46% of the week**, against
-12% for the PID comparator. That is not a bug in the reproduction; it is what
-their eq. (23) asks for, because at `β₂ = 0.42` a long run of small
-exceedances is cheaper than the air it saves. Their tables report energy and
-effluent averages but not how often the limit is broken.
-
-**2. The network changes are worth their place, and both of them count.**
-Sweeping the reward weight with every arm optimising the same objective, and
-the arms differing *only* in the network, PANDA's Pareto front sits about
-**29 kWh/d below** the published DDPG's at matched violation rate — all four
-per-point gaps positive, so it is not one lucky run. Running the two changes
-separately: the forecast alone gives +19 kWh/d, the risk-sensitive critic
-alone +26, and the two together +29. Neither is redundant.
-
-![weight sweep](docs/figures/fig7_weight_sweep.png)
-
-**3. Asking for a violation budget instead of guessing a weight works, but
-needs longer training.** Sweeping the budget traces an energy/violation
-frontier that passes under both PID and DDPG-B. A 40% budget is met almost
-exactly (40.2%). But at one seed and twenty training weeks the dual has not
-converged, so the budget does not reliably index the operating point — one of
-four sweep runs is dominated by another.
-
-![frontier](docs/figures/fig6_frontier.png)
-
-A per-modification verdict table — what is demonstrated and what is not — is
-at the end of [`docs/03_novelty.md`](docs/03_novelty.md).
+Full tables, all three weathers and every seed: `docs/05_results.md`.
 
 ---
 
-## Layout
+## What is *not* proven
 
-```
-src/wwtp/bsm1/        the plant: ASM1 biology, Takacs settler, 5 tanks, influent
-src/wwtp/baselines/   PID (expert prior from paper 1)
-src/wwtp/maacc/       paper 1 reproduced
-src/wwtp/rl/          paper 2 reproduced: environment, rewards, DDPG, PID/fuzzy
-src/wwtp/forecast/    the influent forecaster
-src/wwtp/twin/        the digital twin
-src/wwtp/panda/       our controller
-experiments/          numbered scripts, run them in order
-docs/                 00 code walkthrough · 01 paper 1 · 02 paper 1 reproduction
-                      03 our contribution · 04 paper 2 + reproduction findings
-                      06 a negative result we kept
-tests/                28 tests
-```
+- **Every sweep point is one seed.** Per-point gaps are published so you can
+  see whether a mean rests on one run.
+- **The network comparison is not parameter-matched** — our arm reads six
+  extra inputs and has 32 critic outputs against 1, so some of the gap could
+  be capacity.
+- **The Dyna fix failed.** Model-based updates do buy sample efficiency
+  (3749 → 3205 kWh/d at equal real experience) but broke the constraint
+  (14 % → 67 % violations), and the intra-episode dual we wrote to fix it did
+  not (68 %). Diagnosis in `docs/03_novelty.md` §4.
+- **Two earlier claims were withdrawn** when the full tracking benchmark ran:
+  that MAACC never beats a well-tuned PID (it does, under noise), and that a
+  de-tuned prior gives the learned term room (it does not — MAACC is worse
+  everywhere in that condition).
+- The plant is a faithful re-implementation, not the official BSM1 code, and
+  the influent is statistically equivalent rather than identical. Absolute
+  values are not directly comparable with either paper's tables; every claim
+  here is a comparison *between methods on the same simulator*.
+
+---
 
 ## Running it
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests -q
-
-python experiments/01_train_forecaster.py     # ~10 min
-python experiments/02_train_twin.py           # ~40 min
-python experiments/03_run_control.py          # paper 1 benchmark
-python experiments/06_aeration_benchmark.py   # paper 2 + ours  (the main one)
-python experiments/07_figures.py              # figures from the results
+python -m pytest tests -q                      # 72 tests, ~1 min
+python experiments/09_write_results.py         # regenerate docs/05_results.md
+python experiments/07_figures.py               # regenerate the figures
 ```
 
-Checkpoints for the forecaster and the twin are committed in `artifacts/`, so
-you can skip steps 01 and 02.
+Trained checkpoints are in `artifacts/`, so the experiment scripts
+(`01`–`12`, run in order) only need re-running to reproduce from scratch.
+
+| doc | what it covers |
+|---|---|
+| `docs/00_code_walkthrough.md` | every module, in plain language |
+| `docs/01_paper_summary.md` | base paper 1 in detail |
+| `docs/02_reproduction.md` | reproducing it, and a correction to its eq. (15) |
+| `docs/03_novelty.md` | our contribution, with a per-modification verdict table |
+| `docs/04_second_paper.md` | base paper 2, and three corrections its recipe needs |
+| `docs/05_results.md` | all results (generated) |
+| `docs/06_tracking_layer_feedforward.md` | a negative result we kept |
+| `STATUS.md` | what is done, what is not, what to do next |
