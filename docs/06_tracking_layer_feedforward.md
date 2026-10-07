@@ -1,10 +1,20 @@
 # The tracking-layer anticipatory feed-forward — a negative result
 
-> **This did not work.** It is kept because the reason it failed is the reason
-> the project moved to paper 2's framing, and because the two engineering
-> lessons in it (closed-loop identification bias, and offset-free feed-forward
-> design) cost real time to find. The contribution the project actually rests
-> on is in `docs/03_novelty.md`.
+> **This did not work on the loop it was aimed at.** The full benchmark
+> (54 runs, `docs/05_results.md`) has it consistently worse than the PID prior
+> on dissolved oxygen, by 4 % to 32 % of IAE across every condition — which is
+> the loop the feed-forward was designed for, so the negative result stands.
+>
+> One nuance the benchmark added: on the *nitrate* loop under measurement
+> noise it is better than PID, by 6 % to 16 %. That is a side effect rather
+> than the design intent, and it is smaller than what MAACC achieves on the
+> same loop (23–29 %), so it does not rescue the approach.
+>
+> Kept because the reason it failed is the reason the project moved to
+> paper 2's framing, and because the two engineering lessons in it
+> (closed-loop identification bias, and offset-free feed-forward design) cost
+> real time to find. The contribution the project rests on is in
+> `docs/03_novelty.md`.
 
 ## Original framing: PANDA-MAACC
 

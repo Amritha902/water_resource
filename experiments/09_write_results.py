@@ -409,6 +409,84 @@ def main() -> None:
                 "its budget until the dual catches up. The third arm steps "
                 "the dual inside the episode instead.", ""]
 
+    # --- paper 1: the tracking benchmark ---------------------------------
+    ppath = Path(args.results) / "summary_paper1.json"
+    if ppath.exists():
+        pr = json.loads(ppath.read_text())
+        import collections
+        bag = collections.defaultdict(list)
+        for r in pr:
+            bag[(r["condition"], r["weather"], r["controller"])].append(r)
+
+        def mean(key, *k):
+            v = bag.get(k, [])
+            return float(np.mean([x[key] for x in v])) if v else float("nan")
+
+        out += ["## Paper 1: the tracking benchmark", "",
+                "`experiments/03_run_control.py`, 54 runs: three operating "
+                "conditions x three weathers x three controllers x two seeds. "
+                "`clean` is the idealised setting of the paper; `noisy` adds "
+                "the paper's own supplementary protocol (zero-mean noise at "
+                "3 % of each actuator's upper bound) plus DO and nitrate "
+                "sensor noise; `detuned` keeps that noise and drops the "
+                "expert prior to 25 % of its published gains. Percentages are "
+                "against the PID prior, positive meaning better.", "",
+                "| condition | weather | controller | IAE `S_O,5` | IAE `S_NO,2` | vs PID (DO / NO3) |",
+                "|---|---|---|---|---|---|"]
+        for cond in ("clean", "noisy", "detuned"):
+            for w in ("dry", "rain", "storm"):
+                p1 = mean("IAE_SO5", cond, w, "PID")
+                p2 = mean("IAE_SNO2", cond, w, "PID")
+                for c in ("PID", "MAACC", "PANDA"):
+                    if (cond, w, c) not in bag:
+                        continue
+                    a1, a2 = mean("IAE_SO5", cond, w, c), mean("IAE_SNO2", cond, w, c)
+                    cmp = ("--" if c == "PID" else
+                           f"{100 * (p1 - a1) / p1:+.1f}% / "
+                           f"{100 * (p2 - a2) / p2:+.1f}%")
+                    out.append(f"| {cond} | {w} | {c} | {a1:.5f} | {a2:.5f} | {cmp} |")
+        out.append("")
+
+        nd = 100 * (mean("IAE_SNO2", "noisy", "dry", "PID")
+                    - mean("IAE_SNO2", "noisy", "dry", "MAACC")) \
+            / mean("IAE_SNO2", "noisy", "dry", "PID")
+        nr = 100 * (mean("IAE_SNO2", "noisy", "rain", "PID")
+                    - mean("IAE_SNO2", "noisy", "rain", "MAACC")) \
+            / mean("IAE_SNO2", "noisy", "rain", "PID")
+        out += [
+            f"**Three readings, and two of them corrected what we had "
+            f"written.**", "",
+            f"1. *Under the paper's own noise protocol MAACC does beat the "
+            f"prior on the nitrate loop*, by {nd:.0f} % on dry and {nr:.0f} % "
+            f"on rain, and it lowers `DEVmax` on that loop too. Our earlier "
+            f"spot checks had not covered this condition and we had written "
+            f"that MAACC never reliably beats a well-tuned PID. That was too "
+            f"strong: it is the condition the paper itself emphasises, and in "
+            f"it the method works.", "",
+            f"2. *The de-tuned prior does **not** give the learned term room.* "
+            f"We had predicted it would -- the argument being that integral "
+            f"action in a well-tuned prior absorbs any learned correction, so "
+            f"weakening the prior should let the correction contribute. The "
+            f"data says the opposite: with the prior at 25 % of its gains, "
+            f"MAACC is worse than PID on every weather and both loops "
+            f"(-6 % to -35 %). A weaker prior leaves a larger error for the "
+            f"actor to chase, and chasing it with an incremental policy is "
+            f"evidently harder than leaving it alone. That hypothesis is "
+            f"withdrawn.", "",
+            f"3. *In the clean condition MAACC looks far worse on nitrate "
+            f"(-45 % to -69 %), but read the absolute numbers*: PID's IAE is "
+            f"0.0021 against MAACC's 0.0032. Both are negligible next to the "
+            f"0.06-0.13 of the noisy and de-tuned conditions. With no "
+            f"disturbance to reject there is nothing to learn and any "
+            f"exploration is pure cost, which is what the percentages are "
+            f"reporting.", "",
+            f"The tracking-layer feed-forward (`PANDA` here, not PANDA-RL) is "
+            f"consistently worse on dissolved oxygen (-4 % to -32 %) and "
+            f"mixed on nitrate -- better than PID under noise (+6 % to "
+            f"+16 %), worse elsewhere. The negative result in "
+            f"`docs/06_tracking_layer_feedforward.md` stands for the oxygen "
+            f"loop, which is what it was about.", ""]
+
     out += ["## Caveats", "",
             "- Absolute index values are not directly comparable with either "
             "paper's tables, for the reasons above. Every claim here is a "
