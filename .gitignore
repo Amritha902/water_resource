@@ -3,5 +3,12 @@ __pycache__/
 .ipynb_checkpoints/
 .pytest_cache/
 *.egg-info/
-results/
+# Results: keep the summaries and aggregates, which are the data behind every
+# number in docs/05_results.md and are small enough to version (~170 KB).
+# The per-run traces are 3.5 MB and are only needed to redraw trajectories.
+results/*
+!results/summary_*.json
+!results/summary_*.csv
+!results/aggregate_*.csv
+!results/curves_*.json
 data/
