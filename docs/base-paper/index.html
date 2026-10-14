@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAACC Reproduction</title>
+<meta name="description" content="Interactive walkthrough of the base paper's multiagent adaptive critic controller on a re-implemented BSM1 plant: plant animation, control-law decomposition, critic behaviour, results and every deviation from the paper.">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../index.html">PANDA-MAACC</a>
+  <nav class="nav">
+    <a href="../index.html">Overview</a>
+    <a href="index.html" aria-current="page">1 · Base paper (MAACC)</a>
+    <a href="../ml-extension/index.html">2 · ML extension</a>
+    <a href="https://github.com/Amritha902/water_resource">Code</a>
+  </nav>
+  <button class="theme-toggle" id="theme">Dark mode</button>
+</div></header>
+
+<main>
+  <h1>Part 1 · The base paper, reproduced</h1>
+  <p class="lede">D. Wang, X. Li, J. Ren, J. Qiao, <i>Multiagent Adaptive Critic Control With Expert Knowledge for
+  Wastewater Treatment Plants</i>, IEEE TII 2026. This page shows what the paper does, how each equation maps to
+  code, what the reproduction shows, and where it departs from the printed paper.</p>
+  <nav class="toc">
+    <a href="#plant">1. The plant</a><a href="#live">2. Watch it run</a><a href="#algo">3. The algorithm</a>
+    <a href="#law">4. Inside the control law</a><a href="#results">5. Results</a><a href="#eq15">6. The eq. (15) flaw</a>
+    <a href="#why">7. Why MAACC ≈ PID</a><a href="#deviations">8. Every deviation</a><a href="#notdone">9. Not reproduced</a>
+  </nav>
+
+  <!-- 1 ------------------------------------------------------------------>
+  <h2 id="plant">1. The plant and the control problem</h2>
+  <p class="sub">BSM1 (IWA Benchmark Simulation Model no. 1) is the standard test plant in wastewater control. Reactors
+  1–2 are <b>anoxic</b> (no air): bacteria use nitrate instead of oxygen and turn it into nitrogen gas
+  (denitrification). Reactors 3–5 are <b>aerated</b>: nitrifying bacteria oxidise ammonium to nitrate. The clarifier
+  separates clean effluent from sludge, and the sludge is returned to reactor 1.</p>
+  <div class="card">
+    <div class="tiles" style="margin-top:0">
+      <div class="tile"><div class="label">Loop 1 (agent 1)</div><div class="value">KLa₅ → S<sub>O,5</sub></div><div class="note">air into reactor 5 (0–240 1/d) controls its dissolved oxygen; set point 1 g/m³</div></div>
+      <div class="tile"><div class="label">Loop 2 (agent 2)</div><div class="value">Q<sub>a</sub> → S<sub>NO,2</sub></div><div class="note">internal recycle (0–92,230 m³/d) controls nitrate in reactor 2; set point 2 g/m³</div></div>
+      <div class="tile"><div class="label">Sampling</div><div class="value">45 s</div><div class="note">14-day runs, dry / rain / storm influent</div></div>
+      <div class="tile"><div class="label">Why it is hard</div><div class="value">coupling</div><div class="note">Q<sub>a</sub> carries oxygen from reactor 5 back to the anoxic zone, and KLa₅ changes nitrification and therefore the nitrate Q<sub>a</sub> recycles</div></div>
+    </div>
+  </div>
+
+  <!-- 2 ------------------------------------------------------------------>
+  <h2 id="live">2. Watch it run</h2>
+  <p class="sub">A real 14-day closed-loop simulation, sampled every 15 min. Pick the weather and controller, then press
+  play or drag the slider. The diagram shows the plant at the cursor, and the charts below share the same cursor.</p>
+  <div class="controls">
+    <span><span class="ctl-label">Weather</span><span id="c-weather"></span></span>
+    <span><span class="ctl-label">Controller in diagram</span><span id="c-ctrl"></span></span>
+    <button class="play" id="play" type="button">▶ Play</button>
+    <input type="range" id="scrub" min="0" max="1" value="0" style="flex:1;min-width:180px" aria-label="time">
+    <span class="mono small" id="clock"></span>
+  </div>
+  <div class="card plant" id="plant-svg"></div>
+  <div class="grid-2">
+    <div class="card"><div id="ch-so"></div></div>
+    <div class="card"><div id="ch-no"></div></div>
+    <div class="card"><div id="ch-kla"></div></div>
+    <div class="card"><div id="ch-qa"></div></div>
+    <div class="card"><div id="ch-qin"></div></div>
+    <div class="card"><div id="ch-nh"></div></div>
+  </div>
+
+  <!-- 3 ------------------------------------------------------------------>
+  <h2 id="algo">3. The algorithm, equation by equation</h2>
+  <p class="sub">Each step of Algorithm 1, the equation it comes from, and the line of code that implements it.</p>
+  <ol class="steps">
+    <li><b>Decentralised model (eq. 4).</b> Each subsystem <i>i</i> evolves as its own dynamics plus an unknown
+      coupling from the whole state:
+      <div class="eq">s(k+1, i) = F_i( s(k, i), u(k, i) ) + G_i( s(k) )</div>
+      G_i is never identified. The utility in step 4 is how the paper copes with it.</li>
+    <li><b>Tracking error (eq. 6).</b> <code>z_k = s_k − r_k</code>, r = [1, 2]. <span class="muted">agent.py:235</span></li>
+    <li><b>Expert prior + learned term (eq. 7).</b>
+      <div class="eq">u(k, i) = b(k, i) + a(k, i)</div>
+      b is an incremental PID with the paper's gains:
+      <div class="eq">Δb_k = Kp (e_k − e_k−1) + Ki e_k + Kd (e_k − 2 e_k−1 + e_k−2)
+Kp = diag{100, 100000}   Ki = diag{20, 30000}   Kd = diag{10, 1000}</div>
+      <span class="muted">pid.py:50, agent.py:243, agent.py:251</span>. The action network's outer weights start at
+      zero (<code>zero_outer=True</code>, agent.py:109), so <b>a₀ = 0 and the controller starts as the PID</b>. That
+      is the safety argument of the paper, and <code>test_maacc_starts_from_the_expert_prior</code> checks it.</li>
+    <li><b>Incremental policy (eq. 8).</b> The actor outputs an increment, not the action:
+      <div class="eq">Δa(k, i) = π_i( z(k, i) )      a(k, i) = a(k−1, i) + Δa(k, i)</div>
+      A disturbance then corrupts only one increment. <span class="muted">agent.py:149–158</span></li>
+    <li><b>Coupling-aware utility (eq. 10).</b>
+      <div class="eq">U_i = W_i z_i²  +  Y_i Δa_i²  +  R_i a_i²  +  zᵀ P_i z      ← full error vector</div>
+      The last term charges agent <i>i</i> for the other loop's error too, so each agent works the global objective
+      while moving only its own actuator. <span class="muted">agent.py:139</span></li>
+    <li><b>Critic (eqs. 9, 13).</b> Q_i(z, Δa, a) ≈ cost-to-go, a single-hidden-layer tanh net with only the outer
+      weights β adapted online. Bellman equation: <code>Q(x_{k−1}) = U_k + λ Q(x_k)</code>, λ = 0.9.
+      <span class="muted">agent.py:161–176, networks.py</span></li>
+    <li><b>Critic update (eqs. 15, 18).</b> As printed, the update diverges (see <a href="#eq15">§6</a>). It is
+      replaced with the TD(0) direction on the same residual. <span class="muted">agent.py:170–174</span></li>
+    <li><b>Actor update (eq. 17).</b> <code>L_a = ½ Q²</code>; gradient
+      <code>Q · ∂Q/∂Δa · ∂Δa/∂(net output)</code> back into the actor's outer weights.
+      <span class="muted">agent.py:178–184</span></li>
+    <li><b>Stability (Theorem 1).</b> The weight errors are uniformly ultimately bounded (UUB) for
+      <code>l_c &lt; 1/(λ²‖ϑ‖²)</code> and <code>l_a &lt; 1/(‖δ‖²(β^M C)²)</code>. Closed-loop stability of the tracking
+      error is <i>not</i> proved. It is inherited from the stable expert prior.</li>
+  </ol>
+
+  <!-- 4 ------------------------------------------------------------------>
+  <h2 id="law">4. Inside the control law: u = b + a</h2>
+  <p class="sub">MAACC, storm weather. The PID prior <b>b</b> does almost all of the work; the learned term
+  <b>a</b> is a small correction that stays inside its bound (±24 1/d for KLa₅ and ±9,223 m³/d for Q<sub>a</sub>,
+  10 % of each range). The bottom row shows each agent's critic estimate Q.</p>
+  <div class="controls"><span><span class="ctl-label">Weather</span><span id="l-weather"></span></span></div>
+  <div class="grid-2">
+    <div class="card"><div id="ch-b1"></div></div>
+    <div class="card"><div id="ch-b2"></div></div>
+    <div class="card"><div id="ch-a1"></div></div>
+    <div class="card"><div id="ch-a2"></div></div>
+    <div class="card"><div id="ch-q1"></div></div>
+    <div class="card"><div id="ch-q2"></div></div>
+  </div>
+
+  <!-- 5 ------------------------------------------------------------------>
+  <h2 id="results">5. Results: PID prior vs MAACC</h2>
+  <p class="sub">Paper's noise protocol: white noise with standard deviation 3 % of each actuator's upper bound
+  (7.2 1/d on KLa₅, 2,767 m³/d on Q<sub>a</sub>), plus sensor noise (0.05 g/m³ on DO, 0.10 on nitrate). 14 days, first
+  day discarded. Mean ± standard deviation over seeds. IAE = mean |z|, ISE = mean z², DEVmax = max |z| (eq. 36). EQ =
+  BSM1 effluent quality index (kg pollution units per day), OCI = aeration + pumping energy (kWh/d); lower is better
+  for all.</p>
+  <div id="tbl-results"></div>
+  <div class="callout warn"><p><b>Honest reading.</b> On this simulator MAACC lands within a few percent of the
+  PID prior and does not reliably beat it. The paper reports MAACC ahead of every baseline. Absolute numbers here
+  are not comparable with the paper's Table II (different simulator realisation), but the <i>relative</i> picture
+  differs too, and §7 explains why.</p></div>
+
+  <!-- 6 ------------------------------------------------------------------>
+  <h2 id="eq15">6. A flaw in eq. (15), found during reproduction</h2>
+  <p class="sub">The paper's critic error is <code>e_k = U_k + λ Q(x_k) − Q(x_{k−1})</code>, and eq. (18) descends
+  ½e² in the weights that produce <b>Q(x_k)</b>, the <i>later</i> prediction. For slowly varying states
+  (x_k ≈ x_{k−1}, which describes a wastewater plant) the update becomes</p>
+  <div class="eq">Q_k ← Q_{k−1} · ( 1 + l_c λ (1 − λ) ‖ϑ‖² )  −  l_c λ ‖ϑ‖² U_k</div>
+  <p class="sub">The multiplier is <b>greater than 1</b> for every positive learning rate, so the recursion grows
+  without bound. The standard TD(0) direction corrects Q(x_{k−1}) toward U_k + λQ(x_k) instead, and it converges.
+  Below is the experiment from <code>tests/test_critic_update.py</code>: the same network, data and learning rate,
+  differing only in the update direction.</p>
+  <div class="grid-2">
+    <div class="card"><div id="ch-eq15"></div></div>
+    <div class="card">
+      <div class="chart-title">Try it: the multiplier of the literal update</div>
+      <div class="chart-sub">Gain per step = 1 + l_c λ (1 − λ) ‖ϑ‖². Above 1 means divergence.</div>
+      <div class="controls" style="flex-direction:column;align-items:stretch;gap:6px">
+        <label class="small">learning rate l_c = <b id="v-lc"></b><input type="range" id="s-lc" min="0.001" max="0.2" step="0.001" value="0.02" style="width:100%"></label>
+        <label class="small">discount λ = <b id="v-lam"></b><input type="range" id="s-lam" min="0.5" max="0.99" step="0.01" value="0.9" style="width:100%"></label>
+        <label class="small">‖ϑ‖² (hidden activation energy) = <b id="v-th"></b><input type="range" id="s-th" min="0.5" max="24" step="0.5" value="8" style="width:100%"></label>
+      </div>
+      <div class="tiles"><div class="tile"><div class="label">gain per step</div><div class="value" id="v-gain"></div></div>
+        <div class="tile"><div class="label">growth after 10,000 steps</div><div class="value" id="v-grow"></div></div></div>
+      <p class="small muted">No positive l_c makes the gain fall below 1. Theorem 1 is not contradicted, because it bounds
+      the weight error (UUB) and a bound can be very large. The paper's condition l_c &lt; 1/(λ²‖ϑ‖²) prevents
+      overshoot within one step. It does not make the recursion a contraction.</p>
+    </div>
+  </div>
+
+  <!-- 7 ------------------------------------------------------------------>
+  <h2 id="why">7. Why MAACC lands on top of the PID</h2>
+  <div class="callout"><p>The expert prior is an <b>incremental</b> PID, so it contains an integrator. Any slowly
+  varying correction <i>a</i> that the actor adds is cancelled by the integrator within a few control periods: the
+  PID simply moves <i>b</i> by −<i>a</i>. The tracking error <i>z</i> therefore carries almost no information about
+  <i>a</i>. The only utility term that still depends on <i>a</i> is the effort penalty R·a², whose minimum is
+  a = 0. <b>The learned term is close to unidentifiable from tracking error alone.</b></p>
+  <p>Two consequences: (1) with a de-tuned prior (25 % of the gains) MAACC does recover a few percent, comparable
+  to seed variance; (2) a learned term becomes useful when it is given information the prior does not have, such
+  as what the influent is about to do. That is the motivation for <a href="../ml-extension/index.html">Part 2</a>.</p></div>
+  <div class="card"><div id="ch-cancel"></div></div>
+
+  <!-- 8 ------------------------------------------------------------------>
+  <h2 id="deviations">8. Every deviation from the printed paper</h2>
+  <p class="sub">Each point where the code does something the paper does not literally say, and why.</p>
+  <div id="tbl-dev"></div>
+
+  <!-- 9 ------------------------------------------------------------------>
+  <h2 id="notdone">9. What is not reproduced</h2>
+  <ul>
+    <li><b>The paper's Table II numbers.</b> BSM1 is re-implemented from its published definition, and the influent is
+      statistically equivalent rather than the official files. Absolute IAE/ISE/DEVmax values are not comparable.</li>
+    <li><b>The seven comparison methods</b> (RSCMPC, MADRL-PID, SUP-HDP, dHDP, DPPGADP, ACD-VarInf, FAACC) are not
+      implemented. Only the PID prior and MAACC are compared.</li>
+    <li><b>The “> 90 % training success over 20 runs” statistic</b> was not measured. Three seeds per configuration
+      were run.</li>
+    <li><b>The paper's own weight matrices W, Y, R, P and network sizes</b> are not all stated, so the values here
+      were chosen by us (see §8).</li>
+  </ul>
+
+  <div class="footer">Simulation data: <code>results/site/closed_loop.json</code>, produced by
+  <code>experiments/06_export_site_data.py</code>. <span id="gen"></span></div>
+</main>
+
+<script src="../data/site-data.js"></script>
+<script src="../assets/charts.js"></script>
+<script>
+(function () {
+  "use strict";
+  Charts.themeToggle(document.getElementById("theme"));
+  const S = window.SITE || {};
+  if (S.generated) document.getElementById("gen").textContent = `Generated ${S.generated}, commit ${S.commit}.`;
+  const T = S.traces || {};
+  const C = { PID: "--series-1", MAACC: "--series-2", PANDA: "--series-3" };
+  const day = (v) => "day " + (+v).toFixed(v < 10 && v % 1 ? 1 : 0);
+  const dayTip = (v) => { const d = Math.floor(v), hh = Math.round((v - d) * 24 * 4) / 4;
+    return `day ${d}, ${String(Math.floor(hh)).padStart(2, "0")}:${String(Math.round((hh % 1) * 60)).padStart(2, "0")}`; };
+  const col = (rows, i) => rows.map((r) => r[i]);
+  const pending = (el, what) => { el.textContent = `${what}: results not generated yet.`; el.className = "muted small"; };
+
+  /* ---------------- 2. plant animation ---------------- */
+  let weather = "storm", ctrl = "MAACC", idx = 0, timer = null;
+  const charts = [];
+
+  function plantSVG() {
+    const box = document.getElementById("plant-svg");
+    box.innerHTML = `
+<svg viewBox="0 0 940 250" role="img" aria-label="BSM1 plant diagram with live values">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10z" fill="var(--text-muted)"/></marker>
+    <marker id="aro" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10z" fill="var(--series-2)"/></marker></defs>
+  <text x="8" y="72" class="lbl">influent</text>
+  <text x="8" y="92" class="val" id="pv-qin"></text>
+  <text x="8" y="110" class="lbl" id="pv-nhin"></text>
+  <path class="pipe" d="M10,120 H70" marker-end="url(#ar)"/>
+  <rect class="tank" x="72" y="80" width="100" height="80" rx="4"/><text x="122" y="100" text-anchor="middle">1 · anoxic</text>
+  <rect class="tank" x="186" y="80" width="100" height="80" rx="4"/><text x="236" y="100" text-anchor="middle">2 · anoxic</text>
+  <text x="236" y="128" text-anchor="middle" class="lbl">S_NO,2</text><text x="236" y="148" text-anchor="middle" class="val" id="pv-no"></text>
+  <rect class="tank aer" x="300" y="80" width="110" height="80" rx="4"/><text x="355" y="100" text-anchor="middle">3 · aerated</text>
+  <rect class="tank aer" x="424" y="80" width="110" height="80" rx="4"/><text x="479" y="100" text-anchor="middle">4 · aerated</text>
+  <rect class="tank aer" x="548" y="80" width="110" height="80" rx="4"/><text x="603" y="100" text-anchor="middle">5 · aerated</text>
+  <text x="603" y="128" text-anchor="middle" class="lbl">S_O,5</text><text x="603" y="148" text-anchor="middle" class="val" id="pv-so"></text>
+  <path class="pipe" d="M172,120 H186 M286,120 H300 M410,120 H424 M534,120 H548"/>
+  <path class="pipe air" d="M603,30 V78" marker-end="url(#ar)"/>
+  <text x="612" y="28" class="lbl">air · KLa₅</text><text x="612" y="48" class="val" id="pv-kla"></text>
+  <path class="pipe" d="M658,120 H706" marker-end="url(#ar)"/>
+  <path class="tank" d="M708,80 H808 L788,170 H728 Z"/><text x="758" y="110" text-anchor="middle">clarifier</text>
+  <path class="pipe" d="M808,90 H900" marker-end="url(#ar)"/>
+  <text x="830" y="72" class="lbl">effluent</text>
+  <text x="830" y="112" class="lbl">NH₄-N</text><text x="878" y="112" class="val" id="pv-nh"></text>
+  <text x="830" y="130" class="lbl">total N</text><text x="878" y="130" class="val" id="pv-tn"></text>
+  <path class="pipe recycle" d="M640,160 V200 H122 V162" marker-end="url(#aro)"/>
+  <text x="380" y="216" text-anchor="middle" class="lbl">internal recycle Q_a</text>
+  <text x="380" y="236" text-anchor="middle" class="val" id="pv-qa"></text>
+  <path class="pipe" d="M758,170 V240 H100 V162" marker-end="url(#ar)" opacity="0.6"/>
+  <text x="770" y="236" class="lbl">return sludge 18,446 m³/d</text>
+</svg>`;
+  }
+
+  function trace(c, w) { return T[`noisy|${w || weather}|${c}`]; }
+
+  function setText(id, s, cls) { const e = document.getElementById(id); if (e) { e.textContent = s; e.setAttribute("class", cls || "val"); } }
+
+  function updatePlant() {
+    const tr = trace(ctrl);
+    if (!tr) return;
+    const i = Math.min(idx, tr.t.length - 1);
+    setText("pv-qin", `${Charts.fmtCompact(tr.q_in[i])} m³/d`);
+    setText("pv-no", `${tr.s[i][1].toFixed(2)} g/m³`);
+    setText("pv-so", `${tr.s[i][0].toFixed(2)} g/m³`);
+    setText("pv-kla", `${tr.u[i][0].toFixed(0)} 1/d`);
+    setText("pv-qa", `${Charts.fmtCompact(tr.u[i][1])} m³/d`);
+    setText("pv-nh", `${tr.nh_eff[i].toFixed(2)}`, tr.nh_eff[i] > 4 ? "val viol" : "val");
+    setText("pv-tn", `${tr.tn_eff[i].toFixed(1)}`, tr.tn_eff[i] > 18 ? "val viol" : "val");
+    setText("pv-nhin", "");
+    document.getElementById("clock").textContent = dayTip(tr.t[i]);
+    charts.forEach((c) => c.setMarker(tr.t[i]));
+  }
+
+  function buildLive() {
+    const p = trace("PID"), m = trace("MAACC");
+    const ids = ["ch-so", "ch-no", "ch-kla", "ch-qa", "ch-qin", "ch-nh"];
+    if (!p || !m) { ids.forEach((id) => pending(document.getElementById(id), "Closed-loop runs")); return; }
+    charts.length = 0;
+    const two = (id, title, sub, f, ref, unit, yMin, yMax) => charts.push(Charts.line(document.getElementById(id), {
+      title, subtitle: sub, height: 200, xFmt: day, xTip: dayTip, yLabel: unit, yMin, yMax,
+      refLines: ref ? [ref] : [], directLabels: true,
+      series: [{ name: "PID", color: C.PID, x: p.t, y: f(p) }, { name: "MAACC", color: C.MAACC, x: m.t, y: f(m) }],
+    }));
+    two("ch-so", "Dissolved oxygen, reactor 5", "set point 1 g/m³", (t) => col(t.s, 0), { y: 1, label: "set point" }, "g O₂/m³");
+    two("ch-no", "Nitrate, reactor 2", "set point 2 g/m³", (t) => col(t.s, 1), { y: 2, label: "set point" }, "g N/m³");
+    two("ch-kla", "Aeration KLa₅ (manipulated)", "controller output, 0–240", (t) => col(t.u, 0), null, "1/d");
+    two("ch-qa", "Internal recycle Qₐ (manipulated)", "controller output, 0–92,230", (t) => col(t.u, 1), null, "m³/d");
+    charts.push(Charts.line(document.getElementById("ch-qin"), {
+      title: "Influent flow (the disturbance)", subtitle: `${weather} weather; identical for every controller`,
+      height: 200, xFmt: day, xTip: dayTip, yLabel: "m³/d",
+      series: [{ name: "Q_in", color: "--reference", x: p.t, y: p.q_in }],
+    }));
+    two("ch-nh", "Effluent ammonium", "discharge limit 4 g N/m³", (t) => t.nh_eff, { y: 4, label: "limit" }, "g N/m³", 0);
+    const sc = document.getElementById("scrub");
+    sc.max = p.t.length - 1;
+    idx = Math.min(idx, p.t.length - 1);
+    sc.value = idx;
+    updatePlant();
+  }
+
+  plantSVG();
+  const W3 = [{ label: "Dry", value: "dry" }, { label: "Rain", value: "rain" }, { label: "Storm", value: "storm" }];
+  Charts.segmented(document.getElementById("c-weather"), W3, weather, (v) => { weather = v; buildLive(); });
+  Charts.segmented(document.getElementById("c-ctrl"), [{ label: "PID", value: "PID" }, { label: "MAACC", value: "MAACC" }],
+    ctrl, (v) => { ctrl = v; updatePlant(); });
+  document.getElementById("scrub").addEventListener("input", (e) => { idx = +e.target.value; updatePlant(); });
+  document.getElementById("play").addEventListener("click", (e) => {
+    if (timer) { clearInterval(timer); timer = null; e.target.textContent = "▶ Play"; return; }
+    e.target.textContent = "❚❚ Pause";
+    const sc = document.getElementById("scrub");
+    timer = setInterval(() => {
+      idx = (idx + 2) % (+sc.max + 1); sc.value = idx; updatePlant();
+    }, 40);
+  });
+  // start the storm view just before the first storm
+  if (trace("PID")) idx = Math.round(trace("PID").t.findIndex((t) => t >= 8.3));
+  buildLive();
+
+  /* ---------------- 4. control law ---------------- */
+  let lw = "storm";
+  function buildLaw() {
+    const m = trace("MAACC", lw);
+    const ids = ["ch-b1", "ch-b2", "ch-a1", "ch-a2", "ch-q1", "ch-q2"];
+    if (!m) { ids.forEach((id) => pending(document.getElementById(id), "Closed-loop runs")); return; }
+    const L = m.law, t = m.t.slice(0, L.length);
+    const one = (id, title, sub, y, unit, color, ref) => Charts.line(document.getElementById(id), {
+      title, subtitle: sub, height: 190, xFmt: day, xTip: dayTip, yLabel: unit, refLines: ref || [],
+      series: [{ name: title, color, x: t, y }],
+    });
+    one("ch-b1", "b₁: PID prior, KLa₅", "the expert move", L.map((r) => r.b[0]), "1/d", C.PID);
+    one("ch-b2", "b₂: PID prior, Qₐ", "the expert move", L.map((r) => r.b[1]), "m³/d", C.PID);
+    one("ch-a1", "a₁: learned correction, KLa₅", "bounded to ±24 1/d (10 % of range)", L.map((r) => r.a[0]), "1/d", C.MAACC, [{ y: 0 }]);
+    one("ch-a2", "a₂: learned correction, Qₐ", "bounded to ±9,223 m³/d (10 % of range)", L.map((r) => r.a[1]), "m³/d", C.MAACC, [{ y: 0 }]);
+    one("ch-q1", "Q₁: agent 1 critic estimate", "estimated discounted cost-to-go", L.map((r) => r.q[0]), "Q", C.MAACC);
+    one("ch-q2", "Q₂: agent 2 critic estimate", "estimated discounted cost-to-go", L.map((r) => r.q[1]), "Q", C.MAACC);
+
+    // §7: cancellation, PID minus MAACC's b and a
+    const p = trace("PID", lw);
+    if (p) {
+      Charts.line(document.getElementById("ch-cancel"), {
+        title: "The integrator cancels the learned term",
+        subtitle: `${lw} weather, KLa₅. MAACC's learned term a₁, and how far MAACC's prior b₁ moved away from the stand-alone PID. The two mirror each other, so the total input u = b + a hardly changes.`,
+        height: 220, xFmt: day, xTip: dayTip, yLabel: "1/d", refLines: [{ y: 0 }], directLabels: true,
+        series: [
+          { name: "a₁ (learned)", short: "a₁", color: C.MAACC, x: t, y: L.map((r) => r.a[0]) },
+          { name: "b₁(MAACC) − u₁(PID)", short: "Δb₁", color: C.PID, x: t, y: L.map((r, i) => r.b[0] - (p.law[i] ? p.law[i].b[0] : NaN)) },
+        ],
+      });
+    }
+  }
+  Charts.segmented(document.getElementById("l-weather"), W3, lw, (v) => { lw = v; buildLaw(); });
+  buildLaw();
+
+  /* ---------------- 5. results ---------------- */
+  (function results() {
+    const box = document.getElementById("tbl-results");
+    const met = (S.metrics || []).filter((r) => r.condition === "noisy" && r.controller !== "PANDA");
+    if (!met.length) return pending(box, "Closed-loop runs");
+    const f = (r, k, d) => `${r[k].toFixed(d)} ± ${r[k + "_std"].toFixed(d)}`;
+    const rows = [];
+    for (const w of ["dry", "rain", "storm"]) {
+      const grp = met.filter((r) => r.weather === w);
+      const best = (k) => Math.min(...grp.map((r) => r[k]));
+      for (const r of grp) {
+        const cell = (k, d) => ({ text: f(r, k, d), best: r[k] === best(k) && grp.length > 1 });
+        rows.push([w, r.controller, cell("IAE_SO5", 4), cell("ISE_SO5", 5), cell("DEVmax_SO5", 3),
+          cell("IAE_SNO2", 4), cell("ISE_SNO2", 5), cell("DEVmax_SNO2", 3), cell("EQ", 0), cell("OCI", 0), r.n_seeds]);
+      }
+    }
+    Charts.table(box, ["Weather", "Controller", "IAE S_O,5", "ISE S_O,5", "DEVmax S_O,5", "IAE S_NO,2", "ISE S_NO,2",
+      "DEVmax S_NO,2", "EQ", "OCI", "seeds"], rows, 2);
+    const note = document.createElement("p"); note.className = "small muted";
+    note.textContent = "Bold = lowest in that weather. Differences smaller than the ± spread are not meaningful.";
+    box.appendChild(note);
+  })();
+
+  /* ---------------- 6. eq. 15 ---------------- */
+  (function eq15() {
+    const cr = S.critic, box = document.getElementById("ch-eq15");
+    if (!cr) return pending(box, "Critic experiment");
+    const sgnlog = (v) => Math.sign(v) * Math.log10(1 + Math.abs(v));
+    Charts.line(box, {
+      title: "Critic estimate Q(0) during learning",
+      subtitle: `True value ${cr.true_q0.toFixed(3)} (Monte Carlo). Vertical axis is signed log₁₀(1 + |Q|), so 4 means about 10⁴.`,
+      height: 260, xLabel: "update step", yLabel: "sign · log₁₀(1+|Q|)", directLabels: true,
+      valueFmt: (v) => { const q = Math.sign(v) * (Math.pow(10, Math.abs(v)) - 1); return Math.abs(q) > 100 ? q.toFixed(0) : q.toFixed(3); },
+      refLines: [{ y: sgnlog(cr.true_q0), label: "true Q(0)" }],
+      series: [
+        { name: "eq. (15) as printed", short: "eq. (15)", color: "--critical", x: cr.paper.step, y: cr.paper.q0.map(sgnlog) },
+        { name: "TD(0) direction", short: "TD(0)", color: C.PID, x: cr.td0.step, y: cr.td0.q0.map(sgnlog) },
+      ],
+    });
+  })();
+  (function gain() {
+    const lc = document.getElementById("s-lc"), lam = document.getElementById("s-lam"), th = document.getElementById("s-th");
+    const upd = () => {
+      const g = 1 + (+lc.value) * (+lam.value) * (1 - (+lam.value)) * (+th.value);
+      document.getElementById("v-lc").textContent = (+lc.value).toFixed(3);
+      document.getElementById("v-lam").textContent = (+lam.value).toFixed(2);
+      document.getElementById("v-th").textContent = (+th.value).toFixed(1);
+      document.getElementById("v-gain").textContent = g.toFixed(5);
+      const grow = Math.pow(g, 10000);
+      document.getElementById("v-grow").textContent = isFinite(grow) ? (grow > 1e6 ? grow.toExponential(1) : grow.toFixed(1)) + "×" : "> 10³⁰⁸×";
+    };
+    [lc, lam, th].forEach((e) => e.addEventListener("input", upd));
+    upd();
+  })();
+
+  /* ---------------- 8. deviations ---------------- */
+  Charts.table(document.getElementById("tbl-dev"), ["#", "Paper", "This code", "Why", "Where"], [
+    ["1", "Critic descends eq. (15) in the weights producing Q(x_k)", "Semi-gradient TD(0): correct Q(x_{k−1}) toward U_k + λQ(x_k)", "The printed direction diverges (§6)", "agent.py:166–174"],
+    ["2", "Actor gradient carries ∂Q/∂a only (eq. 27)", "∂Q/∂Δa + ∂Q/∂a", "a_k = a_{k−1} + Δa_k, so both critic inputs depend on the actor output", "agent.py:178–181"],
+    ["3", "tanh networks, no bias stated", "Constant bias input on both networks", "Without it a tanh net is 0 at the origin and cannot represent Q > 0 at the set point", "networks.py:36–40"],
+    ["4", "Raw physical units, scale absorbed in W, Y, R, P", "Inputs and effort terms normalised by actuator range", "KLa₅ spans 0–240 and Qₐ 0–92,230; normalising lets both agents share learning rates. Equivalent re-parameterisation", "agent.py:125–147"],
+    ["5", "a_k = a_{k−1} + Δa_k", "a_k = 0.999·a_{k−1} + Δa_k, clipped to ±10 % of range", "Realises the R·a² penalty and keeps a a bounded correction to the prior", "agent.py:153–157"],
+    ["6", "Δa = π(z), unbounded", "Δa = Δa_max · tanh(π(z)), with Δa_max = 4 1/d (KLa₅) and 1,500 m³/d (Qₐ) per step", "Bounded increments, consistent with the incremental-policy motivation", "agent.py:151–153"],
+    ["7", "Plain gradient steps", "Actor outer-weight decay 2.0, critic 1e−4; gradient norm clipped at 10", "Without decay the start-up transient latched the actor at its tanh rail permanently (observed)", "networks.py:56–72"],
+    ["8", "W, Y, R, P and network sizes not all given", "W = 1, P = 0.25, Y = 0.02, R = 0.05; λ = 0.9; critic 16 hidden, actor 12; l_c = 0.02, l_a = 0.002", "Chosen by us; the paper's values are not fully stated", "agent.py:62–84"],
+    ["9", "Evaluation starts at the BSM1 steady state", "1-day PID warm-up on the first influent day; first day of each run also discarded from metrics", "All controllers start from the same plant state, already at the set point", "envs.py:107–118"],
+    ["10", "Official BSM1 code and influent files", "Re-implementation from the published model; statistically equivalent influent", "The official files are not redistributable", "src/wwtp/bsm1/"],
+  ], 99);
+})();
+</script>
+</body>
+</html>

@@ -57,7 +57,7 @@ Write the resulting recursion for a slowly varying state, where
 `x_k ≈ x_{k-1}`:
 
 ```
-Q_k  <-  Q_{k-1} (1 + l_c (1 - lambda) ||vartheta||^2)  -  l_c ||vartheta||^2 U_k
+Q_k  <-  Q_{k-1} (1 + l_c lambda (1 - lambda) ||vartheta||^2)  -  l_c lambda ||vartheta||^2 U_k
 ```
 
 The homogeneous gain is **greater than one** for every admissible learning
