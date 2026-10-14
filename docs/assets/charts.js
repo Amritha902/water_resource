@@ -338,6 +338,98 @@
     if (window.ResizeObserver) new ResizeObserver(draw).observe(wrap);
   }
 
+
+  /* ------------------------------------------------------------------ */
+  /* scatter: spec.groups = [{name, color, shape, points:[{x, y, label}]}],
+     optional spec.lines = [{name, color, x[], y[], dash}] drawn underneath. */
+  function scatter(container, spec) {
+    container.textContent = "";
+    container.classList.add("chart");
+    if (spec.title) h("div", "chart-title", container, spec.title);
+    if (spec.subtitle) h("div", "chart-sub", container, spec.subtitle);
+    const groups = spec.groups.filter((g) => g.points.length);
+    const lines = spec.lines || [];
+    const lg = h("div", "legend", container);
+    for (const g of groups) {
+      const k = h("span", "key", lg);
+      const sw = h("span", "", k);
+      sw.style.cssText = `width:10px;height:10px;display:inline-block;background:${cssVar(g.color)};border-radius:${g.shape === "square" ? "2px" : "50%"}`;
+      h("span", "", k, g.name);
+    }
+    for (const l of lines) {
+      const k = h("span", "key", lg);
+      const sw = h("span", "swatch-line" + (l.dash ? " dash" : ""), k);
+      sw.style.borderTopColor = cssVar(l.color);
+      h("span", "", k, l.name);
+    }
+    const wrap = h("div", "", container);
+    wrap.style.position = "relative";
+    const height = spec.height || 300;
+    const m = { t: 12, r: 18, b: 40, l: 58 };
+    const svg = el("svg", { height, role: "img", "aria-label": spec.title || "scatter" }, wrap);
+    const tip = h("div", "tooltip", wrap);
+    const all = groups.flatMap((g) => g.points).concat(lines.flatMap((l) => l.x.map((x, i) => ({ x, y: l.y[i] }))));
+    let xmin = Math.min(...all.map((p) => p.x)), xmax = Math.max(...all.map((p) => p.x));
+    let ymin = Math.min(...all.map((p) => p.y)), ymax = Math.max(...all.map((p) => p.y));
+    const px = (xmax - xmin) * 0.08 || 1, py = (ymax - ymin) * 0.1 || 1;
+    xmin = spec.xMin ?? xmin - px; xmax = spec.xMax ?? xmax + px;
+    ymin = spec.yMin ?? ymin - py; ymax = spec.yMax ?? ymax + py;
+    const xFmt = spec.xFmt || fmtCompact, yFmt = spec.yFmt || fmtCompact;
+    function draw() {
+      const W = Math.max(280, wrap.clientWidth);
+      svg.setAttribute("width", W); svg.setAttribute("viewBox", `0 0 ${W} ${height}`);
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      const iw = W - m.l - m.r, ih = height - m.t - m.b;
+      const X = (x) => m.l + ((x - xmin) / (xmax - xmin)) * iw;
+      const Y = (y) => m.t + ih - ((y - ymin) / (ymax - ymin)) * ih;
+      const ax = el("g", { class: "axis" }, svg);
+      for (const v of niceTicks(ymin, ymax, 5)) {
+        if (v < ymin || v > ymax) continue;
+        el("line", { class: "gridline", x1: m.l, x2: m.l + iw, y1: Y(v), y2: Y(v) }, ax);
+        el("text", { x: m.l - 8, y: Y(v) + 4, "text-anchor": "end" }, ax).textContent = yFmt(v);
+      }
+      for (const v of niceTicks(xmin, xmax, Math.max(3, Math.floor(iw / 90)))) {
+        if (v < xmin || v > xmax) continue;
+        el("line", { class: "gridline", x1: X(v), x2: X(v), y1: m.t, y2: m.t + ih }, ax);
+        el("text", { x: X(v), y: m.t + ih + 16, "text-anchor": "middle" }, ax).textContent = xFmt(v);
+      }
+      if (spec.xLabel) el("text", { class: "axis-label", x: m.l + iw / 2, y: height - 4, "text-anchor": "middle" }, svg).textContent = spec.xLabel;
+      if (spec.yLabel) el("text", { class: "axis-label", x: 12, y: m.t + ih / 2, "text-anchor": "middle", transform: `rotate(-90 12 ${m.t + ih / 2})` }, svg).textContent = spec.yLabel;
+      for (const r of spec.refLines || []) {
+        if (r.x !== undefined) el("line", { x1: X(r.x), x2: X(r.x), y1: m.t, y2: m.t + ih, stroke: cssVar("--reference"), "stroke-dasharray": "5 4" }, svg);
+        if (r.y !== undefined) el("line", { x1: m.l, x2: m.l + iw, y1: Y(r.y), y2: Y(r.y), stroke: cssVar("--reference"), "stroke-dasharray": "5 4" }, svg);
+        if (r.label) el("text", { class: "ref-label", x: r.x !== undefined ? X(r.x) + 4 : m.l + 4, y: r.y !== undefined ? Y(r.y) - 5 : m.t + 10 }, svg).textContent = r.label;
+      }
+      for (const l of lines) {
+        let d = "";
+        l.x.forEach((x, i) => { d += (i ? "L" : "M") + X(x).toFixed(1) + "," + Y(l.y[i]).toFixed(1); });
+        el("path", { d, fill: "none", stroke: cssVar(l.color), "stroke-width": 1.6, "stroke-dasharray": l.dash ? "6 4" : "none" }, svg);
+      }
+      for (const g of groups) {
+        for (const p of g.points) {
+          const cx = X(p.x), cy = Y(p.y);
+          const mark = g.shape === "square"
+            ? el("rect", { x: cx - 5, y: cy - 5, width: 10, height: 10, rx: 2, fill: cssVar(g.color), stroke: cssVar("--surface-1"), "stroke-width": 2 }, svg)
+            : el("circle", { cx, cy, r: 5.5, fill: cssVar(g.color), stroke: cssVar("--surface-1"), "stroke-width": 2 }, svg);
+          if (p.tag) el("text", { class: "direct-label", x: cx + 9, y: cy + 4 }, svg).textContent = p.tag;
+          const hit = el("circle", { cx, cy, r: 13, fill: "transparent" }, svg);
+          hit.addEventListener("pointerenter", () => {
+            mark.setAttribute("opacity", 0.75);
+            tip.textContent = "";
+            h("div", "tt-head", tip, g.name + (p.label ? " · " + p.label : ""));
+            const r1 = h("div", "tt-row", tip); h("b", "", r1, xFmt(p.x)); h("span", "", r1, spec.xName || "x");
+            const r2 = h("div", "tt-row", tip); h("b", "", r2, yFmt(p.y)); h("span", "", r2, spec.yName || "y");
+            tip.style.opacity = 1;
+            tip.style.left = Math.min(W - 180, cx + 14) + "px"; tip.style.top = Math.max(0, cy - 30) + "px";
+          });
+          hit.addEventListener("pointerleave", () => { mark.setAttribute("opacity", 1); tip.style.opacity = 0; });
+        }
+      }
+    }
+    draw();
+    if (window.ResizeObserver) new ResizeObserver(draw).observe(wrap);
+  }
+
   /* ---------------- shared page helpers ---------------- */
   function themeToggle(btn) {
     const root = document.documentElement;
@@ -392,5 +484,5 @@
     return t;
   }
 
-  window.Charts = { line, hbar, themeToggle, segmented, table, fmtCompact };
+  window.Charts = { line, hbar, scatter, themeToggle, segmented, table, fmtCompact };
 })();

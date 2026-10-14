@@ -315,6 +315,31 @@ def stage_twin():
     return {"steps": steps, "free_run": free, "training_history": hist}
 
 
+# -- paper 2, Figure 4 ------------------------------------------------------------
+def _fig4_point(sp):
+    """Same procedure as experiments/07_figures.py::fig_dose_response."""
+    from wwtp.bsm1 import asm1, influent
+    from wwtp.bsm1.plant import BSM1Plant
+    z_in, q = influent.DRY_AVERAGE_COMPOSITION, influent.DRY_AVERAGE_FLOW
+    plant = BSM1Plant()
+    kla, e1 = 84.0, 0.0
+    for _ in range(int(20 * 86400 / 45)):
+        m = plant.step(45.0, z_in, q, np.array([kla, 55338.0]))
+        e = sp - m[0]
+        kla = float(np.clip(kla + 60.0 * (e - e1) + 12.0 * e, 0, 240))
+        e1 = e
+    ze = plant.z_effluent
+    return {"do": sp, "kla": kla, "nh": float(ze[asm1.S_NH]),
+            "tn": float(asm1.total_nitrogen(ze)), "cod": float(asm1.total_cod(ze)),
+            "bod": float(asm1.bod5(ze)), "tss": float(asm1.tss(ze)),
+            "ae": plant.aeration_energy_rate(np.array([kla, 0.0]))}
+
+
+def stage_fig4(pool):
+    pts = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
+    return pool.map(_fig4_point, pts, chunksize=1)
+
+
 # -- critic ----------------------------------------------------------------------
 def stage_critic():
     from wwtp.maacc.networks import ShallowNet
@@ -361,8 +386,9 @@ def stage_critic():
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--stages", nargs="*",
-                    default=["critic", "twin", "forecaster", "closed_loop", "realistic"])
-    ap.add_argument("--seeds", type=int, default=3)
+                    default=["critic", "twin", "forecaster", "closed_loop"])
+    ap.add_argument("--seeds", type=int, default=1,
+                    help="trace seeds; the metric tables come from results/summary_paper1.json")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
@@ -378,6 +404,8 @@ def main():
             print(f"== {stage}", flush=True)
             if stage == "closed_loop":
                 data = stage_closed_loop(pool, args.seeds)
+            elif stage == "fig4":
+                data = stage_fig4(pool)
             elif stage == "realistic":
                 data = stage_realistic(pool, args.seeds)
             else:

@@ -3,72 +3,63 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ML Prediction Layer</title>
-<meta name="description" content="The machine-learning extension: probabilistic influent forecaster, neural digital twin, the PANDA controller and an effluent-ammonium early warning, each checked on unseen data against simple baselines.">
+<title>Prediction Models</title>
+<meta name="description" content="The prediction models shared by both extensions: probabilistic influent forecaster, neural digital twin and effluent-ammonium early warning, each re-checked on unseen data against simple baselines.">
 <link rel="stylesheet" href="../assets/site.css">
 </head>
 <body>
 <header class="topbar"><div class="topbar-inner">
-  <a class="brand" href="../index.html">PANDA-MAACC</a>
+  <a class="brand" href="../index.html">PANDA</a>
   <nav class="nav">
     <a href="../index.html">Overview</a>
-    <a href="../base-paper/index.html">1 · Base paper (MAACC)</a>
-    <a href="index.html" aria-current="page">2 · ML extension</a>
+    <a href="../paper1/index.html">Paper 1 · MAACC</a>
+    <a href="../paper2/index.html">Paper 2 · DDPG aeration</a>
+    <a href="index.html" aria-current="page">Prediction models</a>
     <a href="https://github.com/Amritha902/water_resource">Code</a>
   </nav>
   <button class="theme-toggle" id="theme">Dark mode</button>
 </div></header>
 
 <main>
-  <h1>Part 2 · The machine-learning extension</h1>
-  <p class="lede">MAACC only reacts: every signal its agents see is a consequence of a disturbance that has already
-  hit the plant. The influent, which is the main disturbance, is measured at the inlet and is largely predictable.
-  This part adds models that <b>predict</b>, and tests each one on data it never saw, against a simple baseline.</p>
+  <h1>The prediction models</h1>
+  <p class="lede">Both papers' controllers only react: every signal they see is a consequence of a disturbance that
+  has already reached the plant. The influent is the main disturbance, and it is measured at the inlet and largely
+  predictable. These models predict it, and each one is re-checked here on data it never saw, against a simple
+  baseline.</p>
   <nav class="toc">
-    <a href="#arch">1. Architecture</a><a href="#fc">2. Influent forecaster</a><a href="#twin">3. Digital twin</a>
-    <a href="#panda">4. PANDA in closed loop</a><a href="#ew">5. Ammonium early warning</a><a href="#verdict">6. Verdict</a>
+    <a href="#use">1. Where they are used</a><a href="#fc">2. Influent forecaster</a><a href="#twin">3. Digital twin</a>
+    <a href="#ew">4. Ammonium early warning</a><a href="#verdict">5. Verdict</a>
   </nav>
 
-  <!-- 1 ------------------------------------------------------------------>
-  <h2 id="arch">1. Architecture</h2>
-  <div class="eq">u(k, i)  =  b(k, i)   +   g(k, i) · a(k, i)   +   f(k, i)
-          expert       gated adaptive        anticipatory
-          prior (PID)  critic term (MAACC)   feed-forward (new)</div>
-  <p class="sub">Setting g ≡ 1 and f ≡ 0 gives back the paper's eq. (7) exactly, so PANDA is a strict
-  generalisation: whatever stability argument holds for MAACC holds for that restriction. g ∈ (0, 1] and |f| ≤
-  f_max are explicitly bounded.</p>
-  <div class="grid-2">
-    <div class="card"><h3>① Influent forecaster</h3><p class="small">Dilated causal TCN (dilations 1–32, width 64) over
-      24 h of inlet flow, NH₄ and readily biodegradable COD at 15-min resolution. It outputs 10/50/90 % quantiles for each
-      of the next eight 15-min steps (2 h) and a dry/rain/storm classifier. Quantiles are kept in order by
-      construction (cumulative softplus). Trained with the pinball loss on 160 random 14-day influents.
-      <code>src/wwtp/forecast/</code></p></div>
-    <div class="card"><h3>② Neural digital twin</h3><p class="small">GRU (hidden 96) on a 6-min grid:
-      h_t = GRU([s_t, u_t, d_t], h_{t−1}), s_{t+1} = s_t + g(h_t), plus an effluent-NH₄ head. Its recurrent state
-      stands in for the unknown coupling G_i of eq. (4). It is differentiable in u, so the controller can ask “what
-      if I move now?”. Trained on 60 % open-loop PRBS and 40 % dithered-PID data, with scheduled sampling.
-      <code>src/wwtp/twin/</code></p></div>
-    <div class="card"><h3>③ Anticipatory feed-forward f</h3><p class="small">Every 6 min, the twin is rolled 48 min ahead
-      <i>with a differentiable copy of the PID in the loop</i>, twice: once under the forecast influent and once with
-      the influent frozen. Only the <i>difference</i> between the two rollouts is penalised, so any standing twin bias
-      cancels and f = 0 whenever the forecast predicts no change. f is found by 6 Adam steps on that objective,
-      with a one-sided penalty on a predicted rise in effluent NH₄. <code>panda/controller.py</code></p></div>
-    <div class="card"><h3>④ Context + uncertainty gate g</h3><p class="small">The agents' networks also see a
-      6-number forecast summary (predicted relative change of flow at 1 h and 2 h, of NH₄ and COD at 2 h, flow
-      uncertainty, P(wet)). The learned term is scaled by g = 1 / (1 + 4·(q90 − q10)/q50), so when the forecast is
-      unsure the controller falls back to the PID prior.</p></div>
+  <h2 id="use">1. Where they are used</h2>
+  <div class="grid-3">
+    <div class="card"><h3>Influent forecaster</h3><p class="small">Dilated causal TCN (6 blocks, dilations 1–32, width
+      64) over 24 h of inlet flow, NH₄ and readily biodegradable COD at 15 min. It outputs 10/50/90 % quantiles for the
+      next 2 h (monotone by cumulative softplus, pinball loss) plus a dry/rain/storm head. It feeds
+      <a href="../paper1/index.html#panda">PANDA</a> (paper 1), <a href="../paper2/index.html#panda">PANDA-RL</a>
+      (paper 2) and the early warning. <code>src/wwtp/forecast/</code></p></div>
+    <div class="card"><h3>Digital twin (paper 1)</h3><p class="small">GRU (hidden 96) on a 6-min grid:
+      h_t = GRU([s_t, u_t, d_t], h_{t−1}), s_{t+1} = s_t + g(h_t), plus an effluent-NH₄ head. It is differentiable in u,
+      so PANDA's feed-forward can ask “what if I move now?”. It was trained on 60 % open-loop PRBS and 40 % dithered-PID
+      data with scheduled sampling. Paper 2 uses a separate aeration twin for Dyna. <code>src/wwtp/twin/</code></p></div>
+    <div class="card"><h3>Effluent-ammonium early warning</h3><p class="small">A causal TCN with a quantile head and a
+      discrete-time hazard head. It predicts whether, and how far, effluent NH₄ will break 4 mg/L in the next
+      12–120 min, using only signals a plant already measures. It is a stand-alone decision aid for the operator.
+      <code>src/wwtp/warning/</code></p></div>
   </div>
 
   <!-- 2 ------------------------------------------------------------------>
   <h2 id="fc">2. Influent forecaster</h2>
-  <p class="sub">Out-of-sample: the canonical profiles below were never used in training. The forecast for each
+  <p class="sub">Checked on the current code and influent generator. The canonical profiles were never used in training,
+  and the 24 “fresh” scenarios use seeds that were never used in training either. The forecast for each
   moment is the one issued <b>2 hours earlier</b>, plotted at the time it refers to.</p>
   <div class="controls"><span><span class="ctl-label">Weather</span><span id="f-weather"></span></span></div>
   <div class="tiles" id="fc-tiles"></div>
   <div class="card"><div id="ch-fc"></div></div>
   <div class="card"><div id="ch-fc-nh"></div></div>
   <h3>The regime classifier does not generalise</h3>
-  <div class="callout bad"><p>The previously reported <b>95.3 %</b> dry/rain/storm accuracy came from a validation split
+  <div class="callout bad"><p>The reported validation accuracy (<b>95.8 %</b> in <code>artifacts/forecaster_history.json</code>, quoted as
+  95 % in the docs) came from a validation split
   drawn at random from <i>overlapping</i> windows of the same scenarios, which leaks. On fresh scenarios it is near
   chance (below). The label is also ill-posed: each window carries its scenario's weather, but on the calm days
   of a “storm” scenario nothing in 24 h of history can show a storm is coming. The fix is a per-window label
@@ -97,38 +88,15 @@
     <div class="card"><div id="ch-tw-h"></div></div>
     <div class="card"><div id="ch-tw-ex"></div></div>
   </div>
-  <div class="callout warn"><p><b>Closed-loop identification bias, and why the PRBS data is not optional.</b> The first
+  <div class="callout warn"><p><b>Closed-loop identification bias, and why the PRBS data is required.</b> The first
   twin was trained only on PID-controlled data. With the PID in the loop, KLa₅ rises exactly when oxygen demand
   rises, so in that data more air does not visibly mean more oxygen. The twin learned a near-zero aeration gain
   (40 → 220 1/d moved DO by 0.05 g/m³), and differentiating it moved the actuator the wrong way. Refitting with 60 %
   open-loop pseudo-random excitation fixed the signs, as the step tests above show.
   <code>tests/test_learned_models.py::test_trained_twin_has_the_right_control_gains</code></p></div>
 
-  <!-- 4 ------------------------------------------------------------------>
-  <h2 id="panda">4. PANDA in closed loop</h2>
-  <p class="sub">Two operating conditions. <b>Paper protocol</b>: instantaneous actuators, 3 % actuator noise and sensor
-  noise. <b>Realistic instrumentation</b>: the same noise, plus blower and pump slew limits (6 1/d and 2,200 m³/d per
-  45 s, so full travel takes about 30 min), a 2-min DO-probe lag and a nitrate analyser that updates every 10 min.
-  Feedback is slow in the realistic setting, which is where a forecast should help most.</p>
-  <div class="controls">
-    <span><span class="ctl-label">Condition</span><span id="p-cond"></span></span>
-    <span><span class="ctl-label">Weather</span><span id="p-weather"></span></span>
-  </div>
-  <div id="tbl-panda"></div>
-  <div class="grid-2">
-    <div class="card"><div id="ch-p-so"></div></div>
-    <div class="card"><div id="ch-p-no"></div></div>
-  </div>
-  <h3>The four terms of PANDA's control law</h3>
-  <div class="grid-2">
-    <div class="card"><div id="ch-p-f1"></div></div>
-    <div class="card"><div id="ch-p-f2"></div></div>
-    <div class="card"><div id="ch-p-ga"></div></div>
-    <div class="card"><div id="ch-p-g"></div></div>
-  </div>
-
   <!-- 5 ------------------------------------------------------------------>
-  <h2 id="ew">5. Effluent-ammonium early warning</h2>
+  <h2 id="ew">4. Effluent-ammonium early warning</h2>
   <p class="sub"><b>The question, every 6 minutes:</b> will effluent NH₄-N break the 4 g/m³ discharge limit within 12,
   30, 60, 90 or 120 min, and how high will it go? <b>Inputs:</b> only signals a plant already measures online,
   namely inlet flow, NH₄ and COD; DO₅ and NO₂ probes; the controller's own KLa₅ and Qₐ; the effluent NH₄ analyser
@@ -154,10 +122,11 @@
   <div id="ew-body"></div>
 
   <!-- 6 ------------------------------------------------------------------>
-  <h2 id="verdict">6. Verdict</h2>
+  <h2 id="verdict">5. Verdict</h2>
   <div id="verdict-body"></div>
 
-  <div class="footer">Data: <code>results/site/*.json</code>, <code>results/warning/metrics.json</code>.
+  <div class="footer">Data: <code>results/site/*.json</code> from <code>experiments/13_export_site_data.py</code>;
+  <code>results/warning/*.json</code> from <code>05_warning_benchmark.py</code> and <code>15_export_warning_extras.py</code>.
   <span id="gen"></span></div>
 </main>
 
@@ -198,7 +167,7 @@
       ["2-h flow error, fresh scenarios", pct(H.mape_2h[0]), `persistence ${pct(H.mape_2h_persistence[0])}`],
       ["2-h NH₄ error, fresh scenarios", pct(H.mape_2h[1]), `persistence ${pct(H.mape_2h_persistence[1])}`],
       ["10–90 % band coverage", pct(H.coverage_10_90_2h[0]), "nominal 80 %; flow channel"],
-      ["Regime accuracy, fresh", pct(H.regime_accuracy), "chance is 33 %; not 95.3 %"],
+      ["Regime accuracy, fresh", pct(H.regime_accuracy), "chance is 33 %; validation claimed 95.8 %"],
     ]);
     const lead = 2 / 24;
     const tf = c.t.map((t) => t + lead);
@@ -264,7 +233,7 @@
       ["Free-run RMSE, S_O,5", `${f3(F.rmse_twin[0])} g/m³`, `persistence ${f3(F.rmse_persistence[0])}`],
       ["Free-run RMSE, S_NO,2", `${f3(F.rmse_twin[1])} g/m³`, `persistence ${f3(F.rmse_persistence[1])}`],
       ["Fresh windows", String(F.n_windows), `${F.horizon_min / 60} h ahead each`],
-      ["Earlier reported", "0.28", "pooled, in-distribution windows: optimistic"],
+      ["Validation (in-distribution)", (T.training_history[T.training_history.length - 1].val_free_rmse).toFixed(2), "pooled over both channels, from training"],
     ]);
     const hx = F.rmse_twin_by_step.map((_, i) => (i + 1) * 6);
     Charts.line(document.getElementById("ch-tw-h"), {
@@ -286,62 +255,6 @@
       ],
     });
   })();
-
-  /* ---------------- 4. PANDA closed loop ---------------- */
-  let pc = "realistic", pw = "storm";
-  function buildPanda() {
-    const met = (S.metrics || []);
-    const box = document.getElementById("tbl-panda");
-    const rows = met.filter((r) => r.condition === (pc === "paper" ? "noisy" : "realistic") && r.weather === pw);
-    if (!rows.length) {
-      box.textContent = pc === "realistic" && pw === "dry" ? "The realistic condition was run on rain and storm only." : "Results not generated yet for this combination.";
-      box.className = "muted small";
-    } else {
-      box.className = "";
-      const best = (k) => Math.min(...rows.map((r) => r[k]));
-      const cell = (r, k, d) => ({ text: `${r[k].toFixed(d)} ± ${r[k + "_std"].toFixed(d)}`, best: r[k] === best(k) });
-      Charts.table(box, ["Controller", "IAE S_O,5", "DEVmax S_O,5", "IAE S_NO,2", "DEVmax S_NO,2", "EQ", "NH₄ violation", "OCI", "seeds"],
-        ["PID", "MAACC", "PANDA"].map((n) => rows.find((r) => r.controller === n)).filter(Boolean)
-          .map((r) => [r.controller, cell(r, "IAE_SO5", 4), cell(r, "DEVmax_SO5", 3), cell(r, "IAE_SNO2", 4),
-            cell(r, "DEVmax_SNO2", 3), cell(r, "EQ", 0), pct(r.viol_NH), cell(r, "OCI", 0), r.n_seeds]), 1);
-    }
-    const key = (c) => `${pc === "paper" ? "noisy" : "realistic"}|${pw}|${c}`;
-    const tr = (c) => (S.traces || {})[key(c)];
-    const ids = ["ch-p-so", "ch-p-no", "ch-p-f1", "ch-p-f2", "ch-p-ga", "ch-p-g"];
-    if (!tr("PANDA")) { ids.forEach((i) => pending(i, "Closed-loop runs for this combination")); return; }
-    const all = ["PID", "MAACC", "PANDA"].filter(tr);
-    const zoom = pw === "storm" ? [8.2, 11.2] : pw === "rain" ? [7.6, 11] : [3, 6];
-    const cmp = (id, title, ch, sp) => Charts.line(document.getElementById(id), {
-      title, subtitle: `set point ${sp}; zoomed to days ${zoom[0]}–${zoom[1]}`, height: 220,
-      xFmt: day, xTip: dayTip, xMin: zoom[0], xMax: zoom[1], yLabel: "g/m³", directLabels: true,
-      refLines: [{ y: sp, label: "set point" }],
-      series: all.map((c) => ({ name: c, color: C[c], x: tr(c).t, y: tr(c).s.map((r) => r[ch]), width: c === "PANDA" ? 2 : 1.5 })),
-    });
-    cmp("ch-p-so", "Dissolved oxygen, reactor 5", 0, 1);
-    cmp("ch-p-no", "Nitrate, reactor 2", 1, 2);
-    const p = tr("PANDA"), L = p.law, t = p.t.slice(0, L.length);
-    const one = (id, title, sub, ys, unit) => Charts.line(document.getElementById(id), {
-      title, subtitle: sub, height: 200, xFmt: day, xTip: dayTip, yLabel: unit, refLines: [{ y: 0 }],
-      directLabels: ys.length > 1, series: ys,
-    });
-    one("ch-p-f1", "f₁: anticipatory move on KLa₅", "solved through the twin from the forecast; bounded ±40 1/d",
-      [{ name: "f₁", color: C.PANDA, x: t, y: L.map((r) => r.f[0]) }], "1/d");
-    one("ch-p-f2", "f₂: anticipatory move on Qₐ", "bounded ±15,000 m³/d",
-      [{ name: "f₂", color: C.PANDA, x: t, y: L.map((r) => r.f[1]) }], "m³/d");
-    one("ch-p-ga", "g·a: gated learned correction", "KLa₅ channel; a is MAACC's term, now conditioned on the forecast",
-      [{ name: "g·a₁", color: C.MAACC, x: t, y: L.map((r) => r.g[0] * r.a[0]) }], "1/d");
-    Charts.line(document.getElementById("ch-p-g"), {
-      title: "Uncertainty gate g and forecast P(wet)", subtitle: "g → 1 means trust the learned term; P(wet) is the near-chance regime signal (§2)",
-      height: 200, xFmt: day, xTip: dayTip, yMin: 0, yMax: 1, directLabels: true, valueFmt: (v) => v.toFixed(2),
-      series: [
-        { name: "gate g", color: C.PANDA, x: t, y: L.map((r) => r.g[0]) },
-        { name: "P(wet)", color: "--reference", x: t, y: L.map((r) => r.p_wet) },
-      ],
-    });
-  }
-  Charts.segmented(document.getElementById("p-cond"), [{ label: "Realistic instrumentation", value: "realistic" }, { label: "Paper protocol", value: "paper" }], pc, (v) => { pc = v; buildPanda(); });
-  Charts.segmented(document.getElementById("p-weather"), W3, pw, (v) => { pw = v; buildPanda(); });
-  buildPanda();
 
   /* ---------------- 5. early warning ---------------- */
   (function ew() {
@@ -426,19 +339,11 @@
   /* ---------------- 6. verdict ---------------- */
   (function verdict() {
     const box = document.getElementById("verdict-body");
-    const met = S.metrics || [];
-    const m = (c, w, n) => met.find((r) => r.condition === c && r.weather === w && r.controller === n);
     const items = [];
     const F = S.forecaster && S.forecaster.heldout, T = S.twin && S.twin.free_run;
     if (F) items.push(["good", `The forecaster's quantile forecast works out of sample: 2-h flow error ${pct(F.mape_2h[0])} vs ${pct(F.mape_2h_persistence[0])} for persistence, with a well-calibrated band (${pct(F.coverage_10_90_2h[0])} coverage for a nominal 80 %).`]);
-    if (F) items.push(["bad", `The forecaster's regime classifier does not generalise (${pct(F.regime_accuracy)} on fresh scenarios). The 95.3 % previously reported was leakage.`]);
-    if (T) items.push(["good", `The twin's control gains have the right sign, and it predicts 4.8 h ahead about 3× better than persistence on fresh data (RMSE ${f3(T.rmse_twin[0])} vs ${f3(T.rmse_persistence[0])} on DO). Step-response magnitudes are approximate.`]);
-    const pn = m("noisy", "storm", "PID"), an = m("noisy", "storm", "PANDA");
-    if (pn && an) items.push([an.IAE_SO5 < pn.IAE_SO5 && an.IAE_SNO2 < pn.IAE_SNO2 ? "good" : "bad",
-      `Paper protocol, storm: PANDA IAE ${f3(an.IAE_SO5)} / ${f3(an.IAE_SNO2)} vs PID ${f3(pn.IAE_SO5)} / ${f3(pn.IAE_SNO2)} (S_O,5 / S_NO,2).`]);
-    const pr = m("realistic", "storm", "PID"), ar = m("realistic", "storm", "PANDA");
-    if (pr && ar) items.push([ar.IAE_SO5 < pr.IAE_SO5 && ar.IAE_SNO2 < pr.IAE_SNO2 ? "good" : "bad",
-      `Realistic instrumentation, storm: PANDA IAE ${f3(ar.IAE_SO5)} / ${f3(ar.IAE_SNO2)} vs PID ${f3(pr.IAE_SO5)} / ${f3(pr.IAE_SNO2)}.`]);
+    if (F) items.push(["bad", `The forecaster's regime classifier does not generalise (${pct(F.regime_accuracy)} on fresh scenarios against 95.8 % on validation). The validation split leaked.`]);
+    if (T) items.push(["good", `The twin's control gains have the right sign, and it predicts 4.8 h ahead about 3× better than persistence on fresh data (RMSE ${f3(T.rmse_twin[0])} vs ${f3(T.rmse_persistence[0])} on DO). The size of the step response is right for some steps and off for others (see the step tests).`]);
     const W = S.warning && S.warning.operational;
     if (W) {
       const n = W["Early-warning net"], g = W["Gradient boosting"], a = W["Analyser alarm (at limit)"];

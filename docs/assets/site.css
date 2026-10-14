@@ -13,7 +13,10 @@
   --series-1: #2a78d6;   /* PID      blue   */
   --series-2: #eb6834;   /* MAACC    orange */
   --series-3: #1baf7a;   /* PANDA    aqua   */
-  --series-4: #eda100;   /* 4th-only charts (trend baseline) */
+  --series-4: #eda100;   /* DDPG-B, trend baseline */
+  --series-5: #e87ba4;   /* PANDA-RL */
+  --series-6: #008300;
+  --series-7: #6250d6;
   --reference: #8a8880;  /* set points, limits, analyser alarm */
   --good: #0ca30c;
   --warning: #fab219;
@@ -37,6 +40,9 @@
     --series-2: #d95926;
     --series-3: #199e70;
     --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
     --reference: #8a8880;
     --code-bg: #232321;
     --shadow: none;
@@ -57,6 +63,9 @@
   --series-2: #d95926;
   --series-3: #199e70;
   --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-7: #9085e9;
   --reference: #8a8880;
   --code-bg: #232321;
   --shadow: none;
