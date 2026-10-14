@@ -107,9 +107,9 @@ Kp = diag{100, 100000}   Ki = diag{20, 30000}   Kd = diag{10, 1000}</div>
   <!-- 4 ------------------------------------------------------------------>
   <h2 id="law">4. Inside the control law: u = b + a</h2>
   <p class="sub">MAACC, noisy condition, seed 0. The PID prior <b>b</b> does most of the work. The learned term
-  <b>a</b> is clipped at ±10 % of each range (±24 1/d for KLa₅, ±9,223 m³/d for Q<sub>a</sub>), and it spends most of the
-  run <b>at</b> that clip rather than making small corrections (<span id="sat-frac">…</span>). The bottom row shows
-  each agent's critic estimate Q. §7 tests what that saturation means.</p>
+  <b>a</b> is clipped at ±10 % of each range (±24 1/d for KLa₅, ±9,223 m³/d for Q<sub>a</sub>); with the actor faithful
+  to eq. (8) it moves with the tracking error and is mostly away from the clip (<span id="sat-frac">…</span>). The bottom row
+  shows each agent's critic estimate Q. §7 compares what it learns with learning-free controls.</p>
   <div class="controls"><span><span class="ctl-label">Weather</span><span id="l-weather"></span></span></div>
   <div class="grid-2">
     <div class="card"><div id="ch-b1"></div></div>

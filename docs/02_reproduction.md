@@ -90,60 +90,45 @@ Quantitatively, the full benchmark (`experiments/03_run_control.py`, 54 runs,
 tabulated in `docs/05_results.md`) splits three ways, and two of its readings
 corrected what was written here earlier.
 
-**Under the paper's own noise protocol, MAACC works.** With 3 %-of-range
-actuator noise plus DO and nitrate sensor noise, MAACC improves the nitrate
-loop's IAE by 29 % on dry weather and 23 % on rain against the PID prior, and
-lowers `DEVmax` on that loop as well. An earlier draft of this file said
-MAACC "does not reliably beat" a well-tuned PID. That was based on spot
-checks that happened not to cover this condition, and it was too strong.
+**The action network had to be made faithful to eq. (8) first.** An earlier
+version gave the actor a bias input and integrated `a` with a leak of 0.999.
+With the bias, the increment at zero error, `π(0)`, is not zero, so `a`
+drifted steadily into its clip and sat there for 92 % of the run, acting as
+a constant offset — a learning-free PID plus that same constant reproduced
+its "gain" to the third decimal. Eq. (8) is pure integration, and an
+incremental policy must emit nothing at zero error; both are now the
+default (`actor_bias=False`, `leak=1.0`) and the second is a test.
 
-**In the clean condition it is worse on nitrate, and that is not interesting.**
-PID's IAE there is 0.0021 against MAACC's 0.0032 — both negligible beside the
-0.06–0.13 of the noisy runs. With no disturbance to reject there is nothing to
-learn and exploration is pure cost.
+**With the faithful actor, MAACC works where the paper says it does**
+(`docs/REPRODUCTION.md` §2.3, 54 runs, 2 seeds). Under the paper's
+supplementary noise protocol it improves nitrate IAE over the PID prior by
+27 % (dry), 21 % (rain) and 10 % (storm), with `DEVmax` lower on dry and
+rain, and oxygen within 0.3 % (dry, rain) and 6 % (storm). In the clean
+condition it changes nothing (±0.5 %), as it should when there is nothing to
+reject. The learned term now moves with the tracking error instead of
+sitting at its clip.
 
-**The de-tuned prior does not help, which refutes a hypothesis stated here.**
-The earlier argument ran: the prior is an *incremental* PID, so it has
-integral action, and it absorbs any slowly varying additive correction the
-actor learns within a few control periods — therefore weakening the prior
-should give the learned term room. It does not. With the prior at 25 % of its
-published gains, MAACC is worse than PID on every weather and both loops, by
-6 % to 35 %. A weaker prior leaves a larger standing error for the actor to
-chase, and chasing it with an incremental policy turns out to be harder than
-leaving it alone. The hypothesis is withdrawn.
+**What it learns, measured against learning-free controls**
+(`experiments/17_maacc_offset_control.py`). IAE `S_NO,2`, noisy, mean of 2
+seeds:
 
-**But the noisy-condition gain is not learned control.** The control law
-shows MAACC's learned recycle term `a_2` pinned at its clip, −10 % of the
-`Q_a` range (−9 223 m³/d), for most of the run. `experiments/17_maacc_offset_control.py`
-runs two learning-free controllers through the same harness, noise and
-seeds (`results/summary_offset_control.json`):
-
-* **PID + offset** — the prior plus the *constant* `(0, −9 223)`, i.e. MAACC
-  with its learned term frozen at the clip;
-* **PID-clamp** — the prior with its internal `Q_a` state allowed down to
-  −9 223 instead of 0 (the plant still clips the applied flow at 0). The
-  velocity-form PID depends only on errors, so this is PID + offset up to the
-  upper limit.
-
-IAE on `S_NO,2`, noisy, seed 0 (seed 1 agrees):
-
-| | PID | MAACC | PID + offset | PID-clamp |
+| | PID | MAACC | PID + constant −9 223 | PID, integrator clamp −9 223 |
 |---|---|---|---|---|
-| dry | 0.0846 | 0.0601 | 0.0598 | 0.0614 |
-| rain | 0.0808 | 0.0622 | 0.0619 | 0.0598 |
-| storm | 0.1219 | 0.1324 | 0.1113 | 0.1022 |
+| dry | 0.0832 | 0.0607 | 0.0590 | 0.0604 |
+| rain | 0.0797 | 0.0627 | 0.0614 | 0.0591 |
+| storm | 0.1214 | 0.1092 | 0.1110 | 0.1018 |
 
-The constant offset reproduces MAACC's dry and rain gain to the third
-decimal; on storm, where MAACC is worse than PID, both learning-free
-controllers beat it. The mechanism is anti-windup on the recycle loop: the
-PID's `Q_a` sits at zero about 12 % of the time under noise, and with its
-integrator clamped at exactly 0 it leaves zero recycle too early. Lowering
-only the *upper* limit was tested and does not reproduce the effect. So the
-honest statement is: **the paper's noise protocol exposes a weakness in the
-PID prior's saturation handling, and MAACC's saturated learned term happens
-to compensate for it; a one-line change to the prior does the same, and
-better on storm.** This does not contradict the paper's method; it means
-this benchmark cannot show that the adaptive critic learned anything useful.
+Part of the gain on the recycle loop is a slowly varying negative correction
+that compensates the prior's anti-windup at zero recycle (the PID sits at
+zero recycle ~12 % of the time under noise); an anti-windup-tuned prior
+gets most of that without learning. MAACC beats the constant offset on
+storm, where its correction varies with the state, but not the tuned prior.
+
+**The de-tuned prior is now clearly worse** (our stress test, not the
+paper's): oxygen IAE more than doubles. With a weak prior the standing error
+drives the purely integrating aeration actor into its clip. Both earlier
+withdrawals stand: MAACC does beat a well-tuned PID under noise, and a
+de-tuned prior does not give the learned term room.
 
 What survives is the narrower observation, which still motivates the
 extension: a learned correction driven by tracking error alone has very
