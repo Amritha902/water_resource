@@ -68,8 +68,8 @@
 
   <h2 id="replay">3. Watch the evaluation week</h2>
   <p class="sub">Dry weather, week 2 (the agents never trained on it). PID holds DO at 2 mg/L. DDPG-B and PANDA-RL were
-  re-trained here from scratch with the repository code (seed 0, 20 training weeks) and their evaluation runs recorded
-  in full.</p>
+  re-trained here from scratch with the repository code (seed 0, 20 training weeks, 2 CPU threads as in the benchmark),
+  which reproduces the committed seed-0 runs exactly, and their evaluation weeks were recorded in full.</p>
   <div class="tiles" id="rp-tiles"></div>
   <div class="grid-2">
     <div class="card"><div id="ch-rp-do"></div></div>
@@ -276,7 +276,7 @@
       ...["dry", "rain", "storm"].map((w) => [`DDPG-B saving, ${w}`, `${pubSave[w].toFixed(2)} %`, saving(w) == null ? "–" : `${saving(w).toFixed(1)} %`, ""]),
       ["DDPG-B mean S_O,5, dry", "1.032", agg("dry", "DDPG-B") ? agg("dry", "DDPG-B").S_O5_mean.toFixed(2) : "–", ""],
     ], 1);
-    const R = P.replays || {}, R2 = P.replays_t2 || {};
+    const R = P.replays_1t || {}, R2 = P.replays_t2 || {};
     const rr = ["PID", "DDPG-B", "PANDA-RL"].filter((m) => R["dry|" + m]).map((m) => {
       const c = runs.find((x) => x.weather === "dry" && x.method === m && x.seed === 0), s1 = R["dry|" + m].summary;
       const s2 = R2["dry|" + m] && R2["dry|" + m].summary;
