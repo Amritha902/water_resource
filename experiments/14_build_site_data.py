@@ -123,10 +123,15 @@ def main() -> None:
         r = json.loads(p.read_text())
         replays[f"{r['weather']}|{r['method']}"] = r
     site["paper2"]["replays"] = replays
+    # 2-thread re-runs reproduce the benchmark bit-for-bit (it ran with
+    # --threads 2); prefer their trajectories when present
+    site["paper2"]["replays_1t"] = {k: {"summary": v["summary"]} for k, v in replays.items()}
     t2 = {}
     for p in sorted((RES / "site" / "aeration_t2").glob("replay_*.json")):
         r = json.loads(p.read_text())
-        t2[f"{r['weather']}|{r['method']}"] = {"summary": r["summary"]}
+        key = f"{r['weather']}|{r['method']}"
+        t2[key] = {"summary": r["summary"]}
+        replays[key] = r
     site["paper2"]["replays_t2"] = t2
     site["paper2"]["fig4"] = _load(RES / "site" / "fig4.json")
 

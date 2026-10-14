@@ -29,7 +29,7 @@ what is left.
 
 | Project website (`docs/`, GitHub Pages) | **done**: overview + verification ledger, a page per paper, prediction models |
 | Re-checks on unseen data (`13_export_site_data.py`) | **done**: forecaster quantiles hold; regime head at chance (validation leak); twin 3x better than persistence on fresh windows |
-| Reproducibility (`13_export_site_data.py`, `16_replay_paper2.py`) | **done**: seed-0 paper-1 runs and re-trained paper-2 agents match the committed numbers |
+| Reproducibility (`13_export_site_data.py`, `16_replay_paper2.py`) | **done**: all 9 seed-0 paper-1 runs match to 4 decimals; re-trained DDPG-B matches exactly at 2 threads (the benchmark's setting) but not at 1 thread — RL training is sensitive to floating-point order |
 
 **72 tests pass, none skipped.**
 

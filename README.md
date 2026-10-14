@@ -162,7 +162,10 @@ of the training scenarios), and the twin's fresh-data free-running error
 (DO 0.39 / nitrate 0.48 g/m³) is a little worse than its validation figure,
 though still about 3x better than persistence. Re-simulating the committed
 paper-1 runs and re-training the paper-2 agents reproduces the committed
-numbers.
+numbers exactly — for the RL learners only at the benchmark's thread count
+(`--threads 2`): with 1 thread, training matches for the first week and then
+diverges through floating-point summation order, landing elsewhere on the
+same energy/violation trade-off.
 
 ## Running it
 

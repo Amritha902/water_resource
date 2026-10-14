@@ -25,9 +25,14 @@ Numbers are the ones the site shows; the site reads them from `results/`.
 5. **MAACC's nitrate gain under noise is not learned**: a constant offset
    (its learned term frozen at the clip) reproduces it — anti-windup on the
    PID prior's recycle loop (A7b).
-6. **Everything committed is reproducible:** re-simulating paper-1 seed-0
-   runs and re-training paper-2 seed-0 agents in a fresh session gives the
-   committed numbers (site ledger, "reproducible from the code").
+6. **Everything committed is reproducible:** re-simulating the paper-1
+   seed-0 runs gives the committed numbers to 4 decimals; re-training
+   DDPG-B (seed 0) gives AE 3429.5 kWh/d and 45.9 % violations, identical to
+   the committed run — *at the benchmark's 2 CPU threads*. With 1 thread the
+   first training week still matches but the run then diverges (float
+   summation order) and lands at 3526.8 kWh/d / 27.3 %, on the same
+   trade-off. Know this: "is your RL result reproducible?" → yes, bit-for-bit
+   given seed *and* thread count; across thread counts, only statistically.
 
 ---
 
@@ -81,12 +86,13 @@ De-tuned prior (25 % gains): MAACC worse everywhere (−6 % to −35 %).
 **A7b. Is MAACC's nitrate gain learned control?** **No — and say this
 first.** Its learned recycle term `a_2` sits at its clip (−9 223 m³/d) most of
 the run. A learning-free PID plus that constant offset gives IAE `S_NO,2`
-0.0598 (dry) / 0.0619 (rain) vs MAACC 0.0601 / 0.0622 and PID 0.0846 / 0.0808;
-on storm the offset PID gets 0.1113 where MAACC is *worse* than PID (0.1324 vs
-0.1219). Mechanism: the PID's recycle sits at zero ~12 % of the time under
+0.0590 (dry) / 0.0614 (rain) vs MAACC 0.0591 / 0.0616 and PID 0.0832 / 0.0797
+(mean of 2 seeds); on storm the offset PID gets 0.1110 where MAACC is *worse*
+than PID (0.1311 vs 0.1214). Mechanism: the PID's recycle sits at zero ~12 % of the time under
 noise; its integrator clamped at exactly 0 leaves zero recycle too early.
-Letting the integrator go to −9 223 (plant still clips at 0) gives 0.0614 /
-0.0598 / 0.1022 — better than MAACC everywhere. Lowering only the upper limit
+Letting the integrator go to −9 223 (plant still clips at 0) gives 0.0604 /
+0.0591 / 0.1018 (dry/rain/storm) — as good as MAACC on dry, better on rain
+and storm. Lowering only the upper limit
 does not. Script: `experiments/17_maacc_offset_control.py`. What it means:
 the noise protocol exposes the prior's anti-windup, MAACC compensates by
 accident; this benchmark cannot show the critic learned anything useful.

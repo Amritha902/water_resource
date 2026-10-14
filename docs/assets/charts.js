@@ -314,7 +314,8 @@
           ? `M${x0},${y}H${x1 - rad}Q${x1},${y} ${x1},${y + rad}V${y + bh - rad}Q${x1},${y + bh} ${x1 - rad},${y + bh}H${x0}Z`
           : `M${x1},${y}H${x0 + rad}Q${x0},${y} ${x0},${y + rad}V${y + bh - rad}Q${x0},${y + bh} ${x0 + rad},${y + bh}H${x1}Z`;
         const bar = el("path", { d, fill: cssVar(r.color || spec.color || "--series-1") }, svg);
-        el("text", { class: "bar-label", x: pos ? x1 + 6 : x0 - 6, y: y + bh / 2 + 4, "text-anchor": pos ? "start" : "end" }, svg).textContent = fmt(r.value);
+        // negative bars: value sits right of the zero line so it never collides with the row label
+        el("text", { class: "bar-label", x: pos ? x1 + 6 : X(0) + 6, y: y + bh / 2 + 4, "text-anchor": "start" }, svg).textContent = fmt(r.value);
         const hitR = el("rect", { x: lw, y: y - gap / 2, width: iw + rw, height: bh + gap, fill: "transparent" }, svg);
         const on = () => {
           bar.setAttribute("opacity", 0.8);
