@@ -109,13 +109,14 @@ DDPG-B's at matched violation rate (positive = cheaper at the same risk):
 | CVaR only | modification 2 | +25.9 kWh/d |
 | **both** | | **+28.6 kWh/d** |
 
-**Paper 1: the gain is real, but it is not learned control.** Under its own
-noise protocol MAACC improves nitrate tracking by **+28.9 %** (dry) and
-**+22.8 %** (rain) against the PID prior. Its learned recycle term, however,
-sits at its clip for most of the run, and a learning-free PID plus that
-constant offset reproduces the gain to the third decimal (and beats MAACC on
-storm). The mechanism is anti-windup on the PID prior's recycle loop
-(`experiments/17_maacc_offset_control.py`, `docs/02_reproduction.md` §4).
+**Paper 1 works where the paper says it does — once the actor is faithful to
+eq. (8).** Under its own noise protocol MAACC improves nitrate tracking over
+the PID prior by **+27 %** (dry), **+21 %** (rain) and **+10 %** (storm), with
+oxygen within a few percent, and changes nothing in the clean setting. An
+earlier version (actor bias + leaky integrator) let the learned term drift
+into its clip and act as a constant offset; that is fixed and tested. Part of
+the gain is compensation that an anti-windup-tuned prior also gives
+(`experiments/17_maacc_offset_control.py`). Full report: `docs/REPRODUCTION.md`.
 
 Full tables, all three weathers and every seed: `docs/05_results.md`.
 

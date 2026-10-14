@@ -22,9 +22,10 @@ Numbers are the ones the site shows; the site reads them from `results/`.
    (worse than PID on oxygen); the forecaster's weather-regime head (chance on
    fresh data — the 95.8 % was validation leakage); Dyna (breaks the
    constraint).
-5. **MAACC's nitrate gain under noise is not learned**: a constant offset
-   (its learned term frozen at the clip) reproduces it — anti-windup on the
-   PID prior's recycle loop (A7b).
+5. **MAACC needed one fix to learn**: the actor had a bias input and a leaky
+   integrator, so `a` drifted into its clip and acted as a constant offset.
+   Eq. (8) is pure integration with zero increment at zero error; with that,
+   MAACC beats the PID prior on nitrate in all weathers (A7, A7b).
 6. **Everything committed is reproducible:** re-simulating the paper-1
    seed-0 runs gives the committed numbers to 4 decimals; re-training
    DDPG-B (seed 0) gives AE 3429.5 kWh/d and 45.9 % violations, identical to
@@ -78,39 +79,51 @@ approximation). **Not a contradiction of Theorem 1**: UUB allows a huge bound;
 the paper's `l_c` condition is the one-step no-overshoot condition (the
 residual changes by `−l_c λ²‖ϑ‖² e` per step), not a contraction over time.
 
-**A7. Results (committed, 54 runs, 2 seeds).** Under the paper's noise
-protocol (3 % of each actuator's range + sensor noise): MAACC improves nitrate
-IAE by **+28.9 % dry, +22.8 % rain**, −8.0 % storm; oxygen is 2–7 % worse.
-Clean condition: MAACC looks −45…−69 % on nitrate, but in absolute terms
-0.002 vs 0.003 — negligible; with nothing to reject, exploration is pure cost.
-De-tuned prior (25 % gains): MAACC worse everywhere (−6 % to −35 %).
+**A7. Results (committed, 54 runs, 2 seeds; `docs/REPRODUCTION.md` §2.3).**
+Under the paper's noise protocol MAACC improves nitrate IAE over the PID prior
+by **+27.0 % dry, +21.4 % rain, +10.1 % storm**; `DEVmax` on nitrate drops on
+dry/rain; oxygen is within 0.3 % (dry, rain) and 6.4 % worse on storm. Clean
+condition: no change (±0.5 %) — nothing to correct, nothing learned, nothing
+lost. De-tuned prior (our test, not the paper's): oxygen IAE more than
+doubles — with a weak prior the pure integrator winds the aeration actor into
+its clip.
 
-**A7b. Is MAACC's nitrate gain learned control?** **No — and say this
-first.** Its learned recycle term `a_2` sits at its clip (−9 223 m³/d) most of
-the run. A learning-free PID plus that constant offset gives IAE `S_NO,2`
-0.0590 (dry) / 0.0614 (rain) vs MAACC 0.0591 / 0.0616 and PID 0.0832 / 0.0797
-(mean of 2 seeds); on storm the offset PID gets 0.1110 where MAACC is *worse*
-than PID (0.1311 vs 0.1214). Mechanism: the PID's recycle sits at zero ~12 % of the time under
-noise; its integrator clamped at exactly 0 leaves zero recycle too early.
-Letting the integrator go to −9 223 (plant still clips at 0) gives 0.0604 /
-0.0591 / 0.1018 (dry/rain/storm) — as good as MAACC on dry, better on rain
-and storm. Lowering only the upper limit
-does not. Script: `experiments/17_maacc_offset_control.py`. What it means:
-the noise protocol exposes the prior's anti-windup, MAACC compensates by
-accident; this benchmark cannot show the critic learned anything useful.
-It does not by itself refute the paper's method.
+**A7b. "Is the gain learned, or a re-tuning?"** Know this cold.
+(1) *What was wrong:* the first implementation gave the action network a bias
+input and a leak of 0.999; `π(0) ≠ 0`, so `a` drifted into its clip and sat
+there 92 % of the run — a constant offset; a learning-free PID plus the same
+constant reproduced its "gain" to the third decimal. (2) *The fix is the
+paper:* eq. (8) is pure integration, and an incremental policy emits nothing
+at zero error, so the actor has no bias (critic keeps one). Test
+`test_incremental_policy_is_zero_at_zero_error`. (3) *What it learns now*
+(IAE `S_NO,2`, noisy, mean of 2 seeds):
+
+| | PID | MAACC | PID + constant offset | PID, lowered integrator clamp |
+|---|---|---|---|---|
+| dry | 0.0832 | 0.0607 | 0.0590 | 0.0604 |
+| rain | 0.0797 | 0.0627 | 0.0614 | 0.0591 |
+| storm | 0.1214 | 0.1092 | 0.1110 | 0.1018 |
+
+Part of what it learns is a negative recycle correction compensating the
+prior's anti-windup (the PID sits at zero recycle ~12 % of the time under
+noise); an anti-windup-tuned prior gets most of it without learning. On storm
+MAACC's correction varies with the state and beats the constant offset. Honest
+one-liner: *MAACC learns a useful correction; on this benchmark a large part
+of it is something a better-tuned prior also provides.*
 
 **A8. "You wrote earlier that MAACC never beats PID."** Withdrawn. It came
 from spot checks that did not include the noise protocol; the full benchmark
 showed it does on the nitrate loop. Also withdrawn: the prediction that a
 de-tuned prior gives the learned term room — the data says the opposite.
 
-**A9. Ten deviations from the paper** (Paper 1 page §9): TD(0) critic; full
-actor Jacobian `∂Q/∂Δa + ∂Q/∂a`; bias input; normalised inputs; leaky
-integration `0.999·a` and clip ±10 % of range; `Δa = Δa_max·tanh(·)`
-(4 1/d, 1500 m³/d per step); actor weight decay 2.0 + gradient clip 10;
-our own `W=1, P=0.25, Y=0.02, R=0.05, λ=0.9`, 16/12 hidden; 1-day PID
-warm-up; re-implemented BSM1.
+**A9. Deviations from the paper** (`docs/REPRODUCTION.md` §2.2): TD(0)
+critic; full actor Jacobian `∂Q/∂Δa + ∂Q/∂a`; bias input on the **critic
+only** (the actor has none, so `π(0) = 0`); normalised inputs; `a` clipped to
+±10 % of range (pure integration otherwise, as eq. 8); `Δa = Δa_max·tanh(·)`
+(4 1/d, 1500 m³/d per step); actor weight decay 2.0 + gradient clip 10; our
+own `W=1, P=0.25, Y=0.02, R=0.05, λ=0.9`, 16/12 hidden; 1-day PID warm-up;
+re-implemented BSM1. PANDA (our extension) keeps an actor bias and a 0.999
+leak, because its actor reads the forecast and so must act at zero error.
 
 **A10. Not reproduced:** Table II absolute numbers; the 7 comparison methods
 (RSCMPC, MADRL-PID, SUP-HDP, dHDP, DPPGADP, ACD-VarInf, FAACC); the ">90 %

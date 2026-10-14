@@ -43,6 +43,7 @@ as a one-sided risk penalty.
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -54,6 +55,19 @@ from ..forecast.predictor import InfluentPredictor
 from ..maacc.agent import MAACCController, default_agent_configs
 from ..twin.dataset import COARSE_STRIDE, D_SCALE, NH_SCALE, S_SCALE, U_SCALE
 from ..twin.models import DigitalTwin
+
+def panda_agent_configs():
+    """MAACC's agents with the settings PANDA was designed and benchmarked with.
+
+    PANDA's actor also reads the forecast context, so its increment is
+    non-zero whenever the forecast is -- by design.  Under the pure
+    integration of eq. (8) that drifts the learned term into its clip; the
+    leaky integrator (0.999) and the actor bias keep it a bounded correction.
+    MAACC itself uses the paper-faithful settings (no actor bias, leak 1).
+    """
+    return tuple(dataclasses.replace(c, leak=0.999, actor_bias=True)
+                 for c in default_agent_configs())
+
 
 #: length of the control context vector produced by the predictor
 CONTEXT_DIM = 6
@@ -109,7 +123,7 @@ class PANDAController(MAACCController):
         for p in self.twin.parameters():
             p.requires_grad_(False)
 
-        super().__init__(configs=configs or default_agent_configs(), seed=seed,
+        super().__init__(configs=configs or panda_agent_configs(), seed=seed,
                          extra_context=CONTEXT_DIM if use_context else 0,
                          **kwargs)
 

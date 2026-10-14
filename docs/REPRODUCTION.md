@@ -48,15 +48,17 @@ Two earlier deviations were **removed** because they broke the incremental polic
 
 | condition | weather | PID IAE S_O,5 | MAACC IAE S_O,5 | Δ | PID IAE S_NO,2 | MAACC IAE S_NO,2 | Δ | PID DEVmax S_NO,2 | MAACC DEVmax S_NO,2 |
 |---|---|---|---|---|---|---|---|---|---|
-| clean | dry | 0.0076 | 0.0075 | +1.7 % | 0.0021 | 0.0032 | -48.1 % | 0.011 | 0.294 |
-| clean | rain | 0.0075 | 0.0074 | +1.7 % | 0.0023 | 0.0033 | -45.3 % | 0.011 | 0.294 |
-| clean | storm | 0.0078 | 0.0090 | -15.1 % | 0.0455 | 0.0767 | -68.7 % | 1.291 | 1.740 |
-| noisy | dry | 0.0341 | 0.0348 | -2.0 % | 0.0832 | 0.0591 | +28.9 % | 0.518 | 0.338 |
-| noisy | rain | 0.0341 | 0.0348 | -1.9 % | 0.0797 | 0.0616 | +22.8 % | 0.541 | 0.360 |
-| noisy | storm | 0.0341 | 0.0365 | -7.0 % | 0.1214 | 0.1311 | -8.0 % | 1.311 | 1.536 |
-| detuned | dry | 0.0485 | 0.0516 | -6.4 % | 0.0647 | 0.0693 | -7.2 % | 0.298 | 0.695 |
-| detuned | rain | 0.0484 | 0.0542 | -12.0 % | 0.0626 | 0.0673 | -7.4 % | 0.298 | 0.753 |
-| detuned | storm | 0.0487 | 0.0548 | -12.6 % | 0.1044 | 0.1407 | -34.8 % | 1.306 | 1.670 |
+| clean | dry | 0.0076 | 0.0076 | -0.0 % | 0.0021 | 0.0021 | +0.0 % | 0.011 | 0.011 |
+| clean | rain | 0.0075 | 0.0075 | -0.0 % | 0.0023 | 0.0023 | +0.0 % | 0.011 | 0.011 |
+| clean | storm | 0.0078 | 0.0078 | +0.3 % | 0.0455 | 0.0457 | -0.5 % | 1.291 | 1.377 |
+| noisy | dry | 0.0341 | 0.0342 | -0.3 % | 0.0832 | 0.0607 | +27.0 % | 0.518 | 0.361 |
+| noisy | rain | 0.0341 | 0.0342 | -0.3 % | 0.0797 | 0.0627 | +21.4 % | 0.541 | 0.374 |
+| noisy | storm | 0.0341 | 0.0363 | -6.4 % | 0.1214 | 0.1092 | +10.1 % | 1.311 | 1.378 |
+| detuned | dry | 0.0485 | 0.1152 | -137.4 % | 0.0647 | 0.0817 | -26.3 % | 0.298 | 0.794 |
+| detuned | rain | 0.0484 | 0.1127 | -132.7 % | 0.0626 | 0.0737 | -17.8 % | 0.298 | 0.794 |
+| detuned | storm | 0.0487 | 0.1140 | -134.3 % | 0.1044 | 0.1244 | -19.2 % | 1.306 | 1.354 |
+
+**Reading.** Under the paper's own supplementary protocol MAACC improves nitrate tracking over its expert prior in every weather and leaves oxygen within a few percent; in the idealised clean setting, where there is nothing to correct, it changes nothing — both as the paper describes. In our own de-tuned stress test (not in the paper) it is clearly worse: with a weak prior the large standing error drives the purely integrating aeration actor into its clip. That is a limit of eq. (8) with a weak prior, reported as found.
 
 ### 2.4 Against the paper's own numbers (Table II)
 
@@ -78,9 +80,9 @@ A learning-free control, `experiments/17_maacc_offset_control.py`, separates lea
 
 | weather | PID | MAACC | PID + constant offset | PID, lowered clamp |
 |---|---|---|---|---|
-| dry | 0.0832 | 0.0591 | 0.0590 | 0.0604 |
-| rain | 0.0797 | 0.0616 | 0.0614 | 0.0591 |
-| storm | 0.1214 | 0.1311 | 0.1110 | 0.1018 |
+| dry | 0.0832 | 0.0607 | 0.0590 | 0.0604 |
+| rain | 0.0797 | 0.0627 | 0.0614 | 0.0591 |
+| storm | 0.1214 | 0.1092 | 0.1110 | 0.1018 |
 
 Part of what the agent learns on the recycle loop is a slowly varying negative correction that compensates the PID prior's anti-windup at zero recycle; a better-tuned prior gets that for free. Read MAACC's gain against both columns, not against the PID alone.
 

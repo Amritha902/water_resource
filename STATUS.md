@@ -8,7 +8,7 @@ what is left.
 | Piece | State |
 |---|---|
 | BSM1 plant (ASM1 biology, Takács clarifier, 5 tanks, influent generator) | **done**, validated against published BSM1 steady state |
-| Paper 1 (MAACC) reproduced | **done**, and benchmarked: 54 runs over 3 conditions x 3 weathers x 2 seeds. Under the paper's own noise protocol MAACC improves nitrate IAE by 23-29% against the PID prior, **but a learning-free PID plus a constant offset (MAACC's learned term frozen at its clip) reproduces that gain**: the effect is anti-windup on the recycle loop, not learned control (`17_maacc_offset_control.py`). |
+| Paper 1 (MAACC) reproduced | **done**, actor faithful to eq. (8) (no actor bias, pure integration). 54 runs: under the paper's noise protocol MAACC improves nitrate IAE by 27 / 21 / 10 % (dry/rain/storm), oxygen within a few %, no change when clean. Part of the gain is anti-windup compensation (`17_maacc_offset_control.py`). De-tuned prior: clearly worse. Paper's Table II not yet compared (values not in repo). |
 | Paper 1 — correction to the critic update in eq. (15) | **done**, reproduced by a test |
 | Influent forecaster (TCN, quantiles + weather regime) | **trained** |
 | Digital twin (GRU) | **trained** |

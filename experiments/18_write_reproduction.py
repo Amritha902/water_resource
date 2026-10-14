@@ -93,7 +93,12 @@ def paper1(lines: list[str]) -> None:
             lines.append(f"| {c} | {w} | {mean(p,'IAE_SO5'):.4f} | {mean(m,'IAE_SO5'):.4f} | {pct(mean(m,'IAE_SO5'), mean(p,'IAE_SO5')):+.1f} % "
                          f"| {mean(p,'IAE_SNO2'):.4f} | {mean(m,'IAE_SNO2'):.4f} | {pct(mean(m,'IAE_SNO2'), mean(p,'IAE_SNO2')):+.1f} % "
                          f"| {mean(p,'DEVmax_SNO2'):.3f} | {mean(m,'DEVmax_SNO2'):.3f} |")
-    lines.append("")
+    lines += ["", "**Reading.** Under the paper's own supplementary protocol MAACC improves nitrate tracking over its "
+              "expert prior in every weather and leaves oxygen within a few percent; in the idealised clean setting, "
+              "where there is nothing to correct, it changes nothing — both as the paper describes. In our own "
+              "de-tuned stress test (not in the paper) it is clearly worse: with a weak prior the large standing "
+              "error drives the purely integrating aeration actor into its clip. That is a limit of eq. (8) with a "
+              "weak prior, reported as found.", ""]
 
     pub = load("published_paper1.json")
     lines += ["### 2.4 Against the paper's own numbers (Table II)", ""]
