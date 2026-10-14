@@ -272,6 +272,12 @@
       ["Warned ≥ 30 min ahead", pct(net.frac_warned_30min, 0), `of ${net.n_episodes} violation episodes`],
       ["False alarms", `${net.false_alarms_per_day.toFixed(2)} / day`, "budget 1 / compliant day, set on validation"],
     ]);
+    const abl = mk("div", "callout warn");
+    const ap = document.createElement("p");
+    const sm = W.sample, a60 = (k) => (sm[k] && sm[k]["onset@60min"] ? sm[k]["onset@60min"].auprc : null);
+    const nf = op["net, no influent forecast"], na = op["net, no effluent analyser"];
+    ap.textContent = (nf && na) ? `Ablations (the same network retrained without one signal group): without the influent forecast it is as good or better (AUPRC@60 min ${a60("net, no influent forecast").toFixed(3)} vs ${a60("Early-warning net").toFixed(3)}; lead ${nf.median_lead_min.toFixed(0)} vs ${net.median_lead_min.toFixed(0)} min), so the forecaster contributes little here. Without the effluent analyser it drops clearly (AUPRC@60 min ${a60("net, no effluent analyser").toFixed(3)}, lead ${na.median_lead_min.toFixed(0)} min) but still warns well ahead of today's alarm from upstream signals alone. Note the net's false-alarm rate on test plants (${net.false_alarms_per_day.toFixed(2)}/day) slightly exceeds the 1/day budget set on validation.` : "";
+    abl.appendChild(ap);
     const g = mk("div", "grid-2");
     const c1 = document.createElement("div"); c1.className = "card"; g.appendChild(c1);
     const c2 = document.createElement("div"); c2.className = "card"; g.appendChild(c2);
@@ -306,8 +312,7 @@
     const cal = W.calibration;
     if (cal) Charts.line(c4, {
       title: "Calibration of P(violation within 60 min)", subtitle: "test plants; on the diagonal = honest probabilities",
-      height: 250, xLabel: "predicted probability", yLabel: "observed frequency", xMin: 0, xMax: 1, yMin: 0, yMax: 1,
-      directLabels: true, xTip: (v) => `predicted ${v.toFixed(2)}`, valueFmt: (v) => v.toFixed(2),
+      height: 250, xLabel: "predicted probability", yLabel: "observed frequency", xMin: 0, xMax: 1, yMin: 0, yMax: 1, xTip: (v) => `predicted ${v.toFixed(2)}`, valueFmt: (v) => v.toFixed(2),
       series: [
         { name: "perfect", color: "--reference", x: [0, 1], y: [0, 1], dash: true },
         ...["Early-warning net", "Gradient boosting"].filter((m) => cal[m]).map((m) => ({ name: m, short: m === "Gradient boosting" ? "GBM" : "net", color: col[m], x: cal[m].conf, y: cal[m].freq })),

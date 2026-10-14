@@ -33,6 +33,8 @@ Numbers are the ones the site shows; the site reads them from `results/`.
    summation order) and lands at 3526.8 kWh/d / 27.3 %, on the same
    trade-off. Know this: "is your RL result reproducible?" → yes, bit-for-bit
    given seed *and* thread count; across thread counts, only statistically.
+   PANDA-RL re-trained at 2 threads also matches exactly (3597.9 kWh/d,
+   23.1 %).
 
 ---
 
@@ -226,7 +228,16 @@ forecaster context). Plants randomised (aeration in tanks 3–4 160–240 1/d,
 2.4. Train / val / test are different *plants*. Thresholds set on validation
 for ≤ 1 false alarm per compliant day; lead time measured on test plants.
 Compared against the analyser alarm, trend extrapolation and gradient
-boosting. Numbers: Prediction models page §4.
+boosting. **Numbers** (re-evaluated on a fresh corpus, committed networks,
+209 violation episodes on 24 test plants): median lead **126 min** at 1.17
+false alarms/day; gradient boosting 96 min at 1.80/day; analyser trend 36
+min; today's analyser alarm −12 min (after the violation began). AUPRC on
+compliant moments @60 min: net 0.951, GBM 0.931. Calibration ECE 0.006.
+**Ablations:** without the influent forecast the retrained net is as good or
+better (AUPRC@60 0.961, lead 120 min) — the forecaster adds little here;
+without the effluent analyser AUPRC@60 drops to 0.770 but lead is still 108
+min. Test false-alarm rate (1.17/day) slightly exceeds the 1/day validation
+budget.
 
 **C5. How do you avoid leakage in the warning?** Labels look strictly ahead
 (tested); windows end at the prediction step (tested); plant-level splits;
