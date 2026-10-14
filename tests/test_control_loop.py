@@ -56,3 +56,17 @@ def test_metrics_are_finite_and_ordered(weather):
     assert m.dev_max >= m.iae >= 0.0
     summary = res.summary(burn_in_days=1.0)
     assert summary["EQ"] > 0.0 and summary["OCI"] > 0.0
+
+
+def test_incremental_policy_is_zero_at_zero_error():
+    """Eq. (8): with no tracking error the actor emits no increment, so the
+    learned term cannot drift into its clip on its own.  A bias input on the
+    action network breaks this (pi(0) != 0), which is why it has none."""
+    ctrl = MAACCController(seed=3)
+    rng = np.random.default_rng(0)
+    for agent in ctrl.agents:            # arbitrary, non-zero trained weights
+        agent.actor.beta = rng.normal(0.0, 1.0, agent.actor.beta.shape)
+    s = np.array(PAPER_SETPOINTS, dtype=float)
+    for k in range(50):
+        ctrl.act(k, s, s, {})
+    assert np.allclose([a.a for a in ctrl.agents], 0.0, atol=1e-12)

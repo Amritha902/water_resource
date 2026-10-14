@@ -106,9 +106,12 @@ python experiments/14_build_site_data.py               # writes docs/data/site-d
   function offsetText() {
     const O = S.paper1_offset || [], R = S.paper1_runs || [];
     const m = (src, n, w) => { const r = src.filter((x) => x.controller === n && x.weather === w && (x.condition || "noisy") === "noisy"); return r.length ? r.reduce((a, x) => a + x.IAE_SNO2, 0) / r.length : null; };
-    if (!O.length) return "MAACC's learned Q_a term sits at its clip most of the run; control experiment pending.";
-    const f = (w) => `${w}: PID ${m(R, "PID", w).toFixed(4)}, MAACC ${m(R, "MAACC", w).toFixed(4)}, PID + constant offset ${m(O, "PID+offset", w).toFixed(4)}, PID with a lowered integrator clamp ${m(O, "PID-clamp", w).toFixed(4)}`;
-    return `No. MAACC's learned Q_a term sits at its clip (−9,223 m³/d) for most of the run, and a learning-free PID plus that constant offset reproduces the gain. IAE S_NO,2 — ${f("dry")}; ${f("storm")}. The mechanism is anti-windup on the recycle loop of the PID prior.`;
+    if (!O.length || !R.length) return { status: "partial", text: "Control experiment pending." };
+    const ws = ["dry", "rain", "storm"];
+    const bo = ws.filter((w) => m(R, "MAACC", w) < m(O, "PID+offset", w)), bc = ws.filter((w) => m(R, "MAACC", w) < m(O, "PID-clamp", w));
+    const f = (w) => `${w}: PID ${m(R, "PID", w).toFixed(4)}, MAACC ${m(R, "MAACC", w).toFixed(4)}, constant offset ${m(O, "PID+offset", w).toFixed(4)}, anti-windup prior ${m(O, "PID-clamp", w).toFixed(4)}`;
+    return { status: bo.length >= 2 ? "partial" : "no",
+      text: `IAE S_NO,2 (noisy) — ${ws.map(f).join("; ")}. MAACC beats a constant offset in ${bo.length ? bo.join(", ") : "no weather"} and an anti-windup-tuned prior in ${bc.length ? bc.join(", ") : "no weather"}. The paper-faithful actor (no bias, pure integration, eq. 8) learns a state-dependent correction; part of its gain is compensation a better-tuned prior also gives.` };
   }
   let rerun = null;
   if (S.paper1_rerun && S.paper1_runs) {
@@ -130,8 +133,8 @@ python experiments/14_build_site_data.py               # writes docs/data/site-d
     ["MAACC beats the PID prior under the paper's noise protocol", "partial",
      P1.length ? `On the nitrate loop: ${sgn(imp("noisy", "dry", "MAACC", "IAE_SNO2"))} dry, ${sgn(imp("noisy", "rain", "MAACC", "IAE_SNO2"))} rain, ${sgn(imp("noisy", "storm", "MAACC", "IAE_SNO2"))} storm. On the oxygen loop: ${sgn(imp("noisy", "dry", "MAACC", "IAE_SO5"))} / ${sgn(imp("noisy", "rain", "MAACC", "IAE_SO5"))} / ${sgn(imp("noisy", "storm", "MAACC", "IAE_SO5"))}. 2 seeds.` : "pending",
      "results/summary_paper1.json"],
-    ["…and that gain is learned control", "no",
-     offsetText(),
+    ["…and that gain is learned control, not re-tuning", offsetText().status,
+     offsetText().text,
      "experiments/17_maacc_offset_control.py"],
     ["Withdrawn claims: “MAACC never beats a well-tuned PID” and “a de-tuned prior gives the learned term room”", "no",
      P1.length ? `Both were withdrawn when the full benchmark ran. With the de-tuned prior MAACC is worse everywhere, e.g. nitrate ${sgn(imp("detuned", "storm", "MAACC", "IAE_SNO2"))} on storm.` : "pending",

@@ -28,7 +28,7 @@
   <nav class="toc">
     <a href="#plant">1. The plant</a><a href="#live">2. Watch it run</a><a href="#algo">3. The algorithm</a>
     <a href="#law">4. Inside the control law</a><a href="#results">5. Results</a><a href="#eq15">6. The eq. (15) flaw</a>
-    <a href="#why">7. Is the gain learned?</a><a href="#panda">8. Our tracking extension</a><a href="#deviations">9. Every deviation</a><a href="#notdone">10. Not reproduced</a>
+    <a href="#why">7. What the learned term does</a><a href="#panda">8. Our tracking extension</a><a href="#deviations">9. Every deviation</a><a href="#notdone">10. Not reproduced</a>
   </nav>
 
   <!-- 1 ------------------------------------------------------------------>
@@ -161,25 +161,20 @@ Kp = diag{100, 100000}   Ki = diag{20, 30000}   Kd = diag{10, 1000}</div>
   </div>
 
   <!-- 7 ------------------------------------------------------------------>
-  <h2 id="why">7. Is MAACC's gain learned control? A control experiment</h2>
-  <p class="sub">Under the paper's own noise protocol MAACC improves nitrate IAE by about 29 % (dry) and 23 % (rain)
-  against the PID prior, is 8 % worse on storm, and is 2–7 % worse on oxygen. The control law in §4 shows that MAACC's
-  learned term a₂ spends most of the run <b>pinned at its clip</b> (−10 % of the Q<sub>a</sub> range, −9,223 m³/d).
-  That raises a question: is the gain learned control? A control experiment with two learning-free controllers
-  answers it (<code>experiments/17_maacc_offset_control.py</code>, same harness, noise and seeds):</p>
+  <h2 id="why">7. What does the learned term do? A control experiment</h2>
+  <p class="sub">An earlier version of this reproduction gave the action network a bias input and a leaky integrator
+  (0.999·a). Its increment at zero error was then non-zero, so the learned term drifted into its clip and stayed
+  there 92 % of the run, acting as a constant offset. Both were removed: eq. (8) is pure integration, and an
+  incremental policy must emit nothing at zero error (now a test). To separate learning from re-tuning, two
+  learning-free controllers run through the same harness, noise and seeds
+  (<code>experiments/17_maacc_offset_control.py</code>):</p>
   <ul class="small">
-    <li><b>PID + offset</b>: the PID prior plus a <i>constant</i> (0, −9,223), i.e. MAACC with its learned term frozen at the clip.</li>
+    <li><b>PID + offset</b>: the PID prior plus a <i>constant</i> (0, −9,223), the old MAACC with its learned term frozen at the clip.</li>
     <li><b>PID-clamp</b>: the PID prior with its internal Q<sub>a</sub> state allowed down to −9,223 instead of 0. The plant
-      still clips the applied flow at 0. The velocity-form PID depends only on errors, so this is the same controller as
-      PID + offset except for the upper limit.</li>
+      still clips the applied flow at 0. This is anti-windup re-tuning of the prior.</li>
   </ul>
   <div id="tbl-offset"></div>
-  <div class="callout bad"><p><b>The nitrate gain is not learned control.</b> A constant offset reproduces MAACC's gain
-  on dry and rain to the third decimal, and on storm, where MAACC is worse than PID, the learning-free controllers
-  are better than both. The mechanism is anti-windup on the recycle loop: the PID's Q<sub>a</sub> sits at zero for about
-  12 % of the run, and when its integrator is clamped at exactly 0 it leaves zero recycle too early under noise.
-  Lowering the integrator's clamp does what MAACC's saturated learned term does by accident. Lowering only the
-  <i>upper</i> limit was tested and does not reproduce the gain.</p></div>
+  <div class="callout" id="offset-verdict"></div>
   <div class="callout warn"><p><b>Two earlier claims were withdrawn when this benchmark ran.</b> (1) “MAACC never
   reliably beats a well-tuned PID” was too strong: it was based on spot checks that did not cover the noisy condition.
   (2) “A de-tuned prior gives the learned term room” was predicted and is <i>false</i>: at 25 % gains MAACC is worse
@@ -439,6 +434,13 @@ Kp = diag{100, 100000}   Ki = diag{20, 30000}   Kd = diag{10, 1000}</div>
       return [w, ...vals.map(([n, v]) => ({ text: `${v.toFixed(4)}${n === "PID" ? "" : ` (${sgn(100 * (vals[0][1] - v) / vals[0][1])})`}`, best: v === best }))];
     });
     Charts.table(box, ["Weather", "PID prior", "MAACC (learned)", "PID + constant offset", "PID, clamp at −9,223"], rows, 1);
+    const v = document.getElementById("offset-verdict"), vp = document.createElement("p");
+    const R = S.paper1_runs || [];
+    const beatsPid = ["dry", "rain", "storm"].filter((w) => m(R, "MAACC", w, "noisy") < m(R, "PID", w, "noisy"));
+    const beatsOff = ["dry", "rain", "storm"].filter((w) => m(R, "MAACC", w, "noisy") < m(O, "PID+offset", w, "noisy"));
+    const beatsClamp = ["dry", "rain", "storm"].filter((w) => m(R, "MAACC", w, "noisy") < m(O, "PID-clamp", w, "noisy"));
+    vp.textContent = `Reading: MAACC beats the PID prior on nitrate in ${beatsPid.length ? beatsPid.join(", ") : "no weather"}; it beats a constant offset in ${beatsOff.length ? beatsOff.join(", ") : "no weather"}; it beats the anti-windup-tuned prior in ${beatsClamp.length ? beatsClamp.join(", ") : "no weather"}. Part of the gain on the recycle loop is a slowly varying negative correction that a better-tuned prior also achieves, so MAACC's gain should be read against all three columns.`;
+    v.appendChild(vp);
     const n = document.createElement("p"); n.className = "small muted";
     n.textContent = "IAE on S_NO,2, noisy condition, mean of 2 seeds (lower is better; % = improvement over the PID prior; bold = best). PID and MAACC from results/summary_paper1.json; the two learning-free controllers from results/summary_offset_control.json.";
     box.appendChild(n);
@@ -494,9 +496,9 @@ Kp = diag{100, 100000}   Ki = diag{20, 30000}   Kd = diag{10, 1000}</div>
   Charts.table(document.getElementById("tbl-dev"), ["#", "Paper", "This code", "Why", "Where"], [
     ["1", "Critic descends eq. (15) in the weights producing Q(x_k)", "Semi-gradient TD(0): correct Q(x_{k−1}) toward U_k + λQ(x_k)", "The printed direction diverges (§6)", "agent.py:166–174"],
     ["2", "Actor gradient carries ∂Q/∂a only (eq. 27)", "∂Q/∂Δa + ∂Q/∂a", "a_k = a_{k−1} + Δa_k, so both critic inputs depend on the actor output", "agent.py:178–181"],
-    ["3", "tanh networks, no bias stated", "Constant bias input on both networks", "Without it a tanh net is 0 at the origin and cannot represent Q > 0 at the set point", "networks.py:36–40"],
+    ["3", "tanh networks, no bias stated", "Bias input on the critic only; the actor has none", "A tanh critic without bias is 0 at the set point and cannot represent Q > 0 there. Without a bias, π(0) = 0, so the actor emits no increment at zero error, as eq. (8) requires (tested)", "networks.py, agent.py:108"],
     ["4", "Raw physical units, scale absorbed in W, Y, R, P", "Inputs and effort terms normalised by actuator range", "KLa₅ spans 0–240 and Qₐ 0–92,230; normalising lets both agents share learning rates. Equivalent re-parameterisation", "agent.py:125–147"],
-    ["5", "a_k = a_{k−1} + Δa_k", "a_k = 0.999·a_{k−1} + Δa_k, clipped to ±10 % of range", "Realises the R·a² penalty and keeps a a bounded correction to the prior", "agent.py:153–157"],
+    ["5", "a_k = a_{k−1} + Δa_k, a unbounded", "Same pure integration; a clipped to ±10 % of range", "Keeps a a correction to the prior. An earlier version used a leaky 0.999·a and an actor bias, which drifted a into its clip (removed)", "agent.py:153–157"],
     ["6", "Δa = π(z), unbounded", "Δa = Δa_max · tanh(π(z)), with Δa_max = 4 1/d (KLa₅) and 1,500 m³/d (Qₐ) per step", "Bounded increments, consistent with the incremental-policy motivation", "agent.py:151–153"],
     ["7", "Plain gradient steps", "Actor outer-weight decay 2.0, critic 1e−4; gradient norm clipped at 10", "Without decay the start-up transient latched the actor at its tanh rail permanently (observed)", "networks.py:56–72"],
     ["8", "W, Y, R, P and network sizes not all given", "W = 1, P = 0.25, Y = 0.02, R = 0.05; λ = 0.9; critic 16 hidden, actor 12; l_c = 0.02, l_a = 0.002", "Chosen by us; the paper's values are not fully stated", "agent.py:62–84"],
