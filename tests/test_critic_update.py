@@ -4,7 +4,7 @@ Equation (15) of the reference paper forms the approximation error
 ``e_k = U_k + lambda Q(x_k) - Q(x_{k-1})`` and eq. (18) descends it in the
 weights that produce ``Q(x_k)`` -- it corrects the *later* prediction.  For
 slowly varying states that recursion has homogeneous gain
-``1 + l_c (1 - lambda) ||vartheta||^2 > 1`` and diverges.  Descending the
+``1 + l_c lambda (1 - lambda) ||vartheta||^2 > 1`` and diverges.  Descending the
 same Bellman residual in the TD(0) direction converges.
 """
 

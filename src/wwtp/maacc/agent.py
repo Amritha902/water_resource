@@ -41,7 +41,7 @@ Four implementation choices, all discussed in ``docs/02_reproduction.md``:
    ``e_k = U_k + lambda Q(x_k) - Q(x_{k-1})`` and eq. (18) descends it in the
    weights that produce ``Q(x_k)`` -- i.e. it corrects the *later* prediction.
    For the slowly varying states of a WWTP that recursion has homogeneous
-   gain ``1 + l_c (1 - lambda) ||vartheta||^2 > 1`` and the critic diverges;
+   gain ``1 + l_c lambda (1 - lambda) ||vartheta||^2 > 1`` and the critic diverges;
    we reproduce this in ``tests/test_critic_update.py``.  Theorem 1 only
    bounds the weight error (UUB), which does not exclude a large bound.  We
    therefore descend the *same* Bellman residual of eq. (9) in its standard
