@@ -190,7 +190,7 @@
       }
       // direct labels with leader lines when they would collide
       ends.sort((a, b) => a.y - b.y);
-      for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].ly = ends[i - 1].ly + 14;
+      for (let i = 1; i < ends.length; i++) { const prev = ends[i - 1].ly ?? ends[i - 1].y; if (ends[i].y - prev < 16) ends[i].ly = prev + 16; }
       for (const e of ends) {
         const ly = e.ly || e.y;
         e.ly = ly;
