@@ -109,9 +109,13 @@ DDPG-B's at matched violation rate (positive = cheaper at the same risk):
 | CVaR only | modification 2 | +25.9 kWh/d |
 | **both** | | **+28.6 kWh/d** |
 
-**Paper 1 works where the paper says it does.** Under its own noise protocol
-MAACC improves nitrate tracking by **+28.9 %** (dry) and **+22.8 %** (rain)
-against the PID prior.
+**Paper 1: the gain is real, but it is not learned control.** Under its own
+noise protocol MAACC improves nitrate tracking by **+28.9 %** (dry) and
+**+22.8 %** (rain) against the PID prior. Its learned recycle term, however,
+sits at its clip for most of the run, and a learning-free PID plus that
+constant offset reproduces the gain to the third decimal (and beats MAACC on
+storm). The mechanism is anti-windup on the PID prior's recycle loop
+(`experiments/17_maacc_offset_control.py`, `docs/02_reproduction.md` §4).
 
 Full tables, all three weathers and every seed: `docs/05_results.md`.
 
@@ -139,6 +143,27 @@ Full tables, all three weathers and every seed: `docs/05_results.md`.
 
 ---
 
+## Project website
+
+`docs/` is a static GitHub Pages site: an overview with a claim-by-claim
+verification ledger, one interactive page per base paper (animated plant,
+control law broken into its parts, evaluation-week replays, every deviation
+from the paper) and one for the prediction models. Every chart reads
+`docs/data/site-data.js`, which `experiments/14_build_site_data.py` packs from
+`results/`. It also opens straight from disk: `docs/index.html`.
+
+To publish it: **Settings → Pages → Source: Deploy from a branch →**
+`claude/water-resource-ml-prediction-680kno`, folder **`/docs`**.
+
+The site's re-checks found two things the earlier write-up overstated, now
+corrected in the docs: the forecaster's weather-regime head is at chance on
+fresh scenarios (its 95.8 % validation accuracy came from overlapping windows
+of the training scenarios), and the twin's fresh-data free-running error
+(DO 0.39 / nitrate 0.48 g/m³) is a little worse than its validation figure,
+though still about 3x better than persistence. Re-simulating the committed
+paper-1 runs and re-training the paper-2 agents reproduces the committed
+numbers.
+
 ## Running it
 
 ```bash
@@ -160,4 +185,6 @@ Trained checkpoints are in `artifacts/`, so the experiment scripts
 | `docs/04_second_paper.md` | base paper 2, and three corrections its recipe needs |
 | `docs/05_results.md` | all results (generated) |
 | `docs/06_tracking_layer_feedforward.md` | a negative result we kept |
+| `docs/07_viva_prep.md` | questions to expect, with precise answers |
+| `docs/index.html` | the project website (see above) |
 | `STATUS.md` | what is done, what is not, what to do next |

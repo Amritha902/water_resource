@@ -112,6 +112,39 @@ published gains, MAACC is worse than PID on every weather and both loops, by
 chase, and chasing it with an incremental policy turns out to be harder than
 leaving it alone. The hypothesis is withdrawn.
 
+**But the noisy-condition gain is not learned control.** The control law
+shows MAACC's learned recycle term `a_2` pinned at its clip, −10 % of the
+`Q_a` range (−9 223 m³/d), for most of the run. `experiments/17_maacc_offset_control.py`
+runs two learning-free controllers through the same harness, noise and
+seeds (`results/summary_offset_control.json`):
+
+* **PID + offset** — the prior plus the *constant* `(0, −9 223)`, i.e. MAACC
+  with its learned term frozen at the clip;
+* **PID-clamp** — the prior with its internal `Q_a` state allowed down to
+  −9 223 instead of 0 (the plant still clips the applied flow at 0). The
+  velocity-form PID depends only on errors, so this is PID + offset up to the
+  upper limit.
+
+IAE on `S_NO,2`, noisy, seed 0 (seed 1 agrees):
+
+| | PID | MAACC | PID + offset | PID-clamp |
+|---|---|---|---|---|
+| dry | 0.0846 | 0.0601 | 0.0598 | 0.0614 |
+| rain | 0.0808 | 0.0622 | 0.0619 | 0.0598 |
+| storm | 0.1219 | 0.1324 | 0.1113 | 0.1022 |
+
+The constant offset reproduces MAACC's dry and rain gain to the third
+decimal; on storm, where MAACC is worse than PID, both learning-free
+controllers beat it. The mechanism is anti-windup on the recycle loop: the
+PID's `Q_a` sits at zero about 12 % of the time under noise, and with its
+integrator clamped at exactly 0 it leaves zero recycle too early. Lowering
+only the *upper* limit was tested and does not reproduce the effect. So the
+honest statement is: **the paper's noise protocol exposes a weakness in the
+PID prior's saturation handling, and MAACC's saturated learned term happens
+to compensate for it; a one-line change to the prior does the same, and
+better on storm.** This does not contradict the paper's method; it means
+this benchmark cannot show that the adaptive critic learned anything useful.
+
 What survives is the narrower observation, which still motivates the
 extension: a learned correction driven by tracking error alone has very
 little to work with when the prior is good, and the condition where it does

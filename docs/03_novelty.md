@@ -36,8 +36,8 @@ TCN with two heads:
 - a **quantile head** giving the 10/50/90 % quantiles of every channel at each
   of eight 15-minute horizons, trained with the pinball loss, monotone by
   construction;
-- a **weather-regime head** classifying dry / rain / storm, which doubles as an
-  interpretable storm alarm for the operator.
+- a **weather-regime head** classifying dry / rain / storm, intended as an
+  interpretable storm alarm for the operator (it does not generalise; see below).
 
 Both the actor and the critic additionally receive
 
@@ -52,7 +52,13 @@ before the load arrives, instead of finding out hours later.
 
 Trained on 160 randomised 14-day influent realisations. The three canonical
 BSM1 profiles are held out, so every control result is an out-of-sample test
-of the forecaster. Validation weather-regime accuracy is 95%.
+of the forecaster. Validation weather-regime accuracy is 95.8 %, but that
+split drew overlapping windows of the training scenarios: on 24 fresh
+scenarios it is about 36 %, i.e. chance, so the `P(rain) + P(storm)`
+component of `c_k` is close to noise. The quantile part of the forecast
+does generalise (about 5 % 2-h error on flow vs 11 % for persistence,
+well-calibrated 10–90 % band). Fix: per-window event labels and a
+scenario-level split. See the project site, Prediction models §2.
 
 ## 2. Distributional critic with a CVaR objective
 
