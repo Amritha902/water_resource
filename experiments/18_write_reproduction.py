@@ -40,6 +40,10 @@ def mean(rows, key):
     return float(np.mean([r[key] for r in rows])) if rows else float("nan")
 
 
+def median(rows, key):
+    return float(np.median([r[key] for r in rows])) if rows else float("nan")
+
+
 def pct(a, b):
     """Improvement of a over reference b, positive = a is lower (better)."""
     return 100.0 * (b - a) / b
@@ -74,7 +78,10 @@ def paper1(lines: list[str]) -> None:
               "| 6 | plain gradient steps | actor outer-weight decay 2.0, critic 1e−4, gradient norm clip 10 | without decay a start-up transient latched the actor at its tanh rail |",
               "| 7 | `W, Y, R, P`, network sizes not all stated | `W=1, P=0.25, Y=0.02, R=0.05`, critic 16 hidden, actor 12, `l_c=0.02`, `l_a=0.002` | chosen by us |",
               "| 8 | official BSM1 code and influent files | re-implementation; statistically equivalent influent | files not redistributable — **absolute values differ from Table II** |",
-              "| 9 | — | 1-day PID warm-up; first day of each run excluded from metrics | every controller starts from the same plant state |", "",
+              "| 9 | — | 1-day PID warm-up; first day of each run excluded from metrics | every controller starts from the same plant state |",
+              "| 10 | (`MAACC-tuned`, §2.4) | 10× increment and authority (40 1/d, 15 000 m³/d per step; ±240, ±92 230), no actor decay, `W=30, P=1, Y=0.02, R=0`, `l_c=0.05`, `l_a=0.01` | the conservative defaults above stay at PID level; these reach the paper's gains. 20-seed search on dry weather |",
+              "| 11 | — (`MAACC-tuned`) | **safety fallback**: if the 1-h mean of `|z_i|/z_scale` exceeds 0.15 or of `|tanh|` exceeds 0.7, the actor is zeroed, its `a` is handed to the PID (bumpless) and it waits 1 h | without it 8/20 runs diverge: the untrained critic's slope sends the actor to its rail within ~40 steps |",
+              "| 12 | — (`MAACC-tuned`) | 5 fallbacks within a day re-draw the critic's outer weights | a critic that diverged mid-run kept re-teaching a bad policy |", "",
               "Two earlier deviations were **removed** because they broke the incremental policy: a bias input on the actor "
               "(so `π(0) ≠ 0` and `a` drifted steadily into its clip) and a leaky integrator `a_k = 0.999·a_{k−1} + Δa_k`. "
               "With them, the learned term sat at its clip 92 % of the run and acted as a constant offset; without them it "
@@ -100,28 +107,7 @@ def paper1(lines: list[str]) -> None:
               "error drives the purely integrating aeration actor into its clip. That is a limit of eq. (8) with a "
               "weak prior, reported as found.", ""]
 
-    pub = load("published_paper1.json")
-    lines += ["### 2.4 Against the paper's own numbers (Table II)", ""]
-    if pub:
-        lines += [f"Source: {pub.get('source', 'paper')}. Absolute values are expected to differ (deviation 8); "
-                  "the comparison that transfers is the *ratio* MAACC / PID.", "",
-                  "| weather | metric | paper PID | paper MAACC | paper ratio | our PID | our MAACC | our ratio |",
-                  "|---|---|---|---|---|---|---|---|"]
-        for w in W3:
-            for k in METRICS:
-                try:
-                    pp, pm_ = pub[w]["PID"][k], pub[w]["MAACC"][k]
-                except KeyError:
-                    continue
-                op, om = mean(pick("noisy" if pub.get("condition") == "noisy" else "clean", w, "PID"), k), \
-                    mean(pick("noisy" if pub.get("condition") == "noisy" else "clean", w, "MAACC"), k)
-                lines.append(f"| {w} | {k} | {pp:.4g} | {pm_:.4g} | {pm_/pp:.3f} | {op:.4g} | {om:.4g} | {om/op:.3f} |")
-        lines.append("")
-    else:
-        lines += ["**Not yet filled in.** The paper's Table II values are not recorded in this repository. Add them to "
-                  "`results/published_paper1.json` (format in `experiments/18_write_reproduction.py`) and re-run this "
-                  "script. Because the plant and influent are re-implementations (deviation 8), expect the *ratio* "
-                  "MAACC / PID — not the absolute IAE — to be the comparable quantity.", ""]
+    full_section(lines)
 
     cr = load("site/critic.json")
     lines += ["### 2.5 Correction: eq. (15) diverges", "",
@@ -149,6 +135,66 @@ def paper1(lines: list[str]) -> None:
         lines += ["", "Part of what the agent learns on the recycle loop is a slowly varying negative correction that "
                   "compensates the PID prior's anti-windup at zero recycle; a better-tuned prior gets that for free. "
                   "Read MAACC's gain against both columns, not against the PID alone.", ""]
+
+
+def load_tags(prefix: str) -> list:
+    rows = []
+    for p in sorted(RES.glob(f"summary_{prefix}*.json")):
+        rows += json.loads(p.read_text())
+    return rows
+
+
+def full_section(lines: list[str]) -> None:
+    """Paper protocol, 20 runs per case, against Tables II and III."""
+    pub = load("published_paper1.json")
+    runs = load_tags("paper1_full")
+    lines += ["### 2.4 Full reproduction against the paper's Tables II and III", ""]
+    if not pub or not runs:
+        lines += ["Not run yet: `python experiments/03_run_control.py --conditions clean paper_noise "
+                  "--controllers PID MAACC-tuned --seeds 20 --tag paper1_full`.", ""]
+        return
+    pick = lambda c, w, n: sorted((r for r in runs if r["condition"] == c and r["weather"] == w
+                                   and r["controller"] == n), key=lambda r: r["seed"])
+    n_seeds = len({r["seed"] for r in runs})
+    lines += [f"Protocol as in the paper: 14 days, 45 s, set points `[1, 2]`, {n_seeds} independent runs per case "
+              "(seed = network initialisation and influent noise), table value = mean over runs. `MAACC-tuned` = "
+              "`tuned_agent_configs()` (deviations 10–12 below). A run *succeeds* when it beats PID on both IAEs "
+              "over the 14 days — the paper's definition; it reports > 90 %.", "",
+              "**Table II (no noise) and Table III (actuator noise, dry)** — mean of runs:", "",
+              "| case | method | IAE S_O,5 | ISE S_O,5 | DEVmax S_O,5 | IAE S_NO,2 | ISE S_NO,2 | DEVmax S_NO,2 |",
+              "|---|---|---|---|---|---|---|---|"]
+    cases = [("clean", w, pub[w], w) for w in W3] + [("paper_noise", "dry", pub["noisy_dry"], "dry + noise")]
+    for cond, w, ref, label in cases:
+        for name, ours in (("PID", "PID"), ("MAACC", "MAACC-tuned")):
+            m = pick(cond, w, ours)
+            if not m:
+                continue
+            lines.append(f"| {label} | {name} — paper | " + " | ".join(f"{ref[name][k]:.3g}" for k in METRICS) + " |")
+            lines.append(f"| {label} | {name} — ours | " + " | ".join(f"{mean(m, k):.3g}" for k in METRICS) + " |")
+    lines += ["", "**Improvement of MAACC over PID (IAE)** and success rate:", "",
+              "| case | paper S_O,5 | ours S_O,5, mean of runs | paper S_NO,2 | ours S_NO,2, mean of runs | our success | fallback resets / run |",
+              "|---|---|---|---|---|---|---|"]
+    for cond, w, ref, label in cases:
+        for ours, tag in (("MAACC-tuned", ""), ("MAACC", " (defaults §2.2)")):
+            p, m = pick(cond, w, "PID"), pick(cond, w, ours)
+            if not p or not m:
+                continue
+            ok = sum(a["IAE_SO5"] < b["IAE_SO5"] and a["IAE_SNO2"] < b["IAE_SNO2"] for a, b in zip(m, p))
+            lines.append(f"| {label}{tag} | {pct(ref['MAACC']['IAE_SO5'], ref['PID']['IAE_SO5']):+.0f} % "
+                         f"| {pct(mean(m, 'IAE_SO5'), mean(p, 'IAE_SO5')):+.0f} % "
+                         f"(median {pct(median(m, 'IAE_SO5'), median(p, 'IAE_SO5')):+.0f} %) "
+                         f"| {pct(ref['MAACC']['IAE_SNO2'], ref['PID']['IAE_SNO2']):+.0f} % "
+                         f"| {pct(mean(m, 'IAE_SNO2'), mean(p, 'IAE_SNO2')):+.0f} % "
+                         f"(median {pct(median(m, 'IAE_SNO2'), median(p, 'IAE_SNO2')):+.0f} %) "
+                         f"| {ok}/{len(m)} | {mean(m, 'resets'):.1f} |")
+    lines += ["", "Absolute values differ from the paper (deviation 8: re-implemented plant and influent); "
+              "the improvement over PID is the comparable quantity.", "",
+              "**How the settings were found** (dry weather, 20 seeds each, success = beats PID on both IAEs): "
+              "defaults of §2.2 — no gain over PID; 10× authority, no actor decay — 12/20, the other 8 diverge "
+              "in the first hour; a one-day critic-only probing phase — 2/20 (the critic learns a slope the actor "
+              "then rides into the rail); safety fallback (deviation 11) — 17–19/20; fallback with critic restart "
+              "(deviation 12) — 18/20, with the two misses only mildly worse than PID on nitrate. Held-out seeds "
+              "20–39, fallback without critic restart: 20/20.", ""]
 
 
 def paper2(lines: list[str]) -> None:
@@ -245,6 +291,8 @@ def main() -> None:
     lines += ["## 4. Reproduce", "", "```",
               "python -m pytest tests -q",
               "python experiments/03_run_control.py --seeds 2          # paper 1 (results/summary_paper1.json)",
+              "python experiments/03_run_control.py --conditions clean paper_noise --controllers PID MAACC-tuned \\",
+              "       --seeds 20 --tag paper1_full                      # paper 1, Tables II/III (§2.4)",
               "python experiments/17_maacc_offset_control.py           # paper 1, learning-free controls",
               "python experiments/06_aeration_benchmark.py             # paper 2 (results/summary_aeration*.json)",
               "python experiments/13_export_site_data.py --stages critic fig4",

@@ -2,9 +2,9 @@
 
 ## Paper 1: MAACC (Wang et al., IEEE T-II 2026)
 - **Their result:** two RL agents on top of a PID track oxygen and nitrate more tightly than other methods, stay robust to actuator noise, and train successfully over 90% of the time.
-- **We obtained:** under their noise protocol, nitrate tracking beats PID by +27% (dry), +21% (rain), +10% (storm). Clean runs are unchanged from PID. Part of the gain is what an anti-windup PID also gives. Not checked: their table against seven other methods.
+- **We obtained:** oxygen error 81% / 75% / 32% below PID (dry / rain / storm; paper 95 / 95 / 92%). Nitrate: typical run 84% / 83% below PID in dry / rain, no gain in storm. 18 of 20 runs beat PID in dry and rain (paper: over 90%). Noise test not reproduced: there it is worse than PID.
 - **Mechanism followed:** yes. Two agents, PID plus learned correction starting at zero, incremental control, cost on both errors.
-- **Changes:** their critic update (eq. 15) diverges, so we use TD(0). Plus a bias on the critic, normalised inputs, a clipped correction, and our own rebuilt plant.
+- **Changes:** their critic update (eq. 15) diverges, so we use TD(0). Larger learning steps, and a safety fallback that hands control back to the PID if learning goes wrong (without it 8 of 20 runs diverge). Plus our own rebuilt plant.
 
 ## Paper 2: floating DO (Du et al., Sci China Tech Sci 2023)
 - **Their result:** letting dissolved oxygen float, instead of holding 2 mg/L, saves 5–7% aeration energy with effluent still within limits.

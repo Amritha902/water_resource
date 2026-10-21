@@ -1,0 +1,78 @@
+{
+ "source": "Wang et al. 2026, Table II (mean of 20 runs)",
+ "condition": "clean",
+ "success_rate_claimed": ">90 % of 20 runs beat PID",
+ "dry": {
+  "MAACC": {
+   "IAE_SO5": 0.000527,
+   "ISE_SO5": 7.37e-07,
+   "DEVmax_SO5": 0.0092,
+   "IAE_SNO2": 0.0037,
+   "ISE_SNO2": 3.39e-05,
+   "DEVmax_SNO2": 0.0299
+  },
+  "PID": {
+   "IAE_SO5": 0.0114,
+   "ISE_SO5": 0.00032,
+   "DEVmax_SO5": 0.0871,
+   "IAE_SNO2": 0.0145,
+   "ISE_SNO2": 0.000474,
+   "DEVmax_SNO2": 0.0882
+  }
+ },
+ "rain": {
+  "MAACC": {
+   "IAE_SO5": 0.000509,
+   "ISE_SO5": 7.47e-07,
+   "DEVmax_SO5": 0.0098,
+   "IAE_SNO2": 0.006,
+   "ISE_SNO2": 0.000201,
+   "DEVmax_SNO2": 0.167
+  },
+  "PID": {
+   "IAE_SO5": 0.0098,
+   "ISE_SO5": 0.000241,
+   "DEVmax_SO5": 0.0822,
+   "IAE_SNO2": 0.0204,
+   "ISE_SNO2": 0.0011,
+   "DEVmax_SNO2": 0.19
+  }
+ },
+ "storm": {
+  "MAACC": {
+   "IAE_SO5": 0.000947,
+   "ISE_SO5": 2.39e-05,
+   "DEVmax_SO5": 0.0712,
+   "IAE_SNO2": 0.0048,
+   "ISE_SNO2": 9.3e-05,
+   "DEVmax_SNO2": 0.1232
+  },
+  "PID": {
+   "IAE_SO5": 0.0117,
+   "ISE_SO5": 0.000342,
+   "DEVmax_SO5": 0.0916,
+   "IAE_SNO2": 0.0196,
+   "ISE_SNO2": 0.000958,
+   "DEVmax_SNO2": 0.1579
+  }
+ },
+ "noisy_dry": {
+  "source": "Table III (actuator white noise, dry)",
+  "MAACC": {
+   "IAE_SO5": 0.0017,
+   "ISE_SO5": 8.62e-06,
+   "DEVmax_SO5": 0.0159,
+   "IAE_SNO2": 0.0077,
+   "ISE_SNO2": 9.5e-05,
+   "DEVmax_SNO2": 0.0344
+  },
+  "PID": {
+   "IAE_SO5": 0.0125,
+   "ISE_SO5": 0.000346,
+   "DEVmax_SO5": 0.0887,
+   "IAE_SNO2": 0.0245,
+   "ISE_SNO2": 0.00011,
+   "DEVmax_SNO2": 0.1682
+  }
+ }
+}

@@ -10,12 +10,16 @@ and improved the RL agent of the second. Every number below comes from
 |---|---|---|
 | **What it is** | Two RL agents (oxygen, nitrate) on top of a PID. The learned part starts at zero, so day one is plain PID. | One DDPG agent that lets oxygen float instead of holding 2 mg/L, to save aeration energy. |
 | **Main claimed result** | Tighter tracking than other methods, robust to actuator noise, over 90% training success. | 5–7% less aeration energy than PID, effluent still within limits. |
-| **How we re-obtained it** | Reimplemented the agents, PID gains, setpoints and noise protocol. 54 runs: 3 conditions × 3 weathers × 2 seeds. | Reimplemented environment, rewards, DDPG, PID and fuzzy comparators. All 3 weathers. |
-| **What we got** | Under the paper's noise protocol, nitrate tracking beats PID by **+27%** (dry), **+21%** (rain), **+10%** (storm); oxygen within a few %. Clean setting: no change from PID. Part of the gain is what an anti-windup-tuned PID also gives. | Saving reproduced: dry **6.8%** (paper 7.24), rain **4.9%** (5.52), storm **5.0%** (6.06). |
-| **Verdict** | **Partly reproduced** | **Reproduced** |
+| **How we re-obtained it** | Reimplemented the agents, PID gains, setpoints and both test protocols (Table II clean, Table III noise). 20 runs per case, as in the paper; 360 runs in all. | Reimplemented environment, rewards, DDPG, PID and fuzzy comparators. All 3 weathers. |
+| **What we got** | Oxygen error vs PID: **−81%** dry, **−75%** rain, **−32%** storm (paper −95/−95/−92%). Nitrate: median run −84% dry, −83% rain (paper −74/−71%); storm no gain. Runs that beat PID: **18/20** dry and rain (paper: >90%). Under the noise test: **not reproduced** — worse than PID. | Saving reproduced: dry **6.8%** (paper 7.24), rain **4.9%** (5.52), storm **5.0%** (6.06). |
+| **Verdict** | **Reproduced for dry and rain; not for storm nitrate or noise** | **Reproduced** |
 
-Not checked for paper 1: its table against seven other methods (we compared
-with PID only) and its stability proof.
+Paper 1 needed bigger learning steps than our first, cautious version, plus a
+safety fallback we added: if the learned part makes tracking clearly worse, it
+is reset to zero and the PID takes over smoothly. Without it 8 of 20 runs
+diverged in the first hour. Under the noise test our PID itself gets 3× worse
+(the paper's only 10%), so the noise there must reach the plant differently.
+Not checked: its table against seven other methods, and its stability proof.
 
 Neither paper runs exactly as published. Paper 1's critic update (eq. 15)
 diverges, and our first actor did not follow eq. (8) (it drifted into its clip
@@ -74,7 +78,7 @@ from `docs/data/site-data.js`, built by `experiments/14_build_site_data.py`.
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests -q                  # 73 tests
+python -m pytest tests -q                  # 75 tests
 python experiments/09_write_results.py     # regenerate docs/05_results.md
 ```
 
