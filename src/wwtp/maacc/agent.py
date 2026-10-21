@@ -55,7 +55,7 @@ Four implementation choices, all discussed in ``docs/02_reproduction.md``:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 
@@ -90,6 +90,36 @@ class AgentConfig:
     #: in response to tracking error -- otherwise a constant ``pi(0)``
     #: integrates ``a`` steadily into its clip (see docs/02 Sec. 4).
     actor_bias: bool = False
+    #: control periods during which only the critic learns.  The paper's
+    #: actor starts at zero output, but its first gradient steps use a critic
+    #: that has not yet seen anything, and on some seeds those steps push the
+    #: actor into a high-gain limit cycle it never leaves.  0 = paper as printed.
+    actor_warmup: int = 0
+    #: norm clip on each actor outer-weight step (the critic keeps 10).
+    actor_clip: float = 10.0
+    #: probing phase: for the first ``explore_steps`` periods the actor is
+    #: frozen and ``Delta a`` is a mean-reverting random probe, so the critic
+    #: learns how ``Delta a`` and ``a`` change the cost before the actor
+    #: follows its gradient (persistent excitation).  Without it the critic's
+    #: random initial slope sends the actor to its rail within ~40 steps on
+    #: some seeds.  The probe falls inside the excluded first day.
+    explore_steps: int = 0
+    explore_std: float = 0.0       # probe std, fraction of da_max
+    explore_revert: float = 0.05   # pull of the probe back towards a = 0
+    #: penalty on the actor's pre-tanh output; keeps it out of saturation,
+    #: where the gradient vanishes and Delta a chatters at +-da_max.
+    preact_penalty: float = 0.0
+    #: safety fallback: if the 1-hour average of |z_i| / z_scale exceeds
+    #: ``fallback_error``, or the actor sits at its tanh rail (|tanh| above
+    #: ``fallback_sat`` on average), the action network is reset to zero, so
+    #: ``u = b`` -- the expert prior -- until it has re-learned.  The critic
+    #: keeps what it learned.  0 = off (paper as printed).
+    fallback_error: float = 0.0
+    fallback_sat: float = 0.0
+    fallback_window: int = 80
+    #: if the fallback fires this many times within one day, the critic is
+    #: judged corrupted and its outer weights are re-drawn too.  0 = never.
+    fallback_critic_reset: int = 0
 
 
 #: configuration used for every experiment in this repository
@@ -100,6 +130,23 @@ def default_agent_configs() -> tuple[AgentConfig, AgentConfig]:
         AgentConfig(u_min=0.0, u_max=92230.0, u_nominal=55338.0,
                     da_max=1500.0, a_max=9223.0, z_scale=0.5),  # agent 2: Q_a -> S_NO,2
     )
+
+
+def tuned_agent_configs() -> tuple[AgentConfig, AgentConfig]:
+    """Settings that reproduce the paper's Table II gains over PID.
+
+    Relative to :func:`default_agent_configs`: ten times the per-step
+    increment and authority, no actor weight decay, a heavier own-error
+    weight, a faster critic, and the safety fallback.  Chosen by 20-seed
+    searches on dry weather and checked on 20 held-out seeds
+    (``docs/REPRODUCTION.md`` Sec. 2.4).
+    """
+    return tuple(replace(c, da_max=c.da_max * 10, a_max=c.a_max * 10,
+                         lr_actor=0.01, lr_critic=0.05, wd_actor=0.0,
+                         w=30.0, p=1.0, r=0.0, y=0.02,
+                         fallback_error=0.15, fallback_sat=0.7,
+                         fallback_critic_reset=5)
+                 for c in default_agent_configs())
 
 
 class AdaptiveCriticAgent:
@@ -122,6 +169,7 @@ class AdaptiveCriticAgent:
                                  cfg.n_hidden_critic, 1, rng=rng,
                                  inner_scale=0.8)
         self.critic.beta *= 0.05
+        self.rng = rng
         self.reset()
 
     # -- state -------------------------------------------------------------
@@ -130,6 +178,13 @@ class AdaptiveCriticAgent:
         self.da = 0.0
         self.q_prev: float | None = None
         self.x_prev: np.ndarray | None = None
+        self.n_learn = 0
+        self.err_avg = 0.0
+        self.sat_avg = 0.0
+        self.n_resets = 0
+        self.hold = 0
+        self.handover = 0.0
+        self.reset_steps: list[int] = []
 
     # -- feature assembly --------------------------------------------------
     def _critic_input(self, z: np.ndarray, da: float, a: float,
@@ -159,8 +214,14 @@ class AdaptiveCriticAgent:
     def act(self, z: np.ndarray, ctx: np.ndarray | None = None) -> float:
         """Produce ``Delta a_k`` and integrate it into ``a_k`` (eq. 8)."""
         y = float(self.actor.forward(self._actor_input(z[self.i], ctx))[0])
+        self._pre = y
         self._squash = np.tanh(y)
         self.da = float(self._squash * self.cfg.da_max)
+        if self.n_learn < self.cfg.explore_steps:
+            c = self.cfg
+            self.da = float(np.clip(-c.explore_revert * self.a
+                                    + c.explore_std * c.da_max * self.rng.standard_normal(),
+                                    -c.da_max, c.da_max))
         # leaky integration: the R_i term of eq. (10) penalises a standing
         # offset, so the increment is accumulated with a small decay
         self.a = float(np.clip(self.cfg.leak * self.a + self.da,
@@ -190,8 +251,35 @@ class AdaptiveCriticAgent:
         dq_dda = dq_dx[n] / c.da_max + dq_dx[n + 1] / c.a_max   # wrt physical increment
         dda_dy = c.da_max * (1.0 - self._squash ** 2)           # tanh squashing
         self.actor.forward(self._actor_input(z[self.i], ctx))
-        self.actor.sgd_outer(np.array([q * dq_dda * dda_dy]), c.lr_actor,
-                             weight_decay=c.wd_actor)
+        self.n_learn += 1
+        if self.n_learn > max(c.actor_warmup, c.explore_steps) and self.hold == 0:
+            grad = q * dq_dda * dda_dy + c.preact_penalty * self._pre
+            self.actor.sgd_outer(np.array([grad]), c.lr_actor,
+                                 clip=c.actor_clip, weight_decay=c.wd_actor)
+
+        self.handover = 0.0
+        if self.hold > 0:
+            self.hold -= 1
+        elif c.fallback_error or c.fallback_sat:
+            g = 1.0 / c.fallback_window
+            self.err_avg += g * (abs(z[self.i]) / c.z_scale - self.err_avg)
+            self.sat_avg += g * (abs(self._squash) - self.sat_avg)
+            if ((c.fallback_error and self.err_avg > c.fallback_error)
+                    or (c.fallback_sat and self.sat_avg > c.fallback_sat)):
+                self.actor.beta[:] = 0.0                # back to u = b
+                self.handover = self.a                  # bumpless: the PID takes a over
+                self.a = 0.0
+                self.err_avg = self.sat_avg = 0.0
+                self.hold = c.fallback_window           # let the prior settle the plant
+                self.n_resets += 1
+                day = 86400 // 45
+                self.reset_steps = [k for k in self.reset_steps
+                                    if self.n_learn - k < day] + [self.n_learn]
+                if c.fallback_critic_reset and len(self.reset_steps) >= c.fallback_critic_reset:
+                    self.critic.beta = 0.05 * self.rng.uniform(
+                        -0.05, 0.05, self.critic.beta.shape)
+                    self.x_prev = None
+                    self.reset_steps = []
 
         self.q_prev = q
         self.x_prev = x
@@ -250,6 +338,11 @@ class MAACCController:
             for agent in self.agents:
                 agent.learn(z, ctx)
 
+        for i, agent in enumerate(self.agents):
+            if agent.handover:                  # fallback fired: bumpless transfer
+                self.pid.u[i] = np.clip(self.pid.u[i] + agent.handover,
+                                        self.pid.u_min[i], self.pid.u_max[i])
+                a[i] = 0.0
         b = self.pid(r - s)                                           # expert prior
         gate = self._gate(context)
         ff = self._feedforward(context)

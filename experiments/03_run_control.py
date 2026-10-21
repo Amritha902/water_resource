@@ -7,6 +7,7 @@ profiles:
 ``noisy``    the paper's supplementary protocol -- zero-mean white noise with
              a standard deviation of 3 % of each actuator's upper bound --
              plus realistic DO / nitrate sensor noise.
+``paper_noise`` Table III of the paper: actuator white noise only.
 ``detuned``  the same noise, but the expert prior is a conservatively tuned
              PID (25 % of the published gains), which is what a plant that
              has not been re-tuned in years actually looks like.  This is the
@@ -28,7 +29,7 @@ from wwtp.baselines.pid import PAPER_KD, PAPER_KI, PAPER_KP
 from wwtp.baselines.pid_controller import PIDController
 from wwtp.bsm1 import influent
 from wwtp.envs import run_closed_loop
-from wwtp.maacc.agent import MAACCController
+from wwtp.maacc.agent import MAACCController, tuned_agent_configs
 from wwtp.panda.controller import PANDAController
 
 WEATHERS = ("dry", "rain", "storm")
@@ -38,6 +39,10 @@ CONDITIONS = {
     "noisy": dict(gain=1.0,
                   actuator=np.array([0.03 * 240.0, 0.03 * 92230.0]),
                   sensor=np.array([0.05, 0.10])),
+    # Table III of the paper: actuator white noise only (3 % of each range)
+    "paper_noise": dict(gain=1.0,
+                        actuator=np.array([0.03 * 240.0, 0.03 * 92230.0]),
+                        sensor=None),
     "detuned": dict(gain=0.25,
                     actuator=np.array([0.03 * 240.0, 0.03 * 92230.0]),
                     sensor=np.array([0.05, 0.10])),
@@ -51,6 +56,9 @@ def make_controller(name: str, gain: float, seed: int, art: Path):
         return PIDController(kp=kp, ki=ki, kd=kd)
     if name == "MAACC":
         return MAACCController(seed=seed, kp=kp, ki=ki, kd=kd)
+    if name == "MAACC-tuned":
+        return MAACCController(configs=tuned_agent_configs(), seed=seed,
+                               kp=kp, ki=ki, kd=kd)
     if name == "PANDA":
         return PANDAController(fc, tw, seed=seed, kp=kp, ki=ki, kd=kd)
     if name == "PANDA-noFF":
@@ -71,6 +79,7 @@ def main() -> None:
     ap.add_argument("--out", default="results")
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--conditions", nargs="*", default=list(CONDITIONS))
+    ap.add_argument("--weathers", nargs="*", default=list(WEATHERS))
     ap.add_argument("--controllers", nargs="*",
                     default=["PID", "MAACC", "PANDA"])
     ap.add_argument("--ablations", action="store_true",
@@ -82,7 +91,7 @@ def main() -> None:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
-    jobs = [(c, w, n, s) for c in args.conditions for w in WEATHERS
+    jobs = [(c, w, n, s) for c in args.conditions for w in args.weathers
             for n in args.controllers for s in range(args.seeds)]
     if args.ablations:
         jobs += [("noisy", w, n, s) for w in WEATHERS
@@ -99,14 +108,16 @@ def main() -> None:
                               sensor_noise_std=spec["sensor"],
                               seed=100 + seed)
         row = res.summary(burn_in_days=1.0)
-        row.update(condition=cond, controller=name, seed=seed)
+        row.update(condition=cond, controller=name, seed=seed,
+                   resets=sum(getattr(a, "n_resets", 0)
+                              for a in getattr(ctrl, "agents", [])))
         rows.append(row)
         print(f"[{i:3d}/{len(jobs)}] {cond:8s} {weather:6s} {name:12s} s{seed} "
               f"IAE1={row['IAE_SO5']:.5f} IAE2={row['IAE_SNO2']:.5f} "
               f"DEV2={row['DEVmax_SNO2']:.3f} EQ={row['EQ']:.0f} "
               f"OCI={row['OCI']:.0f}", flush=True)
 
-        if seed == 0 and cond in ("noisy", "detuned"):
+        if seed == 0 and cond in ("noisy", "detuned", "paper_noise"):
             traces[f"{cond}|{weather}|{name}"] = {
                 "t": res.time_days[::20].tolist(),
                 "s": res.state[::20].tolist(),
@@ -116,7 +127,8 @@ def main() -> None:
                 "extras": {k: v for k, v in res.extras.items()},
             }
 
-    (out / f"summary_{args.tag}.json").write_text(json.dumps(rows, indent=2))
+        if i % 10 == 0 or i == len(jobs):        # survive an interrupted run
+            (out / f"summary_{args.tag}.json").write_text(json.dumps(rows, indent=2))
     (out / f"traces_{args.tag}.json").write_text(json.dumps(traces))
 
     try:

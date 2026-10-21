@@ -70,3 +70,29 @@ def test_incremental_policy_is_zero_at_zero_error():
     for k in range(50):
         ctrl.act(k, s, s, {})
     assert np.allclose([a.a for a in ctrl.agents], 0.0, atol=1e-12)
+
+
+def test_fallback_hands_the_correction_to_the_pid_without_a_bump():
+    """When the safety fallback fires, u stays continuous and a returns to 0."""
+    from wwtp.maacc.agent import tuned_agent_configs
+    ctrl = MAACCController(configs=tuned_agent_configs(), seed=0)
+    ctrl.reset()
+    s = np.array(PAPER_SETPOINTS, dtype=float)
+    ctrl.act(0, s, s, {})
+    agent = ctrl.agents[0]
+    agent.a = 20.0                       # a learned correction is in place ...
+    agent.err_avg = 10.0                 # ... and the error has blown up
+    u_before = ctrl.pid.u[0] + agent.a
+    u = ctrl.act(1, s, s, {})
+    assert agent.n_resets == 1 and agent.a == 0.0
+    assert np.allclose(agent.actor.beta, 0.0)
+    assert abs(u[0] - u_before) < 1.0    # PID took over the correction
+
+
+def test_tuned_maacc_beats_pid_on_a_short_run():
+    from wwtp.maacc.agent import tuned_agent_configs
+    pid = run_closed_loop(PIDController(), _series()).summary(1.0)
+    m = run_closed_loop(MAACCController(configs=tuned_agent_configs(), seed=0),
+                        _series()).summary(1.0)
+    assert m["IAE_SO5"] < pid["IAE_SO5"]
+    assert m["IAE_SNO2"] < pid["IAE_SNO2"]
