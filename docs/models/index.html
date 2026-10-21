@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prediction Models</title>
+<meta name="description" content="The prediction models shared by both extensions: probabilistic influent forecaster, neural digital twin and effluent-ammonium early warning, each re-checked on unseen data against simple baselines.">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../index.html">PANDA</a>
+  <nav class="nav">
+    <a href="../index.html">Overview</a>
+    <a href="../paper1/index.html">Paper 1 · MAACC</a>
+    <a href="../paper2/index.html">Paper 2 · DDPG aeration</a>
+    <a href="index.html" aria-current="page">Prediction models</a>
+    <a href="https://github.com/Amritha902/water_resource">Code</a>
+  </nav>
+  <button class="theme-toggle" id="theme">Dark mode</button>
+</div></header>
+
+<main>
+  <h1>The prediction models</h1>
+  <p class="lede">Both papers' controllers only react: every signal they see is a consequence of a disturbance that
+  has already reached the plant. The influent is the main disturbance, and it is measured at the inlet and largely
+  predictable. These models predict it, and each one is re-checked here on data it never saw, against a simple
+  baseline.</p>
+  <nav class="toc">
+    <a href="#use">1. Where they are used</a><a href="#fc">2. Influent forecaster</a><a href="#twin">3. Digital twin</a>
+    <a href="#ew">4. Ammonium early warning</a><a href="#verdict">5. Verdict</a>
+  </nav>
+
+  <h2 id="use">1. Where they are used</h2>
+  <div class="grid-3">
+    <div class="card"><h3>Influent forecaster</h3><p class="small">Dilated causal TCN (6 blocks, dilations 1–32, width
+      64) over 24 h of inlet flow, NH₄ and readily biodegradable COD at 15 min. It outputs 10/50/90 % quantiles for the
+      next 2 h (monotone by cumulative softplus, pinball loss) plus a dry/rain/storm head. It feeds
+      <a href="../paper1/index.html#panda">PANDA</a> (paper 1), <a href="../paper2/index.html#panda">PANDA-RL</a>
+      (paper 2) and the early warning. <code>src/wwtp/forecast/</code></p></div>
+    <div class="card"><h3>Digital twin (paper 1)</h3><p class="small">GRU (hidden 96) on a 6-min grid:
+      h_t = GRU([s_t, u_t, d_t], h_{t−1}), s_{t+1} = s_t + g(h_t), plus an effluent-NH₄ head. It is differentiable in u,
+      so PANDA's feed-forward can ask “what if I move now?”. It was trained on 60 % open-loop PRBS and 40 % dithered-PID
+      data with scheduled sampling. Paper 2 uses a separate aeration twin for Dyna. <code>src/wwtp/twin/</code></p></div>
+    <div class="card"><h3>Effluent-ammonium early warning</h3><p class="small">A causal TCN with a quantile head and a
+      discrete-time hazard head. It predicts whether, and how far, effluent NH₄ will break 4 mg/L in the next
+      12–120 min, using only signals a plant already measures. It is a stand-alone decision aid for the operator.
+      <code>src/wwtp/warning/</code></p></div>
+  </div>
+
+  <!-- 2 ------------------------------------------------------------------>
+  <h2 id="fc">2. Influent forecaster</h2>
+  <p class="sub">Checked on the current code and influent generator. The canonical profiles were never used in training,
+  and the 24 “fresh” scenarios use seeds that were never used in training either. The forecast for each
+  moment is the one issued <b>2 hours earlier</b>, plotted at the time it refers to.</p>
+  <div class="controls"><span><span class="ctl-label">Weather</span><span id="f-weather"></span></span></div>
+  <div class="tiles" id="fc-tiles"></div>
+  <div class="card"><div id="ch-fc"></div></div>
+  <div class="card"><div id="ch-fc-nh"></div></div>
+  <h3>The regime classifier does not generalise</h3>
+  <div class="callout bad"><p>The reported validation accuracy (<b>95.8 %</b> in <code>artifacts/forecaster_history.json</code>, quoted as
+  95 % in the docs) came from a validation split
+  drawn at random from <i>overlapping</i> windows of the same scenarios, which leaks. On fresh scenarios it is near
+  chance (below). The label is also ill-posed: each window carries its scenario's weather, but on the calm days
+  of a “storm” scenario nothing in 24 h of history can show a storm is coming. The fix is a per-window label
+  (“is a wet-weather event in this window?”). Until then the P(wet) signal PANDA receives is close to noise.</p></div>
+  <div class="grid-2">
+    <div class="card"><div id="ch-regime"></div></div>
+    <div class="card"><div class="chart-title">Confusion matrix on 24 fresh scenarios</div>
+      <div class="chart-sub">rows = true scenario weather, columns = predicted; share of windows</div>
+      <div id="tbl-conf"></div></div>
+  </div>
+
+  <!-- 3 ------------------------------------------------------------------>
+  <h2 id="twin">3. Neural digital twin</h2>
+  <p class="sub">Two checks, both on data the twin never saw. <b>Step tests:</b> the real plant and the twin, settled
+  under constant dry-average influent, receive the same actuator step. <b>Free-running prediction:</b> from a
+  fresh rollout, the twin is warmed on 1.6 h of history and then predicts 4.8 h ahead on its own outputs, given
+  the real actuator moves and influent.</p>
+  <div class="grid-2">
+    <div class="card"><div id="ch-st0"></div></div>
+    <div class="card"><div id="ch-st1"></div></div>
+    <div class="card"><div id="ch-st2"></div></div>
+    <div class="card"><div id="ch-st3"></div></div>
+  </div>
+  <div class="tiles" id="tw-tiles"></div>
+  <div class="grid-2">
+    <div class="card"><div id="ch-tw-h"></div></div>
+    <div class="card"><div id="ch-tw-ex"></div></div>
+  </div>
+  <div class="callout warn"><p><b>Closed-loop identification bias, and why the PRBS data is required.</b> The first
+  twin was trained only on PID-controlled data. With the PID in the loop, KLa₅ rises exactly when oxygen demand
+  rises, so in that data more air does not visibly mean more oxygen. The twin learned a near-zero aeration gain
+  (40 → 220 1/d moved DO by 0.05 g/m³), and differentiating it moved the actuator the wrong way. Refitting with 60 %
+  open-loop pseudo-random excitation fixed the signs, as the step tests above show.
+  <code>tests/test_learned_models.py::test_trained_twin_has_the_right_control_gains</code></p></div>
+
+  <!-- 5 ------------------------------------------------------------------>
+  <h2 id="ew">4. Effluent-ammonium early warning</h2>
+  <p class="sub"><b>The question, every 6 minutes:</b> will effluent NH₄-N break the 4 g/m³ discharge limit within 12,
+  30, 60, 90 or 120 min, and how high will it go? <b>Inputs:</b> only signals a plant already measures online,
+  namely inlet flow, NH₄ and COD; DO₅ and NO₂ probes; the controller's own KLa₅ and Qₐ; the effluent NH₄ analyser
+  (noisy, and stale between 12-min cycles); water temperature; time of day; and the forecaster's 6-number outlook.
+  <b>Why the plants vary:</b> at the paper's settings effluent NH₄ never exceeds 2.4 g/m³, so there is nothing to
+  warn about. Real plants trim aeration to save energy and lose nitrification in cold water. Each simulated plant
+  therefore draws aeration in reactors 3–4 from 160–240 1/d, temperature from 11.5–17 °C (BSM2 Arrhenius factors on
+  the nitrifier growth and decay rates) and the DO set point from 0.8–2.0. Train, validation and test plants are
+  disjoint: 96, 16 and 24 plants of 10 days each.</p>
+  <div class="grid-2">
+    <div class="card"><h3>Model</h3><p class="small">Causal TCN (dilations 1–16, width 64) over 6 h of the 17 signals.
+      <b>Level head:</b> 10/50/90 % quantiles of effluent NH₄ at each horizon. <b>Hazard head:</b> a discrete-time
+      survival model. For each horizon interval it predicts the probability λ_j that the first exceedance happens
+      there, and P(violation within h_j) = 1 − ∏(1 − λ_l). The warning probability therefore cannot decrease as the
+      horizon grows. <code>src/wwtp/warning/</code></p></div>
+    <div class="card"><h3>How it is scored</h3><p class="small">Against <b>today's practice</b> (alarm when the analyser
+      reads above the limit), <b>trend extrapolation</b> of the analyser, and <b>gradient boosting</b> on hand-made
+      features of the same signals. The main scores use only moments when the plant is <i>still compliant</i>,
+      because on an ongoing violation copying the analyser is trivially right. Operationally, each method's alarm
+      threshold is set on validation plants to allow at most 1 false alarm per compliant day, and lead time is
+      measured on test plants.</p></div>
+  </div>
+  <div id="ew-body"></div>
+
+  <!-- 6 ------------------------------------------------------------------>
+  <h2 id="verdict">5. Verdict</h2>
+  <div id="verdict-body"></div>
+
+  <div class="footer">Data: <code>results/site/*.json</code> from <code>experiments/13_export_site_data.py</code>;
+  <code>results/warning/*.json</code> from <code>05_warning_benchmark.py</code> and <code>15_export_warning_extras.py</code>.
+  <span id="gen"></span></div>
+</main>
+
+<script src="../data/site-data.js"></script>
+<script src="../assets/charts.js"></script>
+<script>
+(function () {
+  "use strict";
+  Charts.themeToggle(document.getElementById("theme"));
+  const S = window.SITE || {};
+  if (S.generated) document.getElementById("gen").textContent = `Generated ${S.generated}, commit ${S.commit}.`;
+  const C = { PID: "--series-1", MAACC: "--series-2", PANDA: "--series-3" };
+  const day = (v) => "day " + (+v).toFixed(v % 1 ? 1 : 0);
+  const dayTip = (v) => { const d = Math.floor(v), m = Math.round((v - d) * 1440);
+    return `day ${d}, ${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; };
+  const pct = (v, d = 1) => (v == null ? "–" : (100 * v).toFixed(d) + " %");
+  const f3 = (v) => (v == null ? "–" : (+v).toFixed(3));
+  const pending = (id, what) => { const e = document.getElementById(id); e.textContent = `${what}: results not generated yet.`; e.className = "muted small"; };
+  const tiles = (id, items) => {
+    const box = document.getElementById(id); box.textContent = "";
+    for (const [label, value, note] of items) {
+      const t = document.createElement("div"); t.className = "tile";
+      const a = document.createElement("div"); a.className = "label"; a.textContent = label;
+      const b = document.createElement("div"); b.className = "value"; b.textContent = value;
+      const c = document.createElement("div"); c.className = "note"; c.textContent = note || "";
+      t.append(a, b, c); box.appendChild(t);
+    }
+  };
+  const W3 = [{ label: "Dry", value: "dry" }, { label: "Rain", value: "rain" }, { label: "Storm", value: "storm" }];
+
+  /* ---------------- 2. forecaster ---------------- */
+  let fw = "storm";
+  function buildFc() {
+    const F = S.forecaster;
+    if (!F) { ["ch-fc", "ch-fc-nh", "ch-regime"].forEach((i) => pending(i, "Forecaster check")); return; }
+    const H = F.heldout, c = F.canonical[fw];
+    tiles("fc-tiles", [
+      ["2-h flow error, fresh scenarios", pct(H.mape_2h[0]), `persistence ${pct(H.mape_2h_persistence[0])}`],
+      ["2-h NH₄ error, fresh scenarios", pct(H.mape_2h[1]), `persistence ${pct(H.mape_2h_persistence[1])}`],
+      ["10–90 % band coverage", pct(H.coverage_10_90_2h[0]), "nominal 80 %; flow channel"],
+      ["Regime accuracy, fresh", pct(H.regime_accuracy), "chance is 33 %; validation claimed 95.8 %"],
+    ]);
+    const lead = 2 / 24;
+    const tf = c.t.map((t) => t + lead);
+    Charts.line(document.getElementById("ch-fc"), {
+      title: "Inlet flow: forecast issued 2 h earlier vs what arrived",
+      subtitle: `${fw} profile (held out). Median error here ${pct(c.mape_2h[0])}; persistence ${pct(c.mape_2h_persistence[0])}; band coverage ${pct(c.coverage_10_90_2h[0])}.`,
+      height: 260, xFmt: day, xTip: dayTip, yLabel: "m³/d", xMin: 1, valueFmt: (v) => Charts.fmtCompact(v),
+      bands: [{ name: "10–90 % band", color: C.PANDA, x: tf, lo: c.q10_2h, hi: c.q90_2h }],
+      series: [
+        { name: "actual (noisy inlet sensor)", color: "--text-secondary", x: c.t_actual, y: c.actual, width: 1.4 },
+        { name: "median forecast", color: C.PANDA, x: tf, y: c.q50_2h },
+      ],
+    });
+    Charts.line(document.getElementById("ch-fc-nh"), {
+      title: "Inlet ammonium: median forecast issued 2 h earlier",
+      subtitle: `Median error ${pct(c.mape_2h[1])} vs persistence ${pct(c.mape_2h_persistence[1])}.`,
+      height: 220, xFmt: day, xTip: dayTip, yLabel: "g N/m³", xMin: 1,
+      series: [
+        { name: "actual", color: "--text-secondary", x: c.t_actual, y: c.nh_actual, width: 1.4 },
+        { name: "median forecast", color: C.PANDA, x: tf, y: c.nh50_2h },
+      ],
+    });
+    Charts.line(document.getElementById("ch-regime"), {
+      title: `Regime posterior over the ${fw} profile`,
+      subtitle: "If the classifier worked, P(storm) would rise around the storm events (days 8.6 and 10.4).",
+      height: 230, xFmt: day, xTip: dayTip, yMin: 0, yMax: 1, xMin: 1, directLabels: true,
+      valueFmt: (v) => v.toFixed(2),
+      series: [
+        { name: "P(dry)", color: "--series-1", x: c.t, y: c.regime.map((r) => r[0]) },
+        { name: "P(rain)", color: "--series-2", x: c.t, y: c.regime.map((r) => r[1]) },
+        { name: "P(storm)", color: "--series-3", x: c.t, y: c.regime.map((r) => r[2]) },
+      ],
+    });
+    const cm = H.regime_confusion, names = ["dry", "rain", "storm"];
+    Charts.table(document.getElementById("tbl-conf"), ["true \\ predicted", ...names],
+      cm.map((row, i) => { const s = row.reduce((a, b) => a + b, 0);
+        return [names[i], ...row.map((v, j) => ({ text: pct(v / s, 0), best: i === j }))]; }));
+  }
+  Charts.segmented(document.getElementById("f-weather"), W3, fw, (v) => { fw = v; buildFc(); });
+  buildFc();
+
+  /* ---------------- 3. twin ---------------- */
+  (function twin() {
+    const T = S.twin;
+    if (!T) { ["ch-st0", "ch-st1", "ch-st2", "ch-st3", "ch-tw-h", "ch-tw-ex"].forEach((i) => pending(i, "Twin check")); return; }
+    const keys = Object.keys(T.steps);
+    keys.forEach((k, i) => {
+      const st = T.steps[k], ch = k.startsWith("KLa") ? 0 : 1;
+      const name = ch ? "S_NO,2 (nitrate, reactor 2)" : "S_O,5 (oxygen, reactor 5)";
+      const pEnd = st.plant[st.plant.length - 1][ch], tEnd = st.twin[st.twin.length - 1][ch], p0 = st.plant[0][ch];
+      Charts.line(document.getElementById("ch-st" + i), {
+        title: `Step ${k}`, subtitle: `${name}. Plant moves ${(pEnd - p0).toFixed(2)}, twin ${(tEnd - p0).toFixed(2)} g/m³ after 4 h (${((tEnd - p0) / (pEnd - p0) * 100).toFixed(0)} % of the plant's change).`,
+        height: 190, xLabel: "minutes after the step", yLabel: "g/m³", directLabels: true,
+        xTip: (v) => `${v} min`,
+        series: [
+          { name: "real plant", short: "plant", color: "--text-secondary", x: st.t_min, y: st.plant.map((r) => r[ch]) },
+          { name: "digital twin", short: "twin", color: C.PANDA, x: st.t_min, y: st.twin.map((r) => r[ch]) },
+        ],
+      });
+    });
+    const F = T.free_run;
+    tiles("tw-tiles", [
+      ["Free-run RMSE, S_O,5", `${f3(F.rmse_twin[0])} g/m³`, `persistence ${f3(F.rmse_persistence[0])}`],
+      ["Free-run RMSE, S_NO,2", `${f3(F.rmse_twin[1])} g/m³`, `persistence ${f3(F.rmse_persistence[1])}`],
+      ["Fresh windows", String(F.n_windows), `${F.horizon_min / 60} h ahead each`],
+      ["Validation (in-distribution)", (T.training_history[T.training_history.length - 1].val_free_rmse).toFixed(2), "pooled over both channels, from training"],
+    ]);
+    const hx = F.rmse_twin_by_step.map((_, i) => (i + 1) * 6);
+    Charts.line(document.getElementById("ch-tw-h"), {
+      title: "Error growth over the prediction horizon", subtitle: "RMSE pooled over both channels, by minutes ahead",
+      height: 230, xLabel: "minutes ahead", yLabel: "RMSE g/m³", zeroBased: true, directLabels: true,
+      xTip: (v) => `${v} min ahead`,
+      series: [
+        { name: "digital twin", short: "twin", color: C.PANDA, x: hx, y: F.rmse_twin_by_step },
+        { name: "persistence (no change)", short: "persistence", color: "--reference", x: hx, y: F.rmse_persistence_by_step },
+      ],
+    });
+    const ex = F.example;
+    if (ex) Charts.line(document.getElementById("ch-tw-ex"), {
+      title: "Example: one fresh 4.8-h free run", subtitle: "S_O,5 under open-loop PRBS excitation; the twin sees only the actuator moves and influent",
+      height: 230, xLabel: "minutes ahead", yLabel: "g O₂/m³", directLabels: true, xTip: (v) => `${v} min`,
+      series: [
+        { name: "real plant", short: "plant", color: "--text-secondary", x: ex.t_min, y: ex.truth.map((r) => r[0]) },
+        { name: "digital twin", short: "twin", color: C.PANDA, x: ex.t_min, y: ex.twin.map((r) => r[0]) },
+      ],
+    });
+  })();
+
+  /* ---------------- 5. early warning ---------------- */
+  (function ew() {
+    const W = S.warning, box = document.getElementById("ew-body");
+    if (!W) { box.textContent = "Early-warning results not generated yet."; box.className = "muted small"; return; }
+    const methods = ["Early-warning net", "Gradient boosting", "Analyser trend", "Analyser alarm"];
+    const col = { "Early-warning net": C.PID, "Gradient boosting": C.MAACC, "Analyser trend": "--series-4", "Analyser alarm": "--reference" };
+    const op = W.operational;
+    const mk = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; box.appendChild(e); return e; };
+    const tl = mk("div", "tiles"); tl.id = "ew-tiles";
+    const net = op["Early-warning net"], today = op["Analyser alarm (at limit)"];
+    tiles("ew-tiles", [
+      ["Median warning time, net", `${net.median_lead_min.toFixed(0)} min`, "before a violation starts; test plants"],
+      ["Today's analyser alarm", `${today.median_lead_min.toFixed(0)} min`, "negative = alarm only after the violation began"],
+      ["Warned ≥ 30 min ahead", pct(net.frac_warned_30min, 0), `of ${net.n_episodes} violation episodes`],
+      ["False alarms", `${net.false_alarms_per_day.toFixed(2)} / day`, "budget 1 / compliant day, set on validation"],
+    ]);
+    const abl = mk("div", "callout warn");
+    const ap = document.createElement("p");
+    const sm = W.sample, a60 = (k) => (sm[k] && sm[k]["onset@60min"] ? sm[k]["onset@60min"].auprc : null);
+    const nf = op["net, no influent forecast"], na = op["net, no effluent analyser"];
+    ap.textContent = (nf && na) ? `Ablations (the same network retrained without one signal group): without the influent forecast it is as good or better (AUPRC@60 min ${a60("net, no influent forecast").toFixed(3)} vs ${a60("Early-warning net").toFixed(3)}; lead ${nf.median_lead_min.toFixed(0)} vs ${net.median_lead_min.toFixed(0)} min), so the forecaster contributes little here. Without the effluent analyser it drops clearly (AUPRC@60 min ${a60("net, no effluent analyser").toFixed(3)}, lead ${na.median_lead_min.toFixed(0)} min) but still warns well ahead of today's alarm from upstream signals alone. Note the net's false-alarm rate on test plants (${net.false_alarms_per_day.toFixed(2)}/day) slightly exceeds the 1/day budget set on validation.` : "";
+    abl.appendChild(ap);
+    const g = mk("div", "grid-2");
+    const c1 = document.createElement("div"); c1.className = "card"; g.appendChild(c1);
+    const c2 = document.createElement("div"); c2.className = "card"; g.appendChild(c2);
+    const hz = [12, 30, 60, 90, 120];
+    Charts.line(c1, {
+      title: "Predicting new violations", subtitle: "AUPRC, plant compliant now (higher is better)",
+      height: 250, xLabel: "warning horizon, min", yMin: 0, yMax: 1, directLabels: true, xTip: (v) => `${v} min ahead`,
+      valueFmt: (v) => v.toFixed(3),
+      series: methods.map((m) => ({ name: m, short: m.replace("Early-warning net", "net").replace("Gradient boosting", "GBM").replace("Analyser ", ""),
+        color: col[m], x: hz, y: hz.map((h) => (W.sample[m][`onset@${h}min`] || {}).auprc) })),
+    });
+    Charts.line(c2, {
+      title: "Same, AUROC", subtitle: "plant compliant now", height: 250, xLabel: "warning horizon, min",
+      yMin: 0.5, yMax: 1, directLabels: true, xTip: (v) => `${v} min ahead`, valueFmt: (v) => v.toFixed(3),
+      series: methods.map((m) => ({ name: m, short: m.replace("Early-warning net", "net").replace("Gradient boosting", "GBM").replace("Analyser ", ""),
+        color: col[m], x: hz, y: hz.map((h) => (W.sample[m][`onset@${h}min`] || {}).auroc) })),
+    });
+    const h3 = mk("h3"); h3.textContent = "Operational comparison at equal nuisance";
+    const opBox = mk("div");
+    const order = ["Early-warning net", "net, no influent forecast", "net, no effluent analyser", "Gradient boosting", "Analyser trend", "Analyser alarm", "Analyser alarm (at limit)"];
+    Charts.table(opBox, ["Method", "Median lead (min)", "Warned before onset", "Warned ≥ 30 min", "Missed", "False alarms / day", "Episodes"],
+      order.filter((k) => op[k]).map((k) => [k, op[k].median_lead_min.toFixed(0), pct(op[k].frac_warned_before, 0),
+        pct(op[k].frac_warned_30min, 0), String(op[k].missed), op[k].false_alarms_per_day.toFixed(2), String(op[k].n_episodes)]), 1);
+    const n2 = mk("p", "small muted");
+    n2.textContent = "“Analyser alarm (at limit)” is the untuned rule plants use. The other rows had their threshold set on validation plants for at most 1 false alarm per compliant day. The two “net, no …” rows are the same network retrained without that signal group (ablation).";
+    const g2 = mk("div", "grid-2");
+    const c3 = document.createElement("div"); c3.className = "card"; g2.appendChild(c3);
+    const c4 = document.createElement("div"); c4.className = "card"; g2.appendChild(c4);
+    const imp = Object.entries(W.importance.drop).sort((a, b) => b[1] - a[1]);
+    Charts.hbar(c3, { title: "Which signals the warning relies on", subtitle: `Drop in AUPRC@60 min (base ${W.importance.base_auprc.toFixed(3)}) when one group is shuffled`,
+      rows: imp.map(([k, v]) => ({ label: k, value: v })), color: C.PID, fmt: (v) => (v >= 0 ? "+" : "") + v.toFixed(3) });
+    const cal = W.calibration;
+    if (cal) Charts.line(c4, {
+      title: "Calibration of P(violation within 60 min)", subtitle: "test plants; on the diagonal = honest probabilities",
+      height: 250, xLabel: "predicted probability", yLabel: "observed frequency", xMin: 0, xMax: 1, yMin: 0, yMax: 1, xTip: (v) => `predicted ${v.toFixed(2)}`, valueFmt: (v) => v.toFixed(2),
+      series: [
+        { name: "perfect", color: "--reference", x: [0, 1], y: [0, 1], dash: true },
+        ...["Early-warning net", "Gradient boosting"].filter((m) => cal[m]).map((m) => ({ name: m, short: m === "Gradient boosting" ? "GBM" : "net", color: col[m], x: cal[m].conf, y: cal[m].freq })),
+      ],
+    });
+    const ep = S.warning_episode;
+    if (ep) {
+      const h = mk("h3"); h.textContent = "One episode, as an operator would see it";
+      const c5 = mk("div", "card"); const c6 = mk("div", "card");
+      Charts.line(c5, {
+        title: `Effluent NH₄: ${ep.name}`, subtitle: "the forecast made 60 min earlier vs what happened, and the stale analyser reading",
+        height: 260, xFmt: day, xTip: dayTip, yLabel: "g N/m³", refLines: [{ y: 4, label: "discharge limit" }], yMin: 0,
+        bands: [{ name: "60-min-ahead 10–90 %", color: C.PID, x: ep.t_shift, lo: ep.q10, hi: ep.q90 }],
+        series: [
+          { name: "true effluent NH₄", color: "--text-primary", x: ep.t, y: ep.nh },
+          { name: "analyser reading", color: "--reference", x: ep.t, y: ep.analyser, width: 1.4 },
+          { name: "60-min-ahead median", color: C.PID, x: ep.t_shift, y: ep.q50 },
+        ],
+      });
+      Charts.line(c6, {
+        title: "P(violation within 2 h)", subtitle: "alarm when above the threshold chosen on validation plants",
+        height: 200, xFmt: day, xTip: dayTip, yMin: 0, yMax: 1, valueFmt: (v) => v.toFixed(2),
+        refLines: [{ y: ep.threshold, label: "alarm threshold" }],
+        series: [{ name: "P(violation ≤ 2 h)", color: C.PID, x: ep.t, y: ep.p120 }],
+      });
+    }
+  })();
+
+  /* ---------------- 6. verdict ---------------- */
+  (function verdict() {
+    const box = document.getElementById("verdict-body");
+    const items = [];
+    const F = S.forecaster && S.forecaster.heldout, T = S.twin && S.twin.free_run;
+    if (F) items.push(["good", `The forecaster's quantile forecast works out of sample: 2-h flow error ${pct(F.mape_2h[0])} vs ${pct(F.mape_2h_persistence[0])} for persistence, with a well-calibrated band (${pct(F.coverage_10_90_2h[0])} coverage for a nominal 80 %).`]);
+    if (F) items.push(["bad", `The forecaster's regime classifier does not generalise (${pct(F.regime_accuracy)} on fresh scenarios against 95.8 % on validation). The validation split leaked.`]);
+    if (T) items.push(["good", `The twin's control gains have the right sign, and it predicts 4.8 h ahead about 3× better than persistence on fresh data (RMSE ${f3(T.rmse_twin[0])} vs ${f3(T.rmse_persistence[0])} on DO). The size of the step response is right for some steps and off for others (see the step tests).`]);
+    const W = S.warning && S.warning.operational;
+    if (W) {
+      const n = W["Early-warning net"], g = W["Gradient boosting"], a = W["Analyser alarm (at limit)"];
+      items.push([n.median_lead_min > a.median_lead_min ? "good" : "bad",
+        `Early warning: median lead ${n.median_lead_min.toFixed(0)} min vs ${a.median_lead_min.toFixed(0)} min for today's analyser alarm, at ${n.false_alarms_per_day.toFixed(2)} false alarms per day. Gradient boosting on the same signals: ${g.median_lead_min.toFixed(0)} min${g.median_lead_min >= n.median_lead_min ? ", so the deep model is not clearly better than a strong tabular baseline" : ""}.`]);
+    }
+    for (const [k, t] of items) {
+      const d = document.createElement("div"); d.className = "callout " + k;
+      const p = document.createElement("p"); p.textContent = (k === "good" ? "✓ " : "✗ ") + t; d.appendChild(p); box.appendChild(d);
+    }
+    if (!items.length) { box.textContent = "Results not generated yet."; box.className = "muted small"; }
+  })();
+})();
+</script>
+</body>
+</html>

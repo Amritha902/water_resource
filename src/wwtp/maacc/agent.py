@@ -34,14 +34,18 @@ Four implementation choices, all discussed in ``docs/02_reproduction.md``:
 2. The actor gradient uses the full Jacobian ``dQ/d(Delta a) + dQ/da``, since
    ``a_k = a_{k-1} + Delta a_k`` makes both critic inputs depend on the
    action-network output.
-3. Both networks carry a constant bias input.  Without it ``tanh`` networks
-   are pinned to zero at the origin and cannot represent a Q-function that is
-   strictly positive at the set point.
+3. The *critic* carries a constant bias input: without it a ``tanh`` network
+   is pinned to zero at the origin and cannot represent a Q-function that is
+   strictly positive at the set point.  The *actor* deliberately has none, so
+   ``pi(0) = 0`` and -- with the pure integration of eq. (8), ``leak = 1`` --
+   the learned term only moves in response to tracking error.  An actor bias
+   plus a leaky integrator made ``a`` drift into its clip and act as a
+   constant offset (``docs/02_reproduction.md`` Sec. 4).
 4. **Critic update.**  Equation (15) writes the approximation error as
    ``e_k = U_k + lambda Q(x_k) - Q(x_{k-1})`` and eq. (18) descends it in the
    weights that produce ``Q(x_k)`` -- i.e. it corrects the *later* prediction.
    For the slowly varying states of a WWTP that recursion has homogeneous
-   gain ``1 + l_c (1 - lambda) ||vartheta||^2 > 1`` and the critic diverges;
+   gain ``1 + l_c lambda (1 - lambda) ||vartheta||^2 > 1`` and the critic diverges;
    we reproduce this in ``tests/test_critic_update.py``.  Theorem 1 only
    bounds the weight error (UUB), which does not exclude a large bound.  We
    therefore descend the *same* Bellman residual of eq. (9) in its standard
@@ -73,7 +77,7 @@ class AgentConfig:
     p: float = 0.25                # P_i -- coupled error of all subsystems
     y: float = 0.02                # Y_i -- increment penalty (normalised)
     r: float = 0.05                # R_i -- control-effort penalty (normalised)
-    leak: float = 0.999            # leaky integration of a_k (realises R_i)
+    leak: float = 1.0              # 1.0 = eq. (8) exactly: a_k = a_{k-1} + Delta a_k
     n_hidden_critic: int = 16
     n_hidden_actor: int = 12
     lr_critic: float = 0.02
@@ -81,6 +85,11 @@ class AgentConfig:
     wd_critic: float = 1e-4        # outer-weight decay of the critic network
     wd_actor: float = 2.0          # outer-weight decay of the action network
     discount: float = 0.90
+    #: bias input on the action network.  Off makes the actor an odd
+    #: function, ``Delta a = pi(0) = 0`` at zero error, so ``a`` only moves
+    #: in response to tracking error -- otherwise a constant ``pi(0)``
+    #: integrates ``a`` steadily into its clip (see docs/02 Sec. 4).
+    actor_bias: bool = False
 
 
 #: configuration used for every experiment in this repository
@@ -106,7 +115,8 @@ class AdaptiveCriticAgent:
 
         # AN input: own tracking error (+ optional predictive context)
         self.actor = ShallowNet(1 + extra_context, cfg.n_hidden_actor, 1,
-                                rng=rng, inner_scale=1.5, zero_outer=True)
+                                rng=rng, inner_scale=1.5, zero_outer=True,
+                                bias=cfg.actor_bias)
         # CN input: full error vector, Delta a, a (+ optional predictive context)
         self.critic = ShallowNet(n_states + 2 + extra_context,
                                  cfg.n_hidden_critic, 1, rng=rng,

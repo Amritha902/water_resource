@@ -8,7 +8,7 @@ what is left.
 | Piece | State |
 |---|---|
 | BSM1 plant (ASM1 biology, Takács clarifier, 5 tanks, influent generator) | **done**, validated against published BSM1 steady state |
-| Paper 1 (MAACC) reproduced | **done**, and benchmarked: 54 runs over 3 conditions x 3 weathers x 2 seeds. Under the paper's own noise protocol MAACC improves nitrate IAE by 23-29% against the PID prior. |
+| Paper 1 (MAACC) reproduced | **done**, actor faithful to eq. (8) (no actor bias, pure integration). 54 runs: under the paper's noise protocol MAACC improves nitrate IAE by 27 / 21 / 10 % (dry/rain/storm), oxygen within a few %, no change when clean. Part of the gain is anti-windup compensation (`17_maacc_offset_control.py`). De-tuned prior: clearly worse. Paper's Table II not yet compared (values not in repo). |
 | Paper 1 — correction to the critic update in eq. (15) | **done**, reproduced by a test |
 | Influent forecaster (TCN, quantiles + weather regime) | **trained** |
 | Digital twin (GRU) | **trained** |
@@ -26,6 +26,10 @@ what is left.
 | Dyna sample-efficiency ablation | **done** — 3 arms, `10_dyna_ablation.py` |
 | Figures | **done** — `docs/figures/`, built by `07_figures.py` |
 | `docs/05_results.md` | **generated** from the benchmark output |
+
+| Project website (`docs/`, GitHub Pages) | **done**: overview + verification ledger, a page per paper, prediction models |
+| Re-checks on unseen data (`13_export_site_data.py`) | **done**: forecaster quantiles hold; regime head at chance (validation leak); twin 3x better than persistence on fresh windows |
+| Reproducibility (`13_export_site_data.py`, `16_replay_paper2.py`) | **done**: all 9 seed-0 paper-1 runs match to 4 decimals; re-trained DDPG-B matches exactly at 2 threads (the benchmark's setting) but not at 1 thread — RL training is sensitive to floating-point order |
 
 **72 tests pass, none skipped.**
 
@@ -143,6 +147,10 @@ no forecast, so every component can be ablated. `experiments/06_aeration_benchma
 has the ablations wired up (`--ablations`).
 
 ## Next steps, in order
+
+0. **Fix the forecaster's regime head**: label each window by whether a
+   wet-weather event is in it, and split validation by scenario. Its P(wet)
+   output currently feeds PANDA and PANDA-RL as near-noise.
 
 1. **Scale the Dyna dual step with `dyna_ratio`.** The intra-episode dual did
    not fix the constraint lag (68.0% against 66.8%); the diagnosis in

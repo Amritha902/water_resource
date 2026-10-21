@@ -22,8 +22,12 @@ class ShallowNet:
 
     def __init__(self, n_in: int, n_hidden: int, n_out: int = 1, *,
                  rng: np.random.Generator, inner_scale: float = 1.0,
-                 zero_outer: bool = False, outer_scale: float = 0.05):
+                 zero_outer: bool = False, outer_scale: float = 0.05,
+                 bias: bool = True):
         self.n_in, self.n_hidden, self.n_out = n_in, n_hidden, n_out
+        #: without the bias input the network is an odd function, so
+        #: ``f(0) = 0`` exactly -- what an incremental policy needs
+        self.bias_value = 1.0 if bias else 0.0
         self.theta = rng.uniform(-inner_scale, inner_scale,
                                  size=(n_in + 1, n_hidden))
         if zero_outer:
@@ -35,7 +39,7 @@ class ShallowNet:
         self._x = np.zeros(n_in + 1)
 
     def forward(self, x: np.ndarray) -> np.ndarray:
-        self._x = np.append(np.asarray(x, dtype=float).reshape(-1), 1.0)
+        self._x = np.append(np.asarray(x, dtype=float).reshape(-1), self.bias_value)
         self._h = np.tanh(self.theta.T @ self._x)
         return self.beta.T @ self._h
 
