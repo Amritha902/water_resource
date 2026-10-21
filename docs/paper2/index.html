@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDPG Aeration Reproduction</title>
+<meta name="description" content="Base paper 2 (Du et al. 2023): letting dissolved oxygen float with a DDPG agent to save aeration energy. The physics, a replay of the evaluation week, the reproduction against the published numbers, the hidden cost in ammonium violations, and the PANDA-RL extension.">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../index.html">PANDA</a>
+  <nav class="nav">
+    <a href="../index.html">Overview</a>
+    <a href="../paper1/index.html">Paper 1 · MAACC</a>
+    <a href="index.html" aria-current="page">Paper 2 · DDPG aeration</a>
+    <a href="../models/index.html">Prediction models</a>
+    <a href="https://github.com/Amritha902/water_resource">Code</a>
+  </nav>
+  <button class="theme-toggle" id="theme">Dark mode</button>
+</div></header>
+
+<main>
+  <h1>Base paper 2 · Letting dissolved oxygen float</h1>
+  <p class="lede">S. L. Du, P. X. Chen, H. G. Han, J. F. Qiao, <i>Dissolved oxygen concentration control in
+  wastewater treatment process based on reinforcement learning</i>, Science China Technological Sciences 66(9),
+  2549–2560, 2023 (DOI 10.1007/s11431-022-2403-8). Most controllers hold DO at a fixed 2 mg/L. Du et al. remove the
+  set point and let a DDPG agent choose the aeration directly, trading energy against effluent quality.</p>
+  <nav class="toc">
+    <a href="#what">1. What the paper does</a><a href="#physics">2. The physics</a><a href="#replay">3. Evaluation week</a>
+    <a href="#repro">4. Reproduction</a><a href="#cost">5. The hidden cost</a><a href="#fixes">6. Three corrections</a>
+    <a href="#dev">7. Every deviation</a><a href="#panda">8. PANDA-RL</a><a href="#frontier">9. Frontier</a>
+    <a href="#isolate">10. Network changes isolated</a><a href="#dyna">11. Dyna</a><a href="#caveats">12. Caveats</a>
+  </nav>
+
+  <h2 id="what">1. What the paper does</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Item</th><th>Paper's specification</th></tr>
+    <tr><td>Controlled</td><td>Aeration KLa₅ only. Q<sub>a</sub> stays at the BSM1 default, and there is <b>no DO set point</b>.</td></tr>
+    <tr><td>State</td><td><code>s = [S_S,5, S_O,5, S_NH,5]</code>: the three tank-5 concentrations in the oxygen balance (their eqs. 12–15)</td></tr>
+    <tr><td>Action</td><td>An increment: <code>KLa₅(t) = KLa₅(t−1) + a_t</code></td></tr>
+    <tr><td>Reward A (DDPG-A), eq. 19</td><td><code>−( max(S_NH,e − 4, 0) + 0.38·max(N_tot,e − 18, 0) )</code>: effluent quality only</td></tr>
+    <tr><td>Reward B (DDPG-B), eq. 23</td><td><code>−( AE + 0.42·max(S_NH,e − 4, 0) )</code>: energy plus the ammonium limit</td></tr>
+    <tr><td>Networks</td><td>Actor 3-256-256-1 (ReLU, tanh output), critic 4-256-256-1</td></tr>
+    <tr><td>Hyper-parameters</td><td>γ = 0.99, batch 256, buffer 30,000, soft update 0.001, learning rates 1e−4 (actor) and 3e−4 (critic)</td></tr>
+    <tr><td>Protocol</td><td>Learn on week 1 of each influent file, evaluate on week 2, 45-s steps</td></tr>
+    <tr><td>Reported</td><td>DDPG-B cuts aeration energy by 7.24 % (dry), 5.52 % (rain) and 6.06 % (storm) against PID. Mean S<sub>O,5</sub> is 2.000 for PID, 1.415 for DDPG-A and 1.032 for DDPG-B</td></tr>
+  </table></div>
+
+  <h2 id="physics">2. The physics the paper relies on (its Figure 4)</h2>
+  <p class="sub">The plant is held at each DO set point under steady dry-average influent for 20 simulated days. More
+  oxygen lowers effluent ammonium but <b>raises</b> effluent total nitrogen, because less denitrification happens
+  in the anoxic tanks. The two discharge limits therefore pull in opposite directions, so an optimum exists for an
+  agent to find. Recomputed from <code>experiments/07_figures.py</code>'s procedure.</p>
+  <div class="grid-3">
+    <div class="card"><div id="ch-f4-nh"></div></div>
+    <div class="card"><div id="ch-f4-tn"></div></div>
+    <div class="card"><div id="ch-f4-ae"></div></div>
+  </div>
+  <div class="callout"><p><b>One simulator fix was needed first.</b> With the original influent generator the ammonium
+  load peak was only 1.25× the mean, so effluent NH₄ never neared 4 mg/L and the constraint in both rewards never
+  bound. The pollutograph was sharpened to the documented BSM1 statistics (influent S<sub>NH</sub> 9–44 mg/L, load
+  peak 1.5× the mean). Under real diurnal influent the fraction of time above each limit then becomes:</p>
+  <div class="table-wrap"><table><tr><th>DO held at</th><th class="num">0.5</th><th class="num">1.0</th><th class="num">2.0</th><th class="num">3.0</th></tr>
+  <tr><td>time with S<sub>NH,e</sub> &gt; 4</td><td class="num">51 %</td><td class="num">34 %</td><td class="num">8 %</td><td class="num">0 %</td></tr>
+  <tr><td>time with N<sub>tot,e</sub> &gt; 18</td><td class="num">7 %</td><td class="num">16 %</td><td class="num">47 %</td><td class="num">55 %</td></tr></table></div>
+  <p class="small muted">Source: docs/04_second_paper.md §2.</p></div>
+
+  <h2 id="replay">3. Watch the evaluation week</h2>
+  <p class="sub">Dry weather, week 2 (the agents never trained on it). PID holds DO at 2 mg/L. DDPG-B and PANDA-RL were
+  re-trained here from scratch with the repository code (seed 0, 20 training weeks, 2 CPU threads as in the benchmark),
+  which reproduces the committed seed-0 runs exactly, and their evaluation weeks were recorded in full.</p>
+  <div class="tiles" id="rp-tiles"></div>
+  <div class="grid-2">
+    <div class="card"><div id="ch-rp-do"></div></div>
+    <div class="card"><div id="ch-rp-kla"></div></div>
+    <div class="card"><div id="ch-rp-nh"></div></div>
+    <div class="card"><div id="ch-rp-tn"></div></div>
+  </div>
+
+  <h2 id="repro">4. Reproduction against the published numbers</h2>
+  <p class="sub">Committed benchmark (<code>results/summary_aeration*.json</code>), mean over seeds. The fixed-set-point
+  comparators are deterministic (1 run). The learners use 2 seeds each.</p>
+  <div class="controls"><span><span class="ctl-label">Weather</span><span id="r-weather"></span></span></div>
+  <div id="tbl-repro"></div>
+  <div class="grid-2">
+    <div class="card"><h3>Comparators vs the paper</h3><div id="tbl-cmp"></div>
+      <p class="small muted">The plant is rebuilt from the model definition, not the official code, so close rather than
+      equal is the right expectation.</p></div>
+    <div class="card"><h3>Re-run here, seed 0, dry</h3><div id="tbl-rerun"></div>
+      <p class="small muted">Same code and seed, re-trained in this session. Green = identical to the repository. The
+      fixed-set-point PID is deterministic. The learners are not: the first training week reproduces exactly, but
+      floating-point sums depend on the CPU thread count (the benchmark used 2), and RL training amplifies those tiny
+      differences. A run that diverges still lands on the same energy/violation trade-off.</p></div>
+  </div>
+
+  <h2 id="cost">5. The cost the paper does not report</h2>
+  <p class="sub">The paper reports energy and mean effluent quality, but not how often the limit is broken. Each point
+  is one run, with energy on the vertical axis (lower is cheaper) and the share of the week with effluent NH₄ above
+  4 mg/L on the horizontal axis (left is cleaner).</p>
+  <div class="controls"><span><span class="ctl-label">Weather</span><span id="c-weather"></span></span></div>
+  <div class="card"><div id="ch-cost"></div></div>
+  <div class="callout warn"><p><b>DDPG-B's saving comes from violating the limit more often.</b> On dry weather it exceeds
+  4 mg/L for 38 % of the week, against 12 % for PID. That is what eq. (23) asks for: at 0.42 per mg/L of excess
+  against a full-aeration penalty of 1.0, a long run of small exceedances costs less than the air saved. The weight
+  acts like a constraint without being one.</p></div>
+
+  <h2 id="fixes">6. Three corrections the published recipe needed</h2>
+  <p class="sub">As published, the agent collapsed to zero aeration and stayed there. Each fix below is documented in
+  <code>docs/04_second_paper.md</code> §5 and implemented in <code>src/wwtp/rl/</code>.</p>
+  <div class="grid-3">
+    <div class="card"><h3>① The observation is not Markov</h3><p class="small">The action is an <i>increment</i> on KLa₅,
+      so the actuator position is a hidden integrator. Once DO saturates near zero the agent cannot tell KLa₅ = 0 from
+      KLa₅ = 20. Correlated OU exploration noise (θ = 0.15, σ = 0.2, about 7 steps of memory) pins the actuator at a
+      rail within a few hundred steps. <b>Fix:</b> add KLa₅/240 to the observation, and use an absolute action.</p></div>
+    <div class="card"><h3>② The decision interval is too short</h3><p class="small">At 45 s with γ = 0.99 the
+      effective horizon is about 100 steps, or 75 min. Effluent NH₄ responds to aeration over hours, so the penalty for
+      cutting air falls outside the horizon while the energy saving is immediate. <b>Fix:</b> hold each action
+      for 20 periods (15 min).</p></div>
+    <div class="card"><h3>③ The value scale stalls the critic</h3><p class="small">The critic has to learn values near
+      −250 from rewards near −2.5. Instrumented, ∂Q/∂a has the <b>wrong sign</b> for the first four simulated weeks, and
+      by then the tanh actor has saturated. <b>Fix:</b> scale the reward by (1 − γ), add weight decay on the actor, and
+      penalise the pre-tanh output.</p></div>
+  </div>
+  <div class="card"><div id="ch-curves"></div></div>
+
+  <h2 id="dev">7. Every deviation from the published protocol</h2>
+  <div id="tbl-dev"></div>
+
+  <h2 id="panda">8. Our extension: PANDA-RL</h2>
+  <p class="sub">Four changes to the network, each aimed at a problem found in §6. With 1 quantile, CVaR α = 1, no
+  constraints and no forecast, PANDA-RL reduces exactly to DDPG. <code>src/wwtp/rl/panda_rl.py</code></p>
+  <div class="grid-2">
+    <div class="card"><h3>① Forecast input</h3><p class="small">The actor and critic also see the forecaster's
+      6-number context: predicted relative change of flow, NH₄ and COD, forecast uncertainty and P(wet). The policy
+      becomes disturbance-scheduled, so it does not have to wait hours to see the effect of its own action. (The P(wet)
+      component is near chance on fresh data; see <a href="../models/index.html#fc">Prediction models</a>.)</p></div>
+    <div class="card"><h3>② Distributional critic + CVaR</h3><p class="small">32 return quantiles with a quantile Huber
+      loss. The actor maximises the mean of the worst 30 % of returns (CVaR at α = 0.3) instead of the expectation,
+      because a discharge consent constrains the tail, not the average.</p></div>
+    <div class="card"><h3>③ Constraints instead of guessed weights</h3><p class="small">The reward keeps only
+      −KLa₅/240. Each discharge limit gets its own cost critic and Lagrange multiplier, updated by dual ascent on the
+      measured violation rate. The operator states “NH₄ above 4 at most x % of the time” instead of guessing 0.38 and
+      0.42.</p></div>
+    <div class="card"><h3>④ Twin-assisted updates (Dyna)</h3><p class="small">A learned aeration twin supplies synthetic
+      transitions. Evaluated in §11. It buys sample efficiency but <b>breaks the constraint</b>, and the attempted fix
+      did not work.</p></div>
+  </div>
+
+  <h2 id="frontier">9. Energy against violation rate: the frontier</h2>
+  <p class="sub">A single operating point cannot show whether floating DO saves anything, because saving and violations
+  move together. Each PANDA-RL run below has a different ammonium budget, and its Lagrange multiplier finds the weight
+  that delivers it. One seed each.</p>
+  <div class="card"><div id="ch-frontier"></div></div>
+  <div id="frontier-notes"></div>
+
+  <h2 id="isolate">10. The network changes, isolated</h2>
+  <p class="sub">Both arms use paper 2's own reward <code>−(KLa₅/240 + β₂·max(S_NH,e − 4, 0))</code>, with no Lagrange
+  multiplier, and β₂ is swept. The arms differ <b>only</b> in the network. The comparison is between Pareto fronts,
+  because at equal β₂ different arms settle at different violation rates.</p>
+  <div class="card"><div id="ch-sweep"></div></div>
+  <div id="tbl-sweep"></div>
+  <div class="callout warn"><p><b>Not controlled for:</b> PANDA-fw reads 6 extra inputs and its critic has 32 outputs
+  against 1, so it is matched to DDPG-B in neither parameters nor inputs. Part of any gap could be capacity. Every
+  point is one seed.</p></div>
+
+  <h2 id="dyna">11. Does the learned plant model buy sample efficiency?</h2>
+  <p class="sub">Every arm gets the same number of <i>real</i> interactions. Only the number of synthetic batches per
+  real batch changes.</p>
+  <div id="tbl-dyna"></div>
+  <div class="callout bad"><p><b>Negative result, kept.</b> The twin does speed up learning of the energy objective, but
+  with roughly 4× the gradient steps the Lagrange multiplier, which is stepped only at episode boundaries, cannot keep
+  up, and violations rise from 14 % to 67 %. Stepping the dual inside the episode did not fix it (68 %). The proposed
+  fix, scaling the dual step with the Dyna ratio, is untested.</p></div>
+
+  <h2 id="caveats">12. Caveats</h2>
+  <ul>
+    <li>The plant is a re-implementation of BSM1 and the influent is statistically equivalent. Absolute numbers are not
+      directly comparable with the paper's tables, so every claim is a comparison between methods on the same simulator.</li>
+    <li>The learners are seed-sensitive. Two seeds per method in the benchmark, one per point in the sweeps.</li>
+    <li>Convergence took about 15–20 simulated training weeks, far more than the paper's “7 days of online
+      interactive learning”.</li>
+    <li>PANDA-RL at a 5 % ammonium budget does not reach it: PID itself exceeds the limit 12 % of the time, so a 5 %
+      budget needs <i>more</i> air than PID and leaves no energy to save.</li>
+  </ul>
+
+  <div class="footer"><span id="gen"></span></div>
+</main>
+
+<script src="../data/site-data.js"></script>
+<script src="../assets/charts.js"></script>
+<script>
+(function () {
+  "use strict";
+  Charts.themeToggle(document.getElementById("theme"));
+  const S = window.SITE || {};
+  const P = S.paper2 || {};
+  if (S.generated) document.getElementById("gen").textContent = `Generated ${S.generated}, commit ${S.commit}.`;
+  const COL = { PID: "--series-1", Fuzzy: "--series-2", "DDPG-A": "--series-3", "DDPG-B": "--series-4", "PANDA-RL": "--series-5",
+    "PANDA-fw": "--series-5", "PANDA-fcast": "--series-6", "PANDA-cvar": "--series-7" };
+  const ORDER = ["PID", "Fuzzy", "DDPG-A", "DDPG-B", "PANDA-RL"];
+  const pct = (v, d = 1) => (v == null ? "–" : (100 * v).toFixed(d) + " %");
+  const day = (v) => "day " + (+v).toFixed(v % 1 ? 1 : 0);
+  const dayTip = (v) => { const d = Math.floor(v), m = Math.round((v - d) * 1440);
+    return `day ${d}, ${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; };
+  const pending = (id, what) => { const e = document.getElementById(id); e.textContent = `${what}: not generated yet.`; e.className = "muted small"; };
+  const tiles = (id, items) => {
+    const box = document.getElementById(id); box.textContent = "";
+    for (const [label, value, note] of items) {
+      const t = document.createElement("div"); t.className = "tile";
+      for (const [cls, txt] of [["label", label], ["value", value], ["note", note || ""]]) {
+        const e = document.createElement("div"); e.className = cls; e.textContent = txt; t.appendChild(e);
+      }
+      box.appendChild(t);
+    }
+  };
+  const W3 = [{ label: "Dry", value: "dry" }, { label: "Rain", value: "rain" }, { label: "Storm", value: "storm" }];
+  const runs = P.runs || [];
+  const mean = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+  const agg = (w, m) => { const r = runs.filter((x) => x.weather === w && x.method === m); if (!r.length) return null;
+    const o = { n: r.length }; for (const k of ["AE", "EQ", "S_O5_mean", "S_NH", "N_tot", "viol_NH", "viol_TN"]) o[k] = mean(r.map((x) => x[k]));
+    o.AE_lo = Math.min(...r.map((x) => x.AE)); o.AE_hi = Math.max(...r.map((x) => x.AE)); return o; };
+
+  /* 2. Figure 4 */
+  (function () {
+    const F = P.fig4;
+    if (!F) { ["ch-f4-nh", "ch-f4-tn", "ch-f4-ae"].forEach((i) => pending(i, "Figure-4 sweep")); return; }
+    const x = F.map((r) => r.do);
+    const mk = (id, title, y, unit, ref, color) => Charts.line(document.getElementById(id), {
+      title, height: 210, xLabel: "DO set point, tank 5 [g/m³]", yLabel: unit, refLines: ref ? [ref] : [],
+      xTip: (v) => `DO held at ${v}`, series: [{ name: title, color, x, y }],
+    });
+    mk("ch-f4-nh", "Effluent ammonium falls", F.map((r) => r.nh), "g N/m³", null, "--series-1");
+    mk("ch-f4-tn", "Effluent total N rises", F.map((r) => r.tn), "g N/m³", { y: 18, label: "limit 18" }, "--series-2");
+    mk("ch-f4-ae", "Aeration energy rises", F.map((r) => r.ae), "kWh/d", null, "--series-4");
+  })();
+
+  /* 3. replay */
+  (function () {
+    const R = P.replays || {};
+    const names = ["PID", "DDPG-B", "PANDA-RL"].filter((m) => R["dry|" + m]);
+    const ids = ["ch-rp-do", "ch-rp-kla", "ch-rp-nh", "ch-rp-tn"];
+    if (!names.length) { ids.forEach((i) => pending(i, "Replay")); return; }
+    tiles("rp-tiles", names.map((m) => { const s = R["dry|" + m].summary;
+      return [m, `${s.AE.toFixed(0)} kWh/d`, `mean DO ${s.S_O5_mean.toFixed(2)} · NH₄ > 4 for ${pct(s.viol_NH)} of the week`]; }));
+    const mk = (id, title, sub, key, unit, ref) => Charts.line(document.getElementById(id), {
+      title, subtitle: sub, height: 220, xFmt: day, xTip: dayTip, yLabel: unit, refLines: ref ? [ref] : [], directLabels: true,
+      series: names.map((m) => ({ name: m, color: COL[m], x: R["dry|" + m].trace.t, y: R["dry|" + m].trace[key], width: m === "PID" ? 1.4 : 2 })),
+    });
+    mk("ch-rp-do", "Dissolved oxygen, tank 5", "PID holds 2 mg/L; the learners let it float", "S_O5", "g O₂/m³");
+    mk("ch-rp-kla", "Aeration KLa₅ (the action)", "lower = less blower energy", "KLa5", "1/d");
+    mk("ch-rp-nh", "Effluent ammonium", "discharge limit 4 g N/m³", "S_NH", "g N/m³", { y: 4, label: "limit" });
+    mk("ch-rp-tn", "Effluent total nitrogen", "discharge limit 18 g N/m³", "N_tot", "g N/m³", { y: 18, label: "limit" });
+  })();
+
+  /* 4. reproduction tables */
+  let rw = "dry";
+  function repro() {
+    const rows = ORDER.map((m) => [m, agg(rw, m)]).filter((r) => r[1]);
+    const pid = agg(rw, "PID");
+    Charts.table(document.getElementById("tbl-repro"),
+      ["Method", "AE kWh/d (seed range)", "saving vs PID", "EQ", "mean S_O,5", "S_NH,e", "N_tot,e", "NH₄ > 4", "TN > 18", "runs"],
+      rows.map(([m, a]) => [m, a.n > 1 ? `${a.AE.toFixed(1)} (${a.AE_lo.toFixed(0)}–${a.AE_hi.toFixed(0)})` : a.AE.toFixed(1),
+        m === "PID" ? "–" : `${(100 * (pid.AE - a.AE) / pid.AE).toFixed(1)} %`, a.EQ.toFixed(0), a.S_O5_mean.toFixed(2),
+        a.S_NH.toFixed(2), a.N_tot.toFixed(2), pct(a.viol_NH), pct(a.viol_TN), String(a.n)]), 1);
+  }
+  Charts.segmented(document.getElementById("r-weather"), W3, rw, (v) => { rw = v; repro(); });
+  repro();
+  (function () {
+    const pid = agg("dry", "PID"), fz = agg("dry", "Fuzzy");
+    const saving = (w) => { const p = agg(w, "PID"), d = agg(w, "DDPG-B"); return p && d ? (100 * (p.AE - d.AE) / p.AE) : null; };
+    const pubSave = { dry: 7.24, rain: 5.52, storm: 6.06 };
+    Charts.table(document.getElementById("tbl-cmp"), ["Quantity", "Paper", "Ours", "Difference"], [
+      ["PID aeration energy, dry", "3698.2", pid ? pid.AE.toFixed(1) : "–", pid ? `${(100 * (pid.AE - 3698.2) / 3698.2).toFixed(1)} %` : "–"],
+      ["Fuzzy aeration energy, dry", "3697.1", fz ? fz.AE.toFixed(1) : "–", fz ? `${(100 * (fz.AE - 3697.1) / 3697.1).toFixed(1)} %` : "–"],
+      ...["dry", "rain", "storm"].map((w) => [`DDPG-B saving, ${w}`, `${pubSave[w].toFixed(2)} %`, saving(w) == null ? "–" : `${saving(w).toFixed(1)} %`, ""]),
+      ["DDPG-B mean S_O,5, dry", "1.032", agg("dry", "DDPG-B") ? agg("dry", "DDPG-B").S_O5_mean.toFixed(2) : "–", ""],
+    ], 1);
+    const R = P.replays_1t || {}, R2 = P.replays_t2 || {};
+    const rr = ["PID", "DDPG-B", "PANDA-RL"].filter((m) => R["dry|" + m]).map((m) => {
+      const c = runs.find((x) => x.weather === "dry" && x.method === m && x.seed === 0), s1 = R["dry|" + m].summary;
+      const s2 = R2["dry|" + m] && R2["dry|" + m].summary;
+      const same = (s) => s && c && Math.abs(c.AE - s.AE) < 0.05 && Math.abs(c.viol_NH - s.viol_NH) < 1e-4;
+      const cell = (s) => (s ? { text: `${s.AE.toFixed(1)} · ${pct(s.viol_NH)}`, chip: same(s) ? "ok" : "partial" } : "–");
+      return [m, c ? `${c.AE.toFixed(1)} · ${pct(c.viol_NH)}` : "–", cell(s1), m === "PID" ? "(deterministic)" : cell(s2)];
+    });
+    if (rr.length) Charts.table(document.getElementById("tbl-rerun"), ["Method", "repo (AE · NH₄>4)", "re-run, 1 thread", "re-run, 2 threads"], rr, 1);
+    else pending("tbl-rerun", "Re-run");
+  })();
+
+  /* 5. cost scatter */
+  let cw = "dry";
+  function cost() {
+    const groups = ORDER.map((m) => ({ name: m, color: COL[m], shape: m === "PID" || m === "Fuzzy" ? "square" : "circle",
+      points: runs.filter((r) => r.weather === cw && r.method === m).map((r) => ({ x: r.viol_NH, y: r.AE, label: `seed ${r.seed}`, tag: m === "Fuzzy" ? "" : m })) }));
+    Charts.scatter(document.getElementById("ch-cost"), {
+      title: `Energy against the ammonium violation rate, ${cw} weather`, subtitle: "each point is one run; down and to the left is better on both",
+      height: 320, xLabel: "share of the evaluation week with effluent NH₄ > 4 g N/m³", yLabel: "aeration energy, kWh/d",
+      xName: "of week above limit", yName: "kWh/d", xFmt: (v) => pct(v, 0), groups,
+    });
+  }
+  Charts.segmented(document.getElementById("c-weather"), W3, cw, (v) => { cw = v; cost(); });
+  cost();
+
+  /* 6. learning curves */
+  (function () {
+    const C = P.curves || {};
+    const keys = Object.keys(C).filter((k) => /^(rain|storm)\|(DDPG-B|PANDA-RL)\|s0$/.test(k));
+    if (!keys.length) return pending("ch-curves", "Learning curves");
+    Charts.line(document.getElementById("ch-curves"), {
+      title: "Training reward per training week (seed 0)", subtitle: "rain and storm runs from the committed benchmark; higher is better",
+      height: 240, xLabel: "training week", yLabel: "mean reward per decision", directLabels: true, xTip: (v) => `week ${v + 1}`,
+      series: keys.map((k) => { const [w, m] = k.split("|"); return { name: `${m}, ${w}`, short: `${m} ${w}`, color: COL[m],
+        dash: w === "storm", x: C[k].map((h) => h.episode), y: C[k].map((h) => h.train_reward) }; }),
+    });
+  })();
+
+  /* 7. deviations */
+  Charts.table(document.getElementById("tbl-dev"), ["#", "Paper", "This code", "Why"], [
+    ["1", "State [S_S,5, S_O,5, S_NH,5]", "Adds KLa₅/240 (obs_mode = \"augmented\")", "Restores the Markov property (§6 ①)"],
+    ["2", "Incremental action KLa₅ += a", "Absolute action KLa₅ = (a + 1)/2 · 240 (action_mode = \"absolute\")", "Removes the hidden integrator; the as-published environment is kept as --published-env"],
+    ["3", "Decision every 45 s", "Hold each action for 20 periods (15 min)", "Brings the effluent response inside the discount horizon (§6 ②)"],
+    ["4", "AE in kWh/d inside the reward", "Normalised aeration KLa₅/240 in [0, 1]", "AE ≈ 3,500 would swamp 0.42·excess. Affine in KLa₅, so the same objective up to scale; the paper does not state its units"],
+    ["5", "Plain DDPG update", "Reward × (1 − γ), actor weight decay, pre-tanh penalty", "The critic's ∂Q/∂a had the wrong sign for weeks (§6 ③)"],
+    ["6", "OU noise θ = 0.15, σ = 0.2", "σ from 0.35 annealed to 0.05, 500 warm-up steps, buffer 80,000", "Exploration that does not pin the actuator; a larger buffer for 15–20 training weeks"],
+    ["7", "“7 days of online learning”", "20 passes over the training week", "The published budget did not converge"],
+    ["8", "Official BSM1 influent files", "Statistically equivalent generator with a sharpened pollutograph", "Files not redistributable; the limits must bind (§2)"],
+  ], 99);
+
+  /* 9. frontier */
+  (function () {
+    const F = P.frontier || [];
+    if (!F.length) return pending("ch-frontier", "Frontier");
+    const pid = agg("dry", "PID"), ddpg = runs.filter((r) => r.weather === "dry" && r.method === "DDPG-B");
+    Charts.scatter(document.getElementById("ch-frontier"), {
+      title: "PANDA-RL at four ammonium budgets vs the comparators, dry weather", subtitle: "labels give the budget the operator asked for",
+      height: 320, xLabel: "share of week with NH₄ > 4", yLabel: "aeration energy, kWh/d", xName: "of week above limit", yName: "kWh/d",
+      xFmt: (v) => pct(v, 0),
+      groups: [
+        { name: "PID (DO = 2)", color: COL.PID, shape: "square", points: pid ? [{ x: pid.viol_NH, y: pid.AE, tag: "PID" }] : [] },
+        { name: "DDPG-B (paper 2)", color: COL["DDPG-B"], points: ddpg.map((r) => ({ x: r.viol_NH, y: r.AE, label: `seed ${r.seed}`, tag: "DDPG-B" })) },
+        { name: "PANDA-RL, budget sweep", color: COL["PANDA-RL"], points: F.map((r) => ({ x: r.viol_NH, y: r.AE, label: `budget ${pct(r.nh_budget, 0)}, λ = ${r.lambda[0].toFixed(1)}`, tag: `budget ${pct(r.nh_budget, 0)}` })) },
+      ],
+    });
+    const d = document.getElementById("frontier-notes"); d.className = "callout warn";
+    const p = document.createElement("p");
+    p.textContent = "Read with care: the 15 % budget run is dominated (worse on both axes than the 25 % run), so at one seed and 20 training weeks the budget does not reliably index the operating point. The multipliers move the right way as the budget loosens, so the dual works; the policy has not converged. Interpolating between measured runs, the efficient frontier passes about 50 kWh/d under PID at PID's violation rate and about 55 kWh/d under DDPG-B at DDPG-B's.";
+    d.appendChild(p);
+  })();
+
+  /* 10. weight sweep */
+  (function () {
+    const ws = P.weights || [];
+    if (!ws.length) return pending("ch-sweep", "Weight sweep");
+    const arms = ["DDPG-B", "PANDA-fw", "PANDA-fcast", "PANDA-cvar"].filter((a) => ws.some((r) => r.arm === a));
+    const label = { "DDPG-B": "DDPG-B (paper)", "PANDA-fw": "PANDA-fw: forecast + CVaR", "PANDA-fcast": "forecast only", "PANDA-cvar": "CVaR only" };
+    Charts.scatter(document.getElementById("ch-sweep"), {
+      title: "Fixed-weight sweep: each point is one β₂", subtitle: "a front further down and to the left is better", height: 320,
+      xLabel: "share of week with NH₄ > 4", yLabel: "aeration energy, kWh/d", xName: "of week above limit", yName: "kWh/d", xFmt: (v) => pct(v, 0),
+      groups: arms.map((a) => ({ name: label[a], color: COL[a], shape: a === "DDPG-B" ? "square" : "circle",
+        points: ws.filter((r) => r.arm === a).map((r) => ({ x: r.viol_NH, y: r.AE, label: `β₂ = ${r.beta2}` })) })),
+    });
+    Charts.table(document.getElementById("tbl-sweep"), ["Arm", "What it adds", "Mean gap vs DDPG-B front", "Per point"], [
+      ["PANDA-fw", "forecast + CVaR", "+29 kWh/d", "+51, +25, +35, +3"],
+      ["PANDA-fcast", "forecast only", "+19 kWh/d", "+29, +10"],
+      ["PANDA-cvar", "CVaR only", "+26 kWh/d", "+39, +13"],
+    ], 2);
+    const n = document.createElement("p"); n.className = "small muted";
+    n.textContent = "Gap = how much cheaper the arm's Pareto front is than DDPG-B's, interpolated at DDPG-B's own violation rates (positive = cheaper at the same risk). Source: docs/05_results.md, computed by experiments/09_write_results.py.";
+    document.getElementById("tbl-sweep").appendChild(n);
+  })();
+
+  /* 11. dyna */
+  (function () {
+    const D = P.dyna || [];
+    if (!D.length) return pending("tbl-dyna", "Dyna ablation");
+    Charts.table(document.getElementById("tbl-dyna"), ["Arm", "AE kWh/d", "NH₄ > 4", "mean S_O,5", "final λ (NH, TN)", "wall time"],
+      D.map((r) => [r.arm, r.AE.toFixed(1), pct(r.viol_NH), r.S_O5_mean.toFixed(2), r.lambda.map((v) => v.toFixed(1)).join(", "), `${r.wall_seconds.toFixed(0)} s`]), 1);
+  })();
+})();
+</script>
+</body>
+</html>

@@ -149,7 +149,13 @@ Setting `g = 1, f = 0` gives back exactly the paper's controller.
   heads: 10/50/90 % quantiles (uncertainty) and a dry/rain/storm classifier.
 * `predictor.py` — the online wrapper: feed one measurement per step, get
   the median forecast, the spread, and the 6-number `context()` vector.
-* **Result:** regime accuracy 95.3 %; checkpoint `artifacts/forecaster.pt`.
+* **Result** (checkpoint `artifacts/forecaster.pt`), re-checked on 24 fresh
+  scenarios by `experiments/13_export_site_data.py`: the quantile forecast
+  holds up (2-h median error about 5 % on flow vs 11 % for persistence;
+  the 10–90 % band covers the truth about 80 % of the time). The regime
+  head does **not**: 95.8 % on validation but about 36 % (chance) on fresh
+  scenarios — the validation split drew overlapping windows of the training
+  scenarios, and the scenario-level label is not observable on calm days.
 
 ### 4.2 Digital twin — `twin/`
 

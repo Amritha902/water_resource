@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PANDA Wastewater Control</title>
+<meta name="description" content="Two base papers on learning control of a BSM1 wastewater plant, reproduced from scratch, with our prediction-driven extensions and a claim-by-claim verification ledger.">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="index.html">PANDA</a>
+  <nav class="nav">
+    <a href="index.html" aria-current="page">Overview</a>
+    <a href="paper1/index.html">Paper 1 · MAACC</a>
+    <a href="paper2/index.html">Paper 2 · DDPG aeration</a>
+    <a href="models/index.html">Prediction models</a>
+    <a href="https://github.com/Amritha902/water_resource">Code</a>
+  </nav>
+  <button class="theme-toggle" id="theme">Dark mode</button>
+</div></header>
+
+<main>
+  <h1>Learning control of a wastewater plant: two papers, reproduced and extended</h1>
+  <p class="lede">A BSM1 wastewater plant built from scratch. Two published learning controllers are re-implemented on it,
+  and each is extended with models that <i>predict</i> what the plant is about to face. Every chart on this site is drawn
+  from simulations run with the repository code, and every claim is listed below with its evidence, including the ones
+  that failed.</p>
+  <p class="muted small" id="gen"></p>
+
+  <div class="grid-3">
+    <a class="card" href="paper1/index.html" style="text-decoration:none;color:inherit">
+      <h3>Paper 1 · MAACC →</h3>
+      <p class="small" style="margin:0">Wang, Li, Ren, Qiao, IEEE TII 2026. One adaptive-critic agent per loop
+      (air → oxygen, recycle → nitrate), a learned correction on top of an expert PID, and a cost that charges each agent
+      for both loops. The page has an animated plant, the control law broken into its parts, results and every
+      deviation.</p>
+    </a>
+    <a class="card" href="paper2/index.html" style="text-decoration:none;color:inherit">
+      <h3>Paper 2 · DDPG aeration →</h3>
+      <p class="small" style="margin:0">Du, Chen, Han, Qiao, Sci China Tech Sci 2023. Drop the DO set point and let a
+      DDPG agent trade aeration energy against effluent quality. The page shows the physics, a replay of the evaluation
+      week, the reproduction, the hidden violation cost, and PANDA-RL.</p>
+    </a>
+    <a class="card" href="models/index.html" style="text-decoration:none;color:inherit">
+      <h3>Prediction models →</h3>
+      <p class="small" style="margin:0">The influent forecaster, the neural digital twin and the effluent-ammonium early
+      warning that both extensions build on. Each is re-checked on data it never saw, against a simple baseline.</p>
+    </a>
+  </div>
+
+  <h2 id="ledger">Verification ledger</h2>
+  <p class="sub"><span class="chip ok">Verified</span> means a test or held-out experiment confirms the claim.
+  <span class="chip partial">Partial</span> means it holds with the caveat given next to it.
+  <span class="chip no">Not verified / failed / not done</span> means exactly that. Numbers are read from the result
+  files when the page loads.</p>
+  <div id="ledger-p1"></div>
+  <div id="ledger-p2"></div>
+  <div id="ledger-m"></div>
+
+  <h2 id="tests">Automated tests</h2>
+  <p class="sub" id="tests-sum">Run <code>python -m pytest tests -v</code> to reproduce.</p>
+  <details><summary>Show every test and its result</summary><div id="tests-list"></div></details>
+
+  <h2 id="reproduce">Reproduce everything</h2>
+<pre><code>pip install -r requirements.txt
+python -m pytest tests -v                              # the test suite
+python experiments/03_run_control.py --seeds 2         # paper 1: 54-run tracking benchmark
+python experiments/06_aeration_benchmark.py            # paper 2: aeration benchmark
+python experiments/11_budget_frontier.py               # PANDA-RL: energy / violation frontier
+python experiments/12_weight_sweep.py                  # PANDA-RL: network changes isolated
+python experiments/10_dyna_ablation.py                 # PANDA-RL: Dyna ablation
+python experiments/04_collect_warning_data.py          # early warning: corpus
+python experiments/05_warning_benchmark.py             # early warning: evaluation
+python experiments/09_write_results.py                 # regenerate docs/05_results.md
+# this website
+python experiments/13_export_site_data.py --stages critic twin forecaster closed_loop fig4
+python experiments/16_replay_paper2.py DDPG-B          # (also PID, PANDA-RL)
+python experiments/15_export_warning_extras.py
+python experiments/14_build_site_data.py               # writes docs/data/site-data.js</code></pre>
+
+  <div class="footer">Source: <a href="https://github.com/Amritha902/water_resource">github.com/Amritha902/water_resource</a>.
+  Simulator caveat: BSM1 is re-implemented from its published definition, and the influent is statistically equivalent
+  rather than the official files. Absolute numbers therefore differ from both papers' tables, and every claim here is a
+  comparison between methods on the same simulator.</div>
+</main>
+
+<script src="data/site-data.js"></script>
+<script src="assets/charts.js"></script>
+<script>
+(function () {
+  "use strict";
+  Charts.themeToggle(document.getElementById("theme"));
+  const S = window.SITE || {};
+  document.getElementById("gen").textContent = S.generated
+    ? `Results packed ${S.generated} from commit ${S.commit}.` : "Results not generated yet.";
+  const f3 = (v) => (v == null ? "–" : (+v).toFixed(3));
+  const pct = (v, d = 1) => (v == null ? "–" : (100 * v).toFixed(d) + " %");
+  const sgn = (v) => (v >= 0 ? "+" : "") + v.toFixed(1) + " %";
+
+  /* ---- paper 1 ---- */
+  const P1 = S.paper1 || [];
+  const r1 = (c, w, n) => P1.find((r) => r.condition === c && r.weather === w && r.controller === n);
+  const imp = (c, w, n, k) => { const p = r1(c, w, "PID"), x = r1(c, w, n); return p && x ? 100 * (p[k] - x[k]) / p[k] : null; };
+  const cr = S.critic;
+  function offsetText() {
+    const O = S.paper1_offset || [], R = S.paper1_runs || [];
+    const m = (src, n, w) => { const r = src.filter((x) => x.controller === n && x.weather === w && (x.condition || "noisy") === "noisy"); return r.length ? r.reduce((a, x) => a + x.IAE_SNO2, 0) / r.length : null; };
+    if (!O.length || !R.length) return { status: "partial", text: "Control experiment pending." };
+    const ws = ["dry", "rain", "storm"];
+    const bo = ws.filter((w) => m(R, "MAACC", w) < m(O, "PID+offset", w)), bc = ws.filter((w) => m(R, "MAACC", w) < m(O, "PID-clamp", w));
+    const f = (w) => `${w}: PID ${m(R, "PID", w).toFixed(4)}, MAACC ${m(R, "MAACC", w).toFixed(4)}, constant offset ${m(O, "PID+offset", w).toFixed(4)}, anti-windup prior ${m(O, "PID-clamp", w).toFixed(4)}`;
+    return { status: bo.length >= 2 ? "partial" : "no",
+      text: `IAE S_NO,2 (noisy) — ${ws.map(f).join("; ")}. MAACC beats a constant offset in ${bo.length ? bo.join(", ") : "no weather"} and an anti-windup-tuned prior in ${bc.length ? bc.join(", ") : "no weather"}. The paper-faithful actor (no bias, pure integration, eq. 8) learns a state-dependent correction; part of its gain is compensation a better-tuned prior also gives.` };
+  }
+  let rerun = null;
+  if (S.paper1_rerun && S.paper1_runs) {
+    const pairs = S.paper1_rerun.map((r) => [r, S.paper1_runs.find((c) => c.condition === r.condition && c.weather === r.weather && c.controller === r.controller && c.seed === r.seed)]).filter((p) => p[1]);
+    const maxdiff = Math.max(...pairs.map(([a, b]) => Math.max(Math.abs(a.IAE_SO5 - b.IAE_SO5) / b.IAE_SO5, Math.abs(a.IAE_SNO2 - b.IAE_SNO2) / b.IAE_SNO2)));
+    rerun = { n: pairs.length, maxdiff };
+  }
+  const p1 = [
+    ["BSM1 plant re-implemented: ASM1 biology (13 components, 8 processes), ten-layer Takács clarifier, five reactors", "ok",
+     "Open-loop steady state matches published BSM1 (S_O,5 ≈ 0.49, S_NO,2 ≈ 3.66, effluent TSS ≈ 12.5 g/m³); the settler thickens > 50×; both control channels have the correct gain sign.", "tests/test_bsm1.py"],
+    ["Dry / rain / storm influent", "partial",
+     "Generated from the documented BSM1 statistics, with the pollutograph sharpened so the discharge limits bind (influent S_NH 9–44 mg/L, load peak 1.5× the mean). Statistically equivalent, not the official files.", "src/wwtp/bsm1/influent.py"],
+    ["Expert prior: incremental PID with the paper's gains", "ok", "Tracks both set points; inputs stay inside the BSM1 bounds.", "tests/test_control_loop.py"],
+    ["MAACC algorithm (eqs. 6–10, 13–14, 17)", "ok",
+     "Starts exactly at the expert prior (a₀ = 0); the learned term stays bounded; network gradients match finite differences. Ten documented deviations (Paper 1 page, §9).", "src/wwtp/maacc/"],
+    ["Critic update of eq. (15) as printed", "no",
+     cr ? `Diverges. On a problem whose true Q(0) is ${cr.true_q0.toFixed(3)} (Monte Carlo), the literal update reaches ${cr.paper.q0[cr.paper.q0.length - 1].toFixed(0)}; the per-step gain is 1 + l_c·λ(1−λ)‖ϑ‖² > 1. Replaced by TD(0) on the same residual, which reaches ${cr.td0.q0[cr.td0.q0.length - 1].toFixed(2)}.` : "See Paper 1, §6.",
+     "tests/test_critic_update.py"],
+    ["MAACC beats the PID prior under the paper's noise protocol", "partial",
+     P1.length ? `On the nitrate loop: ${sgn(imp("noisy", "dry", "MAACC", "IAE_SNO2"))} dry, ${sgn(imp("noisy", "rain", "MAACC", "IAE_SNO2"))} rain, ${sgn(imp("noisy", "storm", "MAACC", "IAE_SNO2"))} storm. On the oxygen loop: ${sgn(imp("noisy", "dry", "MAACC", "IAE_SO5"))} / ${sgn(imp("noisy", "rain", "MAACC", "IAE_SO5"))} / ${sgn(imp("noisy", "storm", "MAACC", "IAE_SO5"))}. 2 seeds.` : "pending",
+     "results/summary_paper1.json"],
+    ["…and that gain is learned control, not re-tuning", offsetText().status,
+     offsetText().text,
+     "experiments/17_maacc_offset_control.py"],
+    ["Withdrawn claims: “MAACC never beats a well-tuned PID” and “a de-tuned prior gives the learned term room”", "no",
+     P1.length ? `Both were withdrawn when the full benchmark ran. With the de-tuned prior MAACC is worse everywhere, e.g. nitrate ${sgn(imp("detuned", "storm", "MAACC", "IAE_SNO2"))} on storm.` : "pending",
+     "docs/05_results.md"],
+    ["Committed paper-1 benchmark reproducible from the code", rerun && rerun.maxdiff < 0.02 ? "ok" : rerun ? "partial" : "partial",
+     rerun ? `${rerun.n} runs re-simulated here (seed 0, noisy) differ from the committed numbers by at most ${(100 * rerun.maxdiff).toFixed(2)} % in IAE.` : "Re-run pending.",
+     "experiments/13_export_site_data.py"],
+    ["Our tracking extension (PANDA: forecast context, uncertainty gate, twin-based feed-forward)", "no",
+     P1.length ? `Worse than the PID prior on oxygen in every condition (noisy: ${sgn(imp("noisy", "dry", "PANDA", "IAE_SO5"))} dry); better on nitrate under noise (${sgn(imp("noisy", "dry", "PANDA", "IAE_SNO2"))} dry). Kept as a negative result.` : "pending",
+     "docs/06_tracking_layer_feedforward.md"],
+    ["Paper's Table II numbers; the 7 comparison methods; the “> 90 % success over 20 runs”", "no",
+     "Not reproduced: a different simulator realisation, the baselines are not implemented, and only 2 seeds were run.", "—"],
+  ];
+
+  /* ---- paper 2 ---- */
+  const P2 = S.paper2 || {};
+  const runs = P2.runs || [];
+  const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+  const a2 = (w, m, k) => { const r = runs.filter((x) => x.weather === w && x.method === m); return r.length ? mean(r.map((x) => x[k])) : null; };
+  const save = (w) => { const p = a2(w, "PID", "AE"), d = a2(w, "DDPG-B", "AE"); return p && d ? 100 * (p - d) / p : null; };
+  const R = P2.replays || {}, R2 = P2.replays_t2 || {};
+  const rep = ["PID", "DDPG-B", "PANDA-RL"].filter((m) => R["dry|" + m]).map((m) => {
+    const c = runs.find((x) => x.weather === "dry" && x.method === m && x.seed === 0);
+    const s = (R2["dry|" + m] || R["dry|" + m]).summary;
+    const eq = (q) => c && Math.abs(c.AE - q.AE) < 0.05 && Math.abs(c.viol_NH - q.viol_NH) < 1e-4;
+    return { m, same: eq(s), c, s, t2: !!R2["dry|" + m] };
+  });
+  const F4 = P2.fig4;
+  const p2 = [
+    ["The trade-off paper 2 exploits (its Figure 4): more DO lowers effluent NH₄ and raises total N", "ok",
+     F4 ? `Steady sweep: DO 0.5 → 4.0 takes NH₄ from ${F4[0].nh.toFixed(2)} to ${F4[F4.length - 1].nh.toFixed(2)} and total N from ${F4[0].tn.toFixed(1)} to ${F4[F4.length - 1].tn.toFixed(1)} g/m³; COD, BOD and TSS barely move.` : "Reproduced in docs/04_second_paper.md §2.",
+     "experiments/07_figures.py"],
+    ["PID and fuzzy comparators match the published aeration energy", "ok",
+     runs.length ? `Dry: PID ${a2("dry", "PID", "AE").toFixed(1)} vs 3698.2 published, fuzzy ${a2("dry", "Fuzzy", "AE").toFixed(1)} vs 3697.1 (+0.6 %).` : "pending", "results/summary_aeration.json"],
+    ["DDPG-B saves 5–7 % aeration energy", "ok",
+     runs.length ? `Ours ${save("dry").toFixed(1)} / ${save("rain").toFixed(1)} / ${save("storm").toFixed(1)} % (dry/rain/storm) against the published 7.24 / 5.52 / 6.06 %.` : "pending", "docs/05_results.md"],
+    ["The published recipe learns as described", "no",
+     "As published, the agent collapses to zero aeration. Three corrections were needed (a Markov observation, 15-min decisions, reward scaling plus actor regularisation), together with an absolute action and normalised AE, and about 20 training weeks instead of 7 days.", "docs/04_second_paper.md §5"],
+    ["“The effluent still passes” while saving energy", "no",
+     runs.length ? `Not by the share-of-time measure the paper does not report: DDPG-B is above 4 mg/L NH₄ for ${pct(a2("dry", "DDPG-B", "viol_NH"))} of the dry week, against ${pct(a2("dry", "PID", "viol_NH"))} for PID.` : "pending", "Paper 2 page, §5"],
+    ["Committed paper-2 benchmark reproducible from the code", rep.length && rep.every((r) => r.same) ? "ok" : "partial",
+     rep.length ? rep.map((r) => `${r.m}: ${r.same ? "identical" : `repo ${r.c ? r.c.AE.toFixed(1) : "?"} kWh/d, ${r.c ? pct(r.c.viol_NH) : "?"} vs re-run ${r.s.AE.toFixed(1)} kWh/d, ${pct(r.s.viol_NH)}`}${r.t2 ? " (2 threads, as the benchmark)" : ""}`).join("; ") + ". Dry, seed 0, re-trained here. The first training week matches exactly; RL training is sensitive to floating-point order (thread count), so learners need not match bit-for-bit." : "Re-run pending.",
+     "experiments/16_replay_paper2.py"],
+    ["PANDA-RL network changes (forecast input + CVaR critic) give a cheaper energy/violation front than DDPG-B", "partial",
+     "+29 kWh/d mean gap (forecast only +19, CVaR only +26). One seed per point, and not parameter- or input-matched.", "results/summary_weights*.json"],
+    ["Lagrangian budget: the operator states an allowed violation rate", "partial",
+     "The multipliers move the right way, but at one seed and 20 weeks the budget does not reliably index the operating point (one of 4 runs is dominated) and a 5 % budget is not reached.", "results/summary_frontier.json"],
+    ["Dyna (twin-assisted updates) improves sample efficiency within the constraint", "no",
+     "AE 3749 → 3205 kWh/d at equal real experience, but violations rise from 14 % to 67 %. The intra-episode dual did not fix this (68 %).", "results/summary_dyna.json"],
+  ];
+
+  /* ---- models ---- */
+  const fc = S.forecaster && S.forecaster.heldout, tw = S.twin && S.twin.free_run, W = S.warning && S.warning.operational;
+  const pm = [
+    ["Influent forecaster: 10/50/90 % quantiles, 2 h ahead", "ok",
+     fc ? `On ${fc.n_scenarios} fresh scenarios: 2-h median error ${pct(fc.mape_2h[0])} flow / ${pct(fc.mape_2h[1])} NH₄, against ${pct(fc.mape_2h_persistence[0])} / ${pct(fc.mape_2h_persistence[1])} for persistence. The 10–90 % band covers the truth ${pct(fc.coverage_10_90_2h[0])} of the time (nominal 80 %).` : "pending",
+     "Prediction models page, §2"],
+    ["Forecaster weather-regime head: “95 % accuracy”", "no",
+     fc ? `${pct(fc.regime_accuracy)} on fresh scenarios, about chance for 3 classes. Validation drew random overlapping windows of the training scenarios (leakage), and a scenario-level label is not observable on the calm days of a storm scenario. PANDA and PANDA-RL receive this P(wet) as an input.` : "pending",
+     "Prediction models page, §2"],
+    ["Digital twin: control gains have the right sign (closed-loop identification bias fixed with PRBS data)", "ok",
+     "Twin step responses move in the same direction as the plant's for both actuators.", "tests/test_learned_models.py"],
+    ["Digital twin: free-running accuracy", "partial",
+     tw ? `On ${tw.n_windows} fresh 4.8-h windows: RMSE ${f3(tw.rmse_twin[0])} (DO) and ${f3(tw.rmse_twin[1])} (nitrate) g/m³, against ${f3(tw.rmse_persistence[0])} / ${f3(tw.rmse_persistence[1])} for persistence. The size of the step response is good for some steps and poor for others.` : "pending",
+     "Prediction models page, §3"],
+    ["Effluent-ammonium early warning beats today's alarm and a tuned gradient-boosting model", W ? (W["Early-warning net"].median_lead_min > W["Gradient boosting"].median_lead_min ? "ok" : "partial") : "partial",
+     W ? `Fresh test plants: median warning ${W["Early-warning net"].median_lead_min.toFixed(0)} min before onset at ${W["Early-warning net"].false_alarms_per_day.toFixed(2)} false alarms/day, against ${W["Gradient boosting"].median_lead_min.toFixed(0)} min for gradient boosting and ${W["Analyser alarm (at limit)"].median_lead_min.toFixed(0)} min for the analyser alarm. Re-evaluated here on a freshly simulated corpus with the committed networks. Caveat: retrained without the influent forecast it is about as good (${W["net, no influent forecast"] ? W["net, no influent forecast"].median_lead_min.toFixed(0) : "?"} min), so the forecaster adds little to it.` : "Re-evaluation pending. The repo's STATUS reports 126 min against 96 min for gradient boosting.",
+     "Prediction models page, §4"],
+  ];
+
+  function ledger(id, title, rows) {
+    const box = document.getElementById(id);
+    const h = document.createElement("h3"); h.textContent = title; box.appendChild(h);
+    const label = { ok: "Verified", partial: "Partial", no: "Not verified / failed" };
+    Charts.table(box.appendChild(document.createElement("div")), ["Claim", "Status", "Evidence", "Where"],
+      rows.map((r) => [r[0], { text: label[r[1]], chip: r[1] }, r[2], r[3]]), 99);
+  }
+  ledger("ledger-p1", "Paper 1 · MAACC and our tracking extension", p1);
+  ledger("ledger-p2", "Paper 2 · DDPG aeration and PANDA-RL", p2);
+  ledger("ledger-m", "Shared prediction models", pm);
+
+  if (S.tests) {
+    document.getElementById("tests-sum").textContent =
+      `${S.tests.summary} (${S.tests.items.length} test cases). Reproduce with python -m pytest tests -v.`;
+    Charts.table(document.getElementById("tests-list"), ["Test", "Result"],
+      S.tests.items.map((t) => [t.id, { text: t.status, chip: t.status === "PASSED" ? "ok" : t.status === "SKIPPED" ? "partial" : "no" }]), 99);
+  }
+})();
+</script>
+</body>
+</html>

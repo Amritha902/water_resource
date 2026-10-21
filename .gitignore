@@ -11,4 +11,4 @@ results/*
 !results/summary_*.csv
 !results/aggregate_*.csv
 !results/curves_*.json
-data/
+/data/
