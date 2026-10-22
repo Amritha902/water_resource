@@ -100,4 +100,5 @@ with other counts they land elsewhere on the same energy/violation trade-off.
 
 Docs: `docs/00_code_walkthrough.md` (modules), `01`–`02` paper 1, `03` our
 contribution, `04` paper 2, `05` results, `07_viva_prep.md` (questions to
-expect), `09_faculty_speech.md` (two-minute talk), `STATUS.md` (what is left).
+expect), `09_faculty_speech.md` (two-minute talk),
+`10_paper_study_notes.md` (page-by-page notes on both papers), `STATUS.md` (what is left).
