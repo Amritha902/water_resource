@@ -11,6 +11,61 @@ BSM1 re-implemented from its published definition: ASM1 (13 components, 8 proces
 > D. Wang, X. Li, J. Ren, J. Qiao, *Multiagent Adaptive Critic Control With Expert
 > Knowledge for Wastewater Treatment Plants*, IEEE Trans. Ind. Informat., 2026.
 
+### 2.0 Exact replication — the paper as printed, on the official BSM1
+
+**Set-up.** Plant: the official BSM1 code as ported by `bsm2-python` (FAU-EVT, BSD-3). Influent: the official dry and rain files (the package's rain file writes flows with '.' as thousands separator — repaired on load). The official storm file is not in that package or any source we could reach, so storm is not in this section. Controller: `wwtp/maacc/exact.py` — Table I values, raw units, eqs. (7)–(19) and (27) as printed, nothing tuned by us. Not given in the paper and chosen by us: initial weight scales (inner U[−1,1], critic outer U[−0.1,0.1]). Protocol: 14 days dry weather under PID from the benchmark steady state, then 14 days of the weather file at 45 s; metrics over all 14 days.
+
+**Check 1 — the PID row (no randomness, so it tests plant + protocol):**
+
+| weather | | IAE S_O,5 | ISE S_O,5 | DEVmax S_O,5 | IAE S_NO,2 | ISE S_NO,2 | DEVmax S_NO,2 |
+|---|---|---|---|---|---|---|---|
+| dry | paper | 0.0114 | 0.00032 | 0.0871 | 0.0145 | 0.000474 | 0.0882 |
+| dry | ours | 0.00819 | 0.000172 | 0.0746 | 0.00949 | 0.000225 | 0.0822 |
+| rain | paper | 0.0098 | 0.000241 | 0.0822 | 0.0204 | 0.0011 | 0.19 |
+| rain | ours | 0.00769 | 0.000149 | 0.0754 | 0.139 | 0.153 | 1.73 |
+
+Dry: same order everywhere, DEVmax within 15 %, IAE ~30 % lower than the paper's. Rain: oxygen matches; nitrate does not — in the official rain event (days 8.5–11, inflow up to 52 000 m³/d) the PID drives `Q_a` to its 92 230 m³/d limit and `S_NO,2` falls to ≈0.6, which no controller limited to that range can avoid. The paper's PID DEVmax of 0.19 there means its rain run was not this file with this actuator range; we cannot tell what differs.
+
+**Check 2 — MAACC exactly as printed (20 runs each; mean):**
+
+| case | critic update | IAE S_O,5 | IAE S_NO,2 | vs PID (O / NO) | runs > 1 % better than PID on both | runs that diverged |
+|---|---|---|---|---|---|---|
+| dry | paper (Table II) | 0.000527 | 0.0037 | +95 % / +74 % | > 90 % | — |
+| dry | eq. (18) as printed | 0.00819 | 0.00949 | +0.0 % / -0.0 % | 0/20 | 0/20 |
+| dry | TD(0) | 0.00819 | 0.00949 | +0.0 % / -0.0 % | 0/20 | 0/20 |
+| dry | residual gradient | 0.00819 | 0.00949 | +0.0 % / -0.0 % | 0/20 | 0/20 |
+| rain | paper (Table II) | 0.000509 | 0.006 | +95 % / +71 % | > 90 % | — |
+| rain | eq. (18) as printed | 0.00771 | 0.299 | -0.2 % / -115.3 % | 0/20 | 0/20 |
+| rain | TD(0) | 0.0077 | 0.14 | -0.1 % / -0.7 % | 0/20 | 0/20 |
+| rain | residual gradient | 0.00769 | 0.139 | +0.0 % / -0.1 % | 0/20 | 0/20 |
+| dry + noise | paper (Table III) | 0.0017 | 0.0077 | +86 % / +69 % | > 90 % | — |
+| dry + noise | eq. (18) as printed | 0.0245 | 0.016 | -0.0 % / +0.0 % | 0/20 | 0/20 |
+| dry + noise | TD(0) | 0.0245 | 0.016 | -0.0 % / +0.0 % | 0/20 | 0/20 |
+| dry + noise | residual gradient | 0.0245 | 0.016 | -0.0 % / +0.0 % | 0/20 | 0/20 |
+
+With the printed equations and Table I values the learned term stays near 10⁻⁵ (the raw-unit utility is ~10⁻⁴, so neither network moves): MAACC equals its PID prior to three digits. "Beats PID" above counts differences in the fourth digit.
+
+**Check 3 — the one freedom the paper leaves: initial weight scales** (dry, seed 0; `(inner CN, outer CN, inner AN)` half-widths of the uniform draws; PID: IAE 8.19e-3 / 9.49e-3):
+
+| init | eq. (18) as printed: IAE O / NO | TD(0): IAE O / NO |
+|---|---|---|
+| (0.001, 1, 100) | 0.00819 / 0.00949 | 0.00819 / 0.00949 |
+| (0.01, 10, 100) | 0.00818 / 0.00949 | 0.00818 / 0.00949 |
+| (1, 0.1, 1) | 0.00819 / 0.00949 | 0.00819 / 0.00949 |
+| (1, 0.1, 100) | 0.00818 / 0.00949 | 0.00818 / 0.00949 |
+| (1, 1, 1000) | 2.43 / 8.36 | 0.00818 / 0.00949 |
+| (1, 10, 1) | 0.00824 / 0.272 | 0.00816 / 0.00949 |
+| (1, 10, 100) | 1.55 / 1.19 | 0.00818 / 0.00949 |
+| (1, 10, 10000) | 0.0619 / 1.06 | 0.0082 / 0.0122 |
+| (1, 100, 100) | 3.05 / 1.58 | 3.05 / 1.45 |
+| (1, 1000, 100) | 0.95 / 1.6 | 0.983 / 2.01 |
+| (10, 10, 100) | 0.956 / 1.93 | 2.79 / 0.00844 |
+| (100, 1, 100) | 1.27 / 6.24 | 0.00266 / 0.00948 |
+
+No initialisation reproduces Table II. With the printed critic update every larger initialisation destroys tracking (IAE ≈ 1); small ones leave MAACC equal to PID. With TD(0) the best case improves oxygen only.
+
+**Conclusion.** Followed exactly, the paper does not produce its own Table II on the official plant: MAACC equals PID or diverges. Its numbers must depend on implementation details not in the paper (input scaling, initial weights, or code differing from eqs. (15)–(19)). §2.4 shows what our modified version — larger steps, normalised inputs, safety fallback, on our rebuilt plant — achieves; it is *not* the paper's algorithm as printed.
+
 ### 2.1 What the paper specifies, and where it is in the code
 
 | Paper | Content | Code |
@@ -36,8 +91,8 @@ BSM1 re-implemented from its published definition: ASM1 (13 components, 8 proces
 | 4 | raw units, scale in `W, Y, R, P` | inputs and effort terms normalised by actuator range | equivalent re-parameterisation; lets both agents share learning rates |
 | 5 | `a` unbounded | `a` clipped to ±10 % of each range (±24 1/d, ±9 223 m³/d); `Δa = Δa_max·tanh(·)` with 4 1/d, 1 500 m³/d per step | keeps `a` a correction to the prior |
 | 6 | plain gradient steps | actor outer-weight decay 2.0, critic 1e−4, gradient norm clip 10 | without decay a start-up transient latched the actor at its tanh rail |
-| 7 | `W, Y, R, P`, network sizes not all stated | `W=1, P=0.25, Y=0.02, R=0.05`, critic 16 hidden, actor 12, `l_c=0.02`, `l_a=0.002` | chosen by us |
-| 8 | official BSM1 code and influent files | re-implementation; statistically equivalent influent | files not redistributable — **absolute values differ from Table II** |
+| 7 | **Table I gives them**: `W=(1,2), Y=(0.5,0.05), R=(1e-4,1e-8), P=(2I, I)`, λ 0.95, `l_c` 0.01, `l_a` 0.005, critic 12/14 hidden, actor 10/12 | `W=1, P=0.25, Y=0.02, R=0.05`, critic 16, actor 12, `l_c=0.02`, `l_a=0.002`, λ 0.9 | **our error**: Table I is an image and was missed; we wrongly recorded these as unstated. §2.0 uses the Table I values |
+| 8 | official BSM1 code and influent files | §2.3–2.4: our re-implementation with statistically equivalent influent. §2.0: the official plant (`bsm2-python`) and official dry/rain files | the official files were found later (§2.0); absolute values in §2.3–2.4 differ from Table II |
 | 9 | — | 1-day PID warm-up; first day of each run excluded from metrics | every controller starts from the same plant state |
 | 10 | (`MAACC-tuned`, §2.4) | 10× increment and authority (40 1/d, 15 000 m³/d per step; ±240, ±92 230), no actor decay, `W=30, P=1, Y=0.02, R=0`, `l_c=0.05`, `l_a=0.01` | the conservative defaults above stay at PID level; these reach the paper's gains. 20-seed search on dry weather |
 | 11 | — (`MAACC-tuned`) | **safety fallback**: if the 1-h mean of `|z_i|/z_scale` exceeds 0.15 or of `|tanh|` exceeds 0.7, the actor is zeroed, its `a` is handed to the PID (bumpless) and it waits 1 h | without it 8/20 runs diverge: the untrained critic's slope sends the actor to its rail within ~40 steps |
@@ -63,9 +118,11 @@ Two earlier deviations were **removed** because they broke the incremental polic
 
 **Reading.** Under the paper's own supplementary protocol MAACC improves nitrate tracking over its expert prior in every weather and leaves oxygen within a few percent; in the idealised clean setting, where there is nothing to correct, it changes nothing — both as the paper describes. In our own de-tuned stress test (not in the paper) it is clearly worse: with a weak prior the large standing error drives the purely integrating aeration actor into its clip. That is a limit of eq. (8) with a weak prior, reported as found.
 
-### 2.4 Full reproduction against the paper's Tables II and III
+### 2.4 Our modified MAACC (rebuilt plant) against Tables II and III
 
 Protocol as in the paper: 14 days, 45 s, set points `[1, 2]`, 20 independent runs per case (seed = network initialisation and influent noise), table value = mean over runs. `MAACC-tuned` = `tuned_agent_configs()` (deviations 10–12 below). A run *succeeds* when it beats PID on both IAEs over the 14 days — the paper's definition; it reports > 90 %.
+
+*This section is our modified MAACC on our rebuilt plant — not the paper as printed (that is §2.0).*
 
 **Table II (no noise) and Table III (actuator noise, dry)** — mean of runs:
 

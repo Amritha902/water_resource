@@ -1,7 +1,8 @@
 # RL control of a wastewater treatment plant
 
-We rebuilt the standard BSM1 plant in code, reimplemented two base papers on it,
-and improved the RL agent of the second. Every number below comes from
+We reimplemented two base papers on the BSM1 wastewater benchmark: first
+exactly as printed on the official benchmark plant, then with the changes
+each needed. We also improved the RL agent of the second. Every number below comes from
 `results/`; `docs/05_results.md` is generated from those files.
 
 ## The two base papers
@@ -9,10 +10,10 @@ and improved the RL agent of the second. Every number below comes from
 | | **Paper 1: MAACC** (Wang et al., IEEE T-II 2026) | **Paper 2: floating DO** (Du et al., Sci China Tech Sci 2023) |
 |---|---|---|
 | **What it is** | Two RL agents (oxygen, nitrate) on top of a PID. The learned part starts at zero, so day one is plain PID. | One DDPG agent that lets oxygen float instead of holding 2 mg/L, to save aeration energy. |
-| **Main claimed result** | Tighter tracking than other methods, robust to actuator noise, over 90% training success. | 5–7% less aeration energy than PID, effluent still within limits. |
-| **How we re-obtained it** | Reimplemented the agents, PID gains, setpoints and both test protocols (Table II clean, Table III noise). 20 runs per case, as in the paper; 360 runs in all. | Reimplemented environment, rewards, DDPG, PID and fuzzy comparators. All 3 weathers. |
-| **What we got** | Oxygen error vs PID: **−81%** dry, **−75%** rain, **−32%** storm (paper −95/−95/−92%). Nitrate: median run −84% dry, −83% rain (paper −74/−71%); storm no gain. Runs that beat PID: **18/20** dry and rain (paper: >90%). Under the noise test: **not reproduced** — worse than PID. | Saving reproduced: dry **6.8%** (paper 7.24), rain **4.9%** (5.52), storm **5.0%** (6.06). |
-| **Verdict** | **Reproduced for dry and rain; not for storm nitrate or noise** | **Reproduced** |
+| **Main claimed result** | Oxygen error 92–95% and nitrate error 71–76% below PID (Table II); still 86% / 69% under actuator noise (Table III); over 90% of 20 runs beat PID. | 5–7% less aeration energy than PID, effluent still within limits. |
+| **Exact replication** | Official BSM1 plant (`bsm2-python`, a port of the IWA benchmark code) with the official dry and rain influent; algorithm exactly as printed with the Table I values; 20 runs per case. | Same official plant and influent; PID and fuzzy comparators; DDPG as published. |
+| **What we got** | Plant check: our PID is within ~30% of the paper's PID row in dry weather. **MAACC as printed equals PID** in every run (its learned term stays ~10⁻⁵); 0 of 180 runs beat PID. Larger initial weights only make it diverge. | PID energy within **1%** of the paper's (rain effluent index too). DDPG on the official plant: see `docs/REPRODUCTION.md` §3. On our rebuilt plant: saving 6.8 / 4.9 / 5.0% (paper 7.24 / 5.52 / 6.06). |
+| **Verdict** | **Not reproducible from the paper as printed.** Its numbers need details the paper does not give. | **Reproduced** (energy saving) |
 
 ### Paper vs ours
 
@@ -22,24 +23,22 @@ and improved the RL agent of the second. Every number below comes from
 
 ![Paper 2: energy saving vs PID, paper vs ours](docs/figures/readme_paper2_vs_ours.png)
 
-Orange = the papers' published numbers (from their tables); blue = our runs.
-Paper 1's nitrate bars are means: two bad runs out of 20 pull rain below zero,
-while the typical run is 83% better than PID. Redraw with
+Orange = the papers' published numbers; green = paper 1 run exactly as
+printed on the official plant; blue = our own modified version of paper 1
+(bigger steps, normalised inputs, a safety fallback to PID) on our rebuilt
+plant. The blue bars are **not** the paper's algorithm. They show how far
+changes can take it: oxygen 81% / 75% below PID in dry / rain and 18 of 20
+runs beating PID, but still worse than PID under noise. Redraw with
 `python experiments/19_readme_figures.py`.
 
-Paper 1 needed bigger learning steps than our first, cautious version, plus a
-safety fallback we added: if the learned part makes tracking clearly worse, it
-is reset to zero and the PID takes over smoothly. Without it 8 of 20 runs
-diverged in the first hour. Under the noise test our PID itself gets 3× worse
-(the paper's only 10%), so the noise there must reach the plant differently.
-Not checked: its table against seven other methods, and its stability proof.
+What we got wrong earlier, and fixed: paper 1's Table I (all its
+hyperparameters) is printed as an image, and we missed it. We first wrote that
+those values were "not stated" and chose our own. The exact replication uses
+Table I.
 
-Neither paper runs exactly as published. Paper 1's critic update (eq. 15)
-diverges, and our first actor did not follow eq. (8) (it drifted into its clip
-and acted as a constant offset; fixed and tested). Paper 2's state is not
-Markov, its 45 s decision step is too short for the ammonia response, and its
-critic gradient has the wrong sign early on. Details: `docs/02`, `docs/04`,
-`docs/REPRODUCTION.md`.
+Where the papers do not run as written: paper 1's critic update (eq. 15)
+grows without bound. Paper 2's state is not Markov, and its 45 s decision step
+is too short for the ammonia response. Details: `docs/REPRODUCTION.md`.
 
 ## What we found that the papers do not report
 

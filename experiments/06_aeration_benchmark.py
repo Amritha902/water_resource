@@ -112,6 +112,8 @@ def main() -> None:
     ap.add_argument("--episodes", type=int, default=30)
     ap.add_argument("--threads", type=int, default=2)
     ap.add_argument("--tag", default="aeration")
+    ap.add_argument("--official", action="store_true",
+                    help="official BSM1 plant and influent (dry, rain only)")
     args = ap.parse_args()
 
     torch.set_num_threads(args.threads)
@@ -120,6 +122,13 @@ def main() -> None:
 
     methods = list(args.methods) + (list(ABLATIONS) if args.ablations else [])
     series = {w: influent.canonical_scenario(w) for w in args.weathers}
+    if args.official:
+        from wwtp.official.plant import (OfficialPlantAdapter, official_series,
+                                         paper2_warm_state)
+        from wwtp.rl.env import AerationEnv
+        warm = paper2_warm_state()
+        AerationEnv.plant_factory = staticmethod(lambda: OfficialPlantAdapter(warm))
+        series = {w: official_series(w) for w in args.weathers}
 
     rows: list[dict] = []
     traces: dict[str, dict] = {}

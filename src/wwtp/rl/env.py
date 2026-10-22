@@ -77,6 +77,11 @@ class AerationEnvConfig:
 class AerationEnv:
     """Single-agent BSM1 aeration environment over one influent series."""
 
+    #: builds the plant on reset; ``None`` = our BSM1 re-implementation.
+    #: ``experiments/06_aeration_benchmark.py --official`` sets it to the
+    #: official BSM1 (:class:`wwtp.official.plant.OfficialPlantAdapter`).
+    plant_factory = None
+
     def __init__(self, series: InfluentSeries,
                  cfg: AerationEnvConfig | None = None,
                  plant_params: PlantParameters | None = None,
@@ -97,7 +102,8 @@ class AerationEnv:
     def reset(self) -> np.ndarray:
         cfg = self.cfg
         self.rng = np.random.default_rng(self.seed)
-        self.plant = BSM1Plant(self.plant_params)
+        self.plant = (BSM1Plant(self.plant_params) if self.plant_factory is None
+                      else type(self).plant_factory())
         self.nitrate_pid = IncrementalPID(
             kp=np.array([NITRATE_KP]), ki=np.array([NITRATE_KI]),
             kd=np.array([NITRATE_KD]), u_min=np.array([QA_BOUNDS[0]]),
