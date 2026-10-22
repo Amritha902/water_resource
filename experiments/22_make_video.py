@@ -1,7 +1,7 @@
 """Results video: docs/video/results.mp4 (1280x720, 20 fps).
 
-Scenes: title; paper 1 exactly as printed on the official plant; our modified
-paper 1 on the rebuilt plant; paper 2 on the official plant (PID vs DDPG-B,
+Scenes: title; paper 1 reimplemented as printed on the official plant; paper 2
+reimplemented on the official plant (PID vs DDPG-B,
 when ``results/traces_video_p2_dry.json`` exists); summary.
 Data: ``experiments/21_video_data.py`` and the paper 2 runs.
 """
@@ -94,8 +94,7 @@ def paper2(upto):
         ax.set_xlim(min(pid["t"]), max(pid["t"]))
     axes[0].legend(frameon=False, ncol=2, loc="upper right", fontsize=11)
     axes[2].set_xlabel("time [days]", fontsize=12)
-    fig.text(0.06, 0.015, "Energy: PID 3728 kWh/d · DDPG-B 3331 kWh/d mean of 3 seeds (−10.6%; paper −7.24%). "
-             "Ammonia above limit 56% of the week vs 21% (PID).", fontsize=11.5, color=INK)
+    fig.text(0.06, 0.015, "This run: DDPG-B 3513 vs PID 3728 kWh/d (paper 3430 vs 3698) · DO 1.01 (paper 1.03) · S_NH 3.31 (paper 3.26)", fontsize=11.5, color=INK)
     fig.subplots_adjust(top=0.9, bottom=0.12, left=0.08, right=0.97, hspace=0.15)
 
 
@@ -104,18 +103,15 @@ scenes += [("card", 60, (["Base paper replication on the official BSM1 benchmark
                           "Paper 1: MAACC (Wang et al., IEEE T-II 2026)",
                           "Paper 2: floating DO by DDPG (Du et al., Sci China 2023)"],
                          "Simulations from github.com/Amritha902/water_resource"))]
-scenes += [("card", 50, (["Paper 1, exactly as printed", "Official plant · official dry influent · Table I values"], None))]
+scenes += [("card", 50, (["Paper 1 reimplemented exactly as printed", "Official BSM1 plant · official dry influent · Table I values"], None))]
 scenes += [("p1exact", 220, None)]
-scenes += [("card", 50, (["Paper 1, our modified version", "Bigger steps · scaled inputs · safety fallback to PID",
-                          "(our variant on our rebuilt plant, not the paper's algorithm)"], None))]
-scenes += [("p1mod", 200, None)]
 if p2:
-    scenes += [("card", 50, (["Paper 2 on the official plant", "Oxygen is allowed to float to save aeration energy"], None))]
+    scenes += [("card", 50, (["Paper 2 reimplemented on the official plant", "Oxygen is allowed to float to save aeration energy"], None))]
     scenes += [("p2", 220, None)]
 scenes += [("card", 110, (["Summary",
                            "Paper 1 as printed = PID in 180 of 180 runs: not reproducible",
-                           "Our modified Paper 1: oxygen error −81% (dry), 18 of 20 runs beat PID",
-                           "Paper 2: PID within 1%; DDPG-B saves 10.6% (paper 7.24%), more ammonia"],
+                           "Paper 2: PID within 1%; DDPG-B saves 10.6% (paper 7.24%), more ammonia",
+                           "Reasons: paper 1 does not learn as printed; key details unpublished"],
                           "Every number from saved runs · docs/REPRODUCTION.md"))]
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -135,15 +131,6 @@ with writer.saving(fig, str(OUT), dpi=100):
                          f"The two lines overlap: the learned correction never exceeds "
                          f"{np.abs(off_a[:, 0]).max():.0e} (KLa) / {np.abs(off_a[:, 1]).max():.0e} m³/d (Qa). "
                          "MAACC = PID in all 180 runs.", (0, 14))
-            elif kind == "p1mod":
-                lo = np.searchsorted(reb_t, 8.0)
-                hi = np.searchsorted(reb_t, 10.0)
-                upto = lo + max(2, int((hi - lo) * frac))
-                tracking("Our modified MAACC vs PID · rebuilt plant, dry weather, days 8–10",
-                         reb_t, [("PID (expert prior)", reb_pid, PID, "-"),
-                                 ("Our modified MAACC", reb_mod, MODIFIED, "-")], upto,
-                         "Oxygen error −81%, nitrate −84% (median run) vs PID over 14 days; 18 of 20 runs beat PID. "
-                         "Worse than PID under noise.", (8.0, 10.0))
             elif kind == "p2":
                 paper2(frac)
             writer.grab_frame()
