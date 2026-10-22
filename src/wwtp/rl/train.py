@@ -38,6 +38,7 @@ def evaluate(agent, series: InfluentSeries, reward: RewardSpec,
     rewards: list[float] = []
     trace: dict[str, list] = {k: [] for k in
                               ("t", "S_O5", "KLa5", "S_NH", "N_tot", "q_in")}
+    last_bucket = -1
     while True:
         action = agent.act(np.concatenate([obs, ctx]), info=None, explore=False)
         obs, info, done = env.step(action)
@@ -48,7 +49,9 @@ def evaluate(agent, series: InfluentSeries, reward: RewardSpec,
         rows.append(info)
         eff.extend(info["eff_samples"])
         q_eff.extend(info["q_eff_samples"])
-        if (info["step"] - 1) % record_stride == 0:
+        bucket = (info["step"] - 1) // record_stride     # works for any action interval
+        if bucket != last_bucket:
+            last_bucket = bucket
             trace["t"].append(info["t_days"])
             for key in ("S_O5", "KLa5", "S_NH", "N_tot", "q_in"):
                 trace[key].append(info[key])

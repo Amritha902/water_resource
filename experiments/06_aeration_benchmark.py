@@ -109,6 +109,7 @@ def main() -> None:
     ap.add_argument("--published-env", action="store_true",
                     help="run the learners in the paper's exact environment")
     ap.add_argument("--seeds", type=int, default=2)
+    ap.add_argument("--seed-start", type=int, default=0)
     ap.add_argument("--episodes", type=int, default=30)
     ap.add_argument("--threads", type=int, default=2)
     ap.add_argument("--tag", default="aeration")
@@ -138,7 +139,7 @@ def main() -> None:
     for weather in args.weathers:
         for method in methods:
             trainable = method not in ("PID", "Fuzzy")
-            for seed in range(args.seeds if trainable else 1):
+            for seed in (range(args.seed_start, args.seed_start + args.seeds) if trainable else [0]):
                 jobs.append((weather, method, seed))
 
     for i, (weather, method, seed) in enumerate(jobs, 1):
@@ -160,7 +161,7 @@ def main() -> None:
             for con, lam in zip(agent.constraints, agent.lmbda):
                 row[f"lambda_{con.name}"] = float(lam)
         rows.append(row)
-        if seed == 0:
+        if seed == args.seed_start:
             traces[tag] = result["trace"]
         print(f"    AE={row['AE']:.1f} EQ={row['EQ']:.0f} "
               f"DO={row['S_O5_mean']:.3f} NH={row['S_NH']:.2f} "
