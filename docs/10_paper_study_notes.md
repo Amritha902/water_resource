@@ -3,7 +3,7 @@
 Page-by-page notes made while reimplementing each paper. Each row is a passage
 we highlighted in our annotated copy of the paper (the PDFs are copyrighted and not
 in this public repository; `tools/annotate_papers.py` rebuilds the annotated copies
-from your own PDFs).
+from your own PDFs, and `--notes` regenerates this file).
 
 Read the papers at their publishers:
 [paper 1, doi:10.1109/TII.2026.3659924](https://doi.org/10.1109/TII.2026.3659924) ·
@@ -22,21 +22,22 @@ did not reproduce; **key claim** = what the paper asserts; **parameter** = a set
 | 1 | “The stability of the” | parameter | Theorem 1 (UUB). We did not re-prove it. Note: UUB allows a large bound, so it does not rule out the eq. (15) blow-up we found (p. 4). |
 | 2 | “suffer from low training success rates” | key claim | Motivation: other RL controllers train unreliably. Their claim: MAACC succeeds > 90 % (p. 9). |
 | 3 | “improved into the following incremental control strategy” | key claim | Eq. (8): Delta a = pi(z), a_k = a_{k-1} + Delta a. We keep this exactly: no actor bias, pure integration (an actor bias made a drift into its clip - fixed). |
-| 3 | “Wi, Yi, Ri, and Pi are positive” | parameter | Eq. (10) weights. Values not in the text. Ours (tuned): W=30, P=1, Y=0.02, R=0, inputs normalised by actuator range. |
+| 3 | “Wi, Yi, Ri, and Pi are positive” | parameter | Eq. (10) weights - given in Table I (p. 7): W=(1,2), Y=(0.5,0.05), R=(1e-4,1e-8), P=(2I, I). We missed that table at first (it is an image). The exact replication (src/wwtp/maacc/exact.py) uses these values. |
 | 4 | “approximation error of the CN is expressed as” | problem / not reproduced | PROBLEM FOUND: eq. (15)+(18) as printed diverge. For slowly varying states Q <- Q(1 + lc*lambda*(1-lambda)*//theta//^2) - ..., multiplier > 1 for any lc > 0. Reproduced in tests/test_critic_update.py. We use the standard TD(0) direction instead. |
 | 4 | “the loss function of the AN is” | key claim | Eq. (17): actor minimises 1/2 Q^2. Since a_k = a_{k-1} + Delta a_k, both critic inputs depend on the actor: we use dQ/dDelta a + dQ/da. |
-| 4 | “values (ranging from 0.001 to 0.01)” | parameter | Learning rates. Ours: l_a = 0.01, l_c = 0.05. l_c above their range was needed for the critic to keep up (20-seed search). |
+| 4 | “values (ranging from 0.001 to 0.01)” | parameter | Table I: l_c = 0.01, l_a = 0.005 - used as given in the exact replication. With raw units the utility is ~1e-4, so at these rates neither network moves: MAACC stays equal to PID. |
 | 5 | “of the CN and the AN for the ith agent are UUB if the following” | parameter | UUB bounds the weight error but allows a large bound - consistent with the divergence we see for eq. (15). |
+| 7 | “TABLE I” | parameter | ALL HYPERPARAMETERS: W=(1,2), Y=(0.5,0.05), R=(1e-4,1e-8), P=(2I,I), lambda=0.95, l_c=0.01, l_a=0.005, h_c=(12,14), h_a=(10,12). Used exactly in src/wwtp/maacc/exact.py. We missed this table at first - it is an image, so text extraction skipped it. |
 | 7 | “set to 45 s, and the total simulation duration is set to 14 days” | matched | Same protocol in our runs: 45 s, 14 days, first day excluded (PID warm-up). |
 | 7 | “based on industry experience” | matched | Set points r = [1, 2] used as given. |
-| 7 | “diag{100, 100 000}” | matched | Same PID gains (src/wwtp/baselines/pid.py). Our PID IAE S_O,5 = 0.0076 (paper 0.0114). |
-| 8 | “Trajectories of SO,5 and SNO,2 under the dry weather” | matched | Our version of this figure: docs/figures/readme_paper1_tracking.png - MAACC stays much closer to both set points than PID. |
-| 8 | “white noise with a mean of zero and a standard deviation of 3%” | problem / not reproduced | NOT REPRODUCED. With this noise our PID gets 3x worse (IAE 0.0076 -> 0.0243); the paper's PID only +10 % (0.0114 -> 0.0125). Their noise must reach the plant differently. Our MAACC is worse than PID here. |
-| 9 | “TABLE II” | matched | OURS vs PAPER (mean of 20 runs, error reduction vs PID). Oxygen: dry -81 % (paper -95), rain -75 % (-95), storm -32 % (-92). Nitrate: dry -22 % mean / -84 % median (paper -74), rain +32 % mean / -83 % median (-71), storm no gain (-76). Absolute values differ: rebuilt plant and influent. |
-| 9 | “TABLE III” | problem / not reproduced | Noise case: paper -86 % (O2), -69 % (NO3). Ours: worse than PID (+128 % / +198 %). 0/20 runs beat PID. |
+| 7 | “diag{100, 100 000}” | matched | Same PID gains. On the official BSM1 plant our PID gives IAE S_O,5 = 0.0082, S_NO,2 = 0.0095 (paper 0.0114, 0.0145): same order, ~30 % lower. |
+| 8 | “Trajectories of SO,5 and SNO,2 under the dry weather” | matched | Comparable figure: docs/figures/readme_paper1_tracking.png - from our MODIFIED MAACC (not the paper as printed, which equals PID). |
+| 8 | “white noise with a mean of zero and a standard deviation of 3%” | problem / not reproduced | NOT REPRODUCED. With this noise our PID gets 3x worse on the official plant (IAE 0.0082 -> 0.0245); the paper's PID only +10 % (0.0114 -> 0.0125). Their noise must reach the plant differently. |
+| 9 | “TABLE II” | matched | NOT REPRODUCED AS PRINTED. Official BSM1 plant + official influent + Table I values, 20 runs: MAACC equals PID (0 % change, 0/20 runs better), for every critic-update reading. No initial-weight scale reproduces this table. Only our modified version (bigger steps, normalised inputs, safety fallback; not the paper) gets oxygen -81 / -75 % (dry/rain). |
+| 9 | “TABLE III” | problem / not reproduced | Noise case: paper -86 % (O2), -69 % (NO3). As printed on the official plant: equal to PID. Our modified version: worse than PID. |
 | 9 | “and III are the average values obtained from 20 simulation” | matched | We also ran 20 runs per case: 360 runs in total (results/summary_paper1_full_*.json). |
-| 9 | “training is deemed successful” | matched | Same success definition used. Ours: 18/20 dry, 18/20 rain, 4/20 storm, 0/20 noise. |
-| 9 | “the MAACC algorithm can reach over 90% across 20 simulation” | key claim | As printed we got 12/20: 8 runs diverged in the first hour (untrained critic slope sends the actor to its rail). With our safety fallback (hand back to PID, bumpless) 18/20. |
+| 9 | “training is deemed successful” | matched | Same success definition used. As printed: 0/20 in every case (MAACC = PID). Our modified version: 18/20 dry, 18/20 rain. |
+| 9 | “the MAACC algorithm can reach over 90% across 20 simulation” | key claim | As printed: 0/20 - the learned term never grows. In our modified version 8/20 runs diverged in the first hour until we added a safety fallback to PID: then 18/20. |
 
 ## Paper 2 — Du et al., *DO concentration control in WWTP based on RL*, Sci China Tech Sci 2023
 

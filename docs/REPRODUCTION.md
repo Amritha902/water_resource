@@ -186,6 +186,25 @@ Part of what the agent learns on the recycle loop is a slowly varying negative c
 > S. L. Du, P. X. Chen, H. G. Han, J. F. Qiao, *Dissolved oxygen concentration control in wastewater
 > treatment process based on reinforcement learning*, Sci. China Tech. Sci. 66(9), 2549–2560, 2023.
 
+### 3.0 Exact replication — official BSM1 plant and influent
+
+Plant and influent as in §2.0 (official BSM1 code via `bsm2-python`; official dry and rain files). Paper 2's set-up: `Q_a` at the BSM1 default, PID holds DO at 2 mg/L, learn on week 1 and evaluate on week 2. The plant is first run 14 days on dry weather under that PID. DDPG uses the corrections of §3.5 (as published it collapses to zero aeration — below). Storm: no official file (§2.0).
+
+| weather | method | runs | AE paper | AE ours | EQ paper | EQ ours | S_NH,e paper | ours | N_tot,e paper | ours | saving vs PID paper | ours |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| dry | PID | 1 | 3698.2 | 3728.2 | 6226 | 6196 | 2.34 | 2.81 | 17.85 | 16.90 | — | — |
+| dry | Fuzzy | 1 | 3697.1 | 3728.2 | 6222 | 6196 | 2.33 | 2.81 | 17.84 | 16.90 | +0.03 % | -0.00 % |
+| dry | DDPG-A | 1 | 3556.3 | 3808.9 | 6069 | 6279 | 2.65 | 2.94 | 16.43 | 17.10 | +3.84 % | -2.17 % |
+| dry | DDPG-B | 1 | 3430.3 | 3337.3 | 6073 | 6476 | 3.26 | 4.50 | 15.29 | 15.27 | +7.24 % | +10.48 % |
+| rain | PID | 1 | 3665.7 | 3690.7 | 8220 | 8296 | 2.88 | 3.41 | 16.07 | 15.48 | — | — |
+| rain | Fuzzy | 1 | 3664.5 | 3690.8 | 8211 | 8296 | 2.87 | 3.41 | 16.07 | 15.48 | +0.03 % | -0.00 % |
+| rain | DDPG-A | 1 | 3584.5 | 3586.6 | 8147 | 8484 | 3.11 | 3.94 | 15.25 | 15.31 | +2.22 % | +2.82 % |
+| rain | DDPG-B | 1 | 3463.5 | 3223.2 | 8242 | 9288 | 3.65 | 6.15 | 14.53 | 14.79 | +5.52 % | +12.67 % |
+
+Mean `S_O,5`, dry, evaluation week: PID 1.998 (paper 2.000), DDPG-A 2.488 (paper 1.415), DDPG-B 0.544 (paper 1.032).
+
+Results per seed vary (DDPG is seed-sensitive); runs above are means.
+
 ### 3.1 What the paper specifies
 
 | Item | Specification | Code |

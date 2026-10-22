@@ -3,24 +3,25 @@
 Good morning. My work is on control of a wastewater treatment plant using
 reinforcement learning.
 
-I first rebuilt the standard benchmark plant, BSM1, in code, so every method
-runs on the same simulated plant. Then I reimplemented my two base papers on it.
+I ran both base papers on the official BSM1 benchmark plant, the same
+simulator the papers use, with its official influent data. I followed each
+paper exactly as printed first, and only then changed anything.
 
 **Paper 1, by Wang and co-authors,** puts two learning agents on top of a PID
 controller: one holds oxygen, one holds nitrate. The paper reports errors about
 95% lower than PID for oxygen and about 74% lower for nitrate.
 
-I ran their full protocol, 20 runs per case. In dry and rain weather, oxygen
-error comes out 81 and 75% below PID. Nitrate in a typical run is 84% below
-PID. 18 of 20 runs beat PID, against their "over 90%". In storm, oxygen still
-improves, nitrate does not. Their noise experiment I could not reproduce: under
-the stated noise even my PID gets three times worse, while theirs barely
-changes, so their noise must reach the plant differently.
+I implemented it exactly as printed, with every value from their Table I, on
+the official benchmark plant and influent. The plant checks out: my PID is
+within about 30% of their PID numbers. But the algorithm as printed does not
+learn. In all 180 runs its correction stays near zero and the result equals
+the PID. So their Table II cannot be reproduced from the paper alone; it
+depends on details they do not give.
 
-To get there I had to fix two things. Their critic update, equation 15,
-diverges, so I use the standard TD form. And I added a safety fallback: if
-learning makes tracking worse, control goes back to the PID smoothly. Without
-it, 8 of 20 runs failed.
+To see what the idea can do, I also built a modified version, with bigger
+steps, scaled inputs and a safety fallback to the PID. It reaches 81% lower
+oxygen error in dry weather and beats PID in 18 of 20 runs. But that is my
+variant, not their algorithm, and under noise it is worse than PID.
 
 **Paper 2, by Du and co-authors,** lets oxygen float to save aeration energy.
 They report 5 to 7% saving. I get 6.8, 4.9 and 5.0% for dry, rain and storm,
