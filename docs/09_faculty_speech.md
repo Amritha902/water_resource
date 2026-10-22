@@ -24,10 +24,13 @@ oxygen error in dry weather and beats PID in 18 of 20 runs. But that is my
 variant, not their algorithm, and under noise it is worse than PID.
 
 **Paper 2, by Du and co-authors,** lets oxygen float to save aeration energy.
-They report 5 to 7% saving. I get 6.8, 4.9 and 5.0% for dry, rain and storm,
-so this one reproduces. But I also found something the paper does not report:
-the saving comes with the ammonia limit broken about three times as often as
-under PID.
+They report 7.2% saving in dry weather and 5.5% in rain. On the official plant
+my PID and fuzzy comparators match their numbers within 1%. My DDPG agent
+saves 10.6% and 7.1% on average. One of the three training seeds lands almost
+exactly on their result, but the seeds spread widely, and as published the
+agent cannot learn at all: it needed three fixes. I also found something the
+paper does not report: the saving comes with the ammonia limit broken far
+more often than under PID.
 
 **My contribution** is a better agent for paper 2. It adds an influent
 forecast and a risk-aware critic, and it handles the limits as constraints.

@@ -7,9 +7,9 @@
 - **Our modified version (not theirs):** bigger steps, scaled inputs and a safety fallback to PID reach oxygen 81% / 75% below PID in dry / rain, 18 of 20 runs better than PID, but it is worse than PID under noise.
 
 ## Paper 2: floating DO (Du et al., Sci China Tech Sci 2023)
-- **Their result:** letting dissolved oxygen float, instead of holding 2 mg/L, saves 5–7% aeration energy with effluent still within limits.
-- **We obtained:** 6.8% / 4.9% / 5.0% on dry / rain / storm (paper 7.24 / 5.52 / 6.06). But the ammonia limit is broken 35–38% of the time, against 12–23% for PID.
-- **Mechanism followed:** yes. DDPG, same state, rewards, network sizes and hyperparameters, train on week 1, test on week 2.
-- **Changes:** as published it collapses to zero air. It needed the air setting added to the state, a 15-minute decision step, rewards scaled by (1 − γ), and a penalty that stops the actor saturating.
+- **Their result:** letting dissolved oxygen float, instead of holding 2 mg/L, saves 7.24% (dry) and 5.52% (rain) aeration energy versus PID, effluent still within limits.
+- **We obtained:** on the official BSM1 plant the PID and fuzzy comparators match their tables within 1%. Our DDPG-B saves 10.6% (dry) and 7.1% (rain) on average, with more ammonia than theirs; the 3 seeds spread from 5.8% to 15.7%, and one seed lands on their numbers (3513 vs 3430 kWh/d, DO 1.01 vs 1.03).
+- **Mechanism followed:** yes: DDPG, same state, rewards, network sizes and hyperparameters, train on week 1, test on week 2.
+- **Changes:** as published it cannot learn. It needed the air setting added to the state, a 15-minute decision step and rewards scaled by (1 − γ). Not reported by them: the ammonia limit is broken far more often than under PID.
 
-Both: our plant and influent are rebuilt from the model definition, so results match in direction and size, not exactly.
+Both: run on the official BSM1 plant and influent (`bsm2-python`). The official storm file was not available, so storm is only on our rebuilt plant.

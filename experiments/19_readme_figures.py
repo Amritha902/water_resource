@@ -86,15 +86,20 @@ def paper2_bars():
     for extra in ("summary_aeration_rs.json", "summary_aeration_storm_base.json"):
         seen = {(r["weather"], r["method"], r["seed"]) for r in aer}
         aer += [r for r in (rep.load(extra) or []) if (r["weather"], r["method"], r["seed"]) not in seen]
-    pick = lambda w, m: [r for r in aer if r["weather"] == w and r["method"] == m]
-    ws = ("dry", "rain", "storm")
-    paper = [rep.PAPER2["DDPG-B_saving"][w] for w in ws]
-    ours = [rep.pct(rep.mean(pick(w, "DDPG-B"), "AE"), rep.mean(pick(w, "PID"), "AE")) for w in ws]
-    fig, ax = plt.subplots(figsize=(5.2, 3.6))
-    bars(ax, ["Dry", "Rain", "Storm"], [("Paper", paper, PAPER), ("Ours", ours, OURS)],
-         "Paper 2 · aeration energy saved vs PID", "saving (%)", fmt="{:.1f}%")
-    ax.set_ylim(0, 9)
-    ax.legend(frameon=False, loc="upper right")
+    off = [r for r in rep.load_tags("aeration_official") if "published" not in r.get("method", "")]
+    pick = lambda rows, w, m: [r for r in rows if r["weather"] == w and r["method"] == m]
+    ws = ("dry", "rain")
+    pub = json.loads((RES / "published_paper2.json").read_text())
+    paper = [rep.pct(pub[w]["DDPG-B"]["AE"], pub[w]["PID"]["AE"]) for w in ws]
+    official = [rep.pct(rep.mean(pick(off, w, "DDPG-B"), "AE"), rep.mean(pick(off, w, "PID"), "AE")) for w in ws]
+    rebuilt = [rep.pct(rep.mean(pick(aer, w, "DDPG-B"), "AE"), rep.mean(pick(aer, w, "PID"), "AE")) for w in ws]
+    fig, ax = plt.subplots(figsize=(6.4, 3.8))
+    bars(ax, ["Dry", "Rain"], [("Paper", paper, PAPER),
+                               ("Ours, official BSM1 (mean of 3 seeds)", official, EXACT),
+                               ("Ours, rebuilt plant (mean of 2 seeds)", rebuilt, OURS)],
+         "Paper 2 · DDPG-B aeration energy saved vs PID", "saving (%)", fmt="{:.1f}%")
+    ax.set_ylim(0, 14)
+    ax.legend(frameon=False, loc="upper right", fontsize=8)
     fig.tight_layout()
     fig.savefig(FIG / "readme_paper2_vs_ours.png", dpi=150)
 

@@ -194,14 +194,18 @@ Plant and influent as in §2.0 (official BSM1 code via `bsm2-python`; official d
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | dry | PID | 1 | 3698.2 | 3728.2 | 6226 | 6196 | 2.34 | 2.81 | 17.85 | 16.90 | — | — |
 | dry | Fuzzy | 1 | 3697.1 | 3728.2 | 6222 | 6196 | 2.33 | 2.81 | 17.84 | 16.90 | +0.03 % | -0.00 % |
-| dry | DDPG-A | 1 | 3556.3 | 3808.9 | 6069 | 6279 | 2.65 | 2.94 | 16.43 | 17.10 | +3.84 % | -2.17 % |
-| dry | DDPG-B | 1 | 3430.3 | 3337.3 | 6073 | 6476 | 3.26 | 4.50 | 15.29 | 15.27 | +7.24 % | +10.48 % |
+| dry | DDPG-A | 3 | 3556.3 | 3652.5 | 6069 | 6319 | 2.65 | 3.40 | 16.43 | 16.47 | +3.84 % | +2.03 % |
+| dry | DDPG-B | 3 | 3430.3 | 3331.2 | 6073 | 6717 | 3.26 | 5.03 | 15.29 | 15.57 | +7.24 % | +10.65 % |
 | rain | PID | 1 | 3665.7 | 3690.7 | 8220 | 8296 | 2.88 | 3.41 | 16.07 | 15.48 | — | — |
 | rain | Fuzzy | 1 | 3664.5 | 3690.8 | 8211 | 8296 | 2.87 | 3.41 | 16.07 | 15.48 | +0.03 % | -0.00 % |
-| rain | DDPG-A | 1 | 3584.5 | 3586.6 | 8147 | 8484 | 3.11 | 3.94 | 15.25 | 15.31 | +2.22 % | +2.82 % |
-| rain | DDPG-B | 1 | 3463.5 | 3223.2 | 8242 | 9288 | 3.65 | 6.15 | 14.53 | 14.79 | +5.52 % | +12.67 % |
+| rain | DDPG-A | 3 | 3584.5 | 3524.0 | 8147 | 8631 | 3.11 | 4.40 | 15.25 | 15.07 | +2.22 % | +4.52 % |
+| rain | DDPG-B | 3 | 3463.5 | 3430.2 | 8242 | 8703 | 3.65 | 4.72 | 14.53 | 14.84 | +5.52 % | +7.06 % |
 
-Mean `S_O,5`, dry, evaluation week: PID 1.998 (paper 2.000), DDPG-A 2.488 (paper 1.415), DDPG-B 0.544 (paper 1.032).
+Mean `S_O,5`, dry, evaluation week: PID 1.998 (paper 2.000), DDPG-A 1.876 (paper 1.415), DDPG-B 0.671 (paper 1.032).
+
+Per seed (saving vs PID / effluent S_NH): dry DDPG-A: -2.2 % / 2.94, +4.1 % / 3.18, +4.2 % / 4.09; dry DDPG-B: +10.5 % / 4.50, +5.8 % / 3.31, +15.7 % / 7.30; rain DDPG-A: +2.8 % / 3.94, +7.6 % / 4.68, +3.1 % / 4.57; rain DDPG-B: +12.7 % / 6.15, +0.4 % / 3.45, +8.1 % / 4.56.
+
+**Reading.** The comparators match the paper within 1 % on energy and effluent quality. All but one DDPG run (dry DDPG-A, seed 0) move the plant the way the paper describes — less air, lower DO, more ammonium, less total nitrogen — and one seed lands almost on the paper's numbers (dry DDPG-B, seed 1: AE 3513 vs 3430, DO 1.01 vs 1.03, S_NH 3.31 vs 3.26, EQ 6164 vs 6073). But the seeds spread widely: the mean DDPG-B saving is larger than the paper's and comes with more ammonium, and dry DDPG-A saves less. The paper reports one number per case without seeds or spread, so which point on this spread it reports cannot be checked.
 
 Results per seed vary (DDPG is seed-sensitive); runs above are means.
 

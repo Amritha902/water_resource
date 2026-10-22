@@ -43,11 +43,11 @@ P2 = [
  (8, "the in\ufb02uent data are taken as the in\ufb02uent of WWTPs in the", G, "Same protocol: learn on week 1, evaluate on week 2."),
  (9, "the size of the replay bu" + "ﬀ" + "er is set to R = 30000;", B, "Same hyper-parameters: gamma 0.99, batch 256, tau 0.001, lr 1e-4 / 3e-4, actor/critic 256-256. Plus reward scaled by (1 - gamma) - the critic's dQ/da had the wrong sign for weeks without it."),
  (9, "ﬁnally we let β1 = 1, β2 = 0.42.", B, "beta2 = 0.42 used as given. AE entered as KLa5/240 (units not stated; raw AE ~3500 would swamp the 0.42 term)."),
- (10, "AE is reduced by 5.52% and", G, "REPRODUCED. Rain saving ours 4.9 % (paper 5.52 %)."),
- (10, "AE is decreased by 7.24% and 7.22%", G, "REPRODUCED. Dry saving ours 6.8 % (paper 7.24 %). PID AE dry ours 3719.7 kWh/d vs paper 3698.2 (+0.6 %)."),
- (10, "6.06% and 6.03%, respectively in", G, "REPRODUCED. Storm saving ours 5.0 % (paper 6.06 %)."),
- (10, "appears to increase under DDPG-A and DDPG-B", R, "NOT REPORTED BY THE PAPER: how often the 4 g N/m3 ammonia limit is broken. Ours: DDPG-B 38 % of the week (dry) vs 12 % for PID. The energy saving is bought with violations - this motivates our constrained, risk-aware agent."),
- (10, "Comparisons of AE and EQ under four di" + "ﬀ" + "erent control strategies", Y, "Mean S_O,5 dry: PID 1.998 (paper 2.000), DDPG-B 1.130 (1.032), DDPG-A 1.894 (1.415) - DDPG-A not matched, ours settles more conservatively."),
+ (10, "AE is reduced by 5.52% and", G, "Rain, official BSM1: our DDPG-B saves 7.1 % on average (3 seeds: 12.7 / 0.4 / 8.1 %), with more ammonium than the paper. PID AE 3691 vs paper 3666 (+0.7 %), EQ 8296 vs 8220."),
+ (10, "AE is decreased by 7.24% and 7.22%", G, "Dry, official BSM1: PID AE 3728 vs paper 3698 (+0.8 %) - comparator matches. Our DDPG-B saves 10.6 % on average (seeds 10.5 / 5.8 / 15.7 %); seed 1 lands on the paper: AE 3513 vs 3430, DO 1.01 vs 1.03, S_NH 3.31 vs 3.26."),
+ (10, "6.06% and 6.03%, respectively in", G, "Storm: no official storm file available to us. On our rebuilt plant the saving is 5.0 % (paper 6.06 %)."),
+ (10, "appears to increase under DDPG-A and DDPG-B", R, "NOT REPORTED BY THE PAPER: how often the 4 g N/m3 ammonia limit is broken. Official plant: DDPG-B 56 % of the week (dry) vs 21 % for PID. The energy saving is bought with violations - this motivates our constrained, risk-aware agent."),
+ (10, "Comparisons of AE and EQ under four di" + "ﬀ" + "erent control strategies", Y, "Official plant, mean S_O,5 dry: PID 1.998 (paper 2.000), DDPG-A 1.88 (1.415), DDPG-B 0.67 (1.032). Means over 3 seeds; DDPG is very seed-sensitive and the paper reports no seeds or spread."),
 ]
 
 def run(src, dst, items, summary):
@@ -111,4 +111,4 @@ if __name__ == "__main__":
     run(sys.argv[1], sys.argv[3], P1,
         "SUMMARY - Exact replication: official BSM1 plant and influent, algorithm as printed, Table I values, 20 runs per case. PID matches the paper's PID row within ~30 % (dry). MAACC as printed EQUALS PID in all 180 runs: Table II/III NOT reproducible from the text. Our modified version (bigger steps, normalised inputs, safety fallback - not the paper) reaches oxygen -81/-75 % vs PID in dry/rain. Legend: green = matched, red = problem / not reproduced, yellow = key claim, blue = parameter.")
     run(sys.argv[2], sys.argv[4], P2,
-        "SUMMARY - Paper 2 reproduced: energy saving 6.8 / 4.9 / 5.0 % (paper 7.24 / 5.52 / 6.06). Needed: KLa5 in the state, 15-min decisions, reward scaled by (1 - gamma). Not reported by the paper: the ammonia limit is broken ~3x as often as under PID. Legend: green = matched, red = problem / not reported, yellow = key claim, blue = parameter.")
+        "SUMMARY - Official BSM1 plant and influent: PID and fuzzy match the paper within 1 % (energy, effluent index). DDPG-B saves 10.6 % (dry) / 7.1 % (rain) on average vs paper 7.24 / 5.52 %, with more ammonium; seeds spread widely and one lands on the paper's numbers. As published the agent cannot learn: needed KLa5 in the state, 15-min decisions, reward scaled by (1 - gamma). Not reported by the paper: the ammonia limit is broken far more often than under PID. Legend: green = matched, red = problem / not reported, yellow = key claim, blue = parameter.")
