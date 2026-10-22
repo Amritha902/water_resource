@@ -86,7 +86,7 @@ def paper2_bars():
     for extra in ("summary_aeration_rs.json", "summary_aeration_storm_base.json"):
         seen = {(r["weather"], r["method"], r["seed"]) for r in aer}
         aer += [r for r in (rep.load(extra) or []) if (r["weather"], r["method"], r["seed"]) not in seen]
-    off = [r for r in rep.load_tags("aeration_official") if "published" not in r.get("method", "")]
+    off = rep.load_tags("aeration_official", exclude="published")
     pick = lambda rows, w, m: [r for r in rows if r["weather"] == w and r["method"] == m]
     ws = ("dry", "rain")
     pub = json.loads((RES / "published_paper2.json").read_text())

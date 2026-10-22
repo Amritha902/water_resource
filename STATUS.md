@@ -9,7 +9,7 @@ what is left.
 |---|---|
 | BSM1 plant (ASM1 biology, Takács clarifier, 5 tanks, influent generator) | **done**, validated against published BSM1 steady state |
 | Paper 1 (MAACC) reproduced | **done — not reproducible as printed.** Exact replication on the official BSM1 plant and influent with the Table I values (`experiments/20_exact_paper1.py`, `docs/REPRODUCTION.md` §2.0): PID within ~30 % of the paper's PID row (dry); MAACC as printed equals PID in all 180 runs; no initial-weight scale reproduces Table II. Our modified version (§2.4, rebuilt plant) reaches oxygen −81 / −75 % vs PID in dry / rain but is not the paper's algorithm. |
-| Paper 2 on the official plant | **done**: comparators within 1 %; DDPG-B saving 10.6 / 7.1 % (dry/rain, 3 seeds; paper 7.24 / 5.52), more ammonium, wide seed spread (`docs/REPRODUCTION.md` §3.0) |
+| Paper 2 on the official plant | **done**: comparators within 1 %; DDPG-B saving 10.6 / 7.1 % (dry/rain, 3 seeds; paper 7.24 / 5.52), more ammonium, wide seed spread; exactly as published (1 seed) ends at 10.7 % after a mid-training collapse (`docs/REPRODUCTION.md` §3.0) |
 | Paper 1 — correction to the critic update in eq. (15) | **done**, reproduced by a test |
 | Influent forecaster (TCN, quantiles + weather regime) | **trained** |
 | Digital twin (GRU) | **trained** |

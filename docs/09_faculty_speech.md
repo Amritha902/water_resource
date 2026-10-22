@@ -28,9 +28,9 @@ algorithm, and under noise it is worse than PID.
 They report 7.2% saving in dry weather and 5.5% in rain. On the official plant
 my PID and fuzzy comparators match their numbers within 1%. My DDPG agent
 saves 10.6% and 7.1% on average over three training seeds, and one seed lands
-almost exactly on their result. But the seeds spread widely, and as published
-the agent shuts the air almost off and ammonia goes far over the limit: it
-needed three fixes before it learned. I also found what the paper does
+almost exactly on their result. But the seeds spread widely. Run exactly as
+published, it shuts the air almost off during training, then recovers to a
+similar 10.7% saving. I also found what the paper does
 not report: with that saving, effluent ammonia is above its limit 56% of the
 week, against 21% under PID.
 

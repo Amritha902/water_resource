@@ -212,10 +212,11 @@ def paper1(lines: list[str]) -> None:
                   "Read MAACC's gain against both columns, not against the PID alone.", ""]
 
 
-def load_tags(prefix: str) -> list:
+def load_tags(prefix: str, exclude: str | None = None) -> list:
     rows = []
     for p in sorted(RES.glob(f"summary_{prefix}*.json")):
-        rows += json.loads(p.read_text())
+        if exclude is None or exclude not in p.name:
+            rows += json.loads(p.read_text())
     return rows
 
 
@@ -276,17 +277,16 @@ def full_section(lines: list[str]) -> None:
 
 def paper2_exact() -> list[str]:
     """§3.0: paper 2 on the official plant and influent."""
-    rows = load_tags("aeration_official")
+    rows = load_tags("aeration_official", exclude="published")
     pub = load("published_paper2.json")
     L = ["### 3.0 Exact replication — official BSM1 plant and influent", ""]
     if not rows or not pub:
         return L + ["Not run yet: `python experiments/06_aeration_benchmark.py --official --weathers dry rain`.", ""]
-    rows = [r for r in rows if "published" not in r.get("method", "")]
     pick = lambda w, m, src=None: [r for r in rows if r["weather"] == w and r["method"] == m]
     L += ["Plant and influent as in §2.0 (official BSM1 code via `bsm2-python`; official dry and rain files). "
           "Paper 2's set-up: `Q_a` at the BSM1 default, PID holds DO at 2 mg/L, learn on week 1 and evaluate "
           "on week 2. The plant is first run 14 days on dry weather under that PID. DDPG uses the corrections of "
-          "§3.5 (as published it collapses to zero aeration — below). Storm: no official file (§2.0).", "",
+          "§3.5; the published version is reported below the table. Storm: no official file (§2.0).", "",
           "| weather | method | runs | AE paper | AE ours | EQ paper | EQ ours | S_NH,e paper | ours | N_tot,e paper | ours | saving vs PID paper | ours |",
           "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for w in ("dry", "rain"):
@@ -321,9 +321,13 @@ def paper2_exact() -> list[str]:
     pubrun = [r for r in load_tags("aeration_official_published")]
     if pubrun:
         r = pubrun[0]
-        L += ["", f"**As published** (paper's state, 45 s incremental action, unscaled reward), DDPG-B, dry: "
-              f"AE {r['AE']:.0f} kWh/d, mean DO {r['S_O5_mean']:.2f} mg/L, ammonium above 4 g N/m³ "
-              f"{100 * r['viol_NH']:.0f} % of the week."]
+        L += ["", f"**As published** (paper's state, 45 s incremental action, unscaled reward), DDPG-B, dry, "
+              f"1 seed: mid-training it shut the air almost off (DO 0.03 mg/L, S_NH 11 at episodes 14–19), "
+              f"but by the end it settled at AE {r['AE']:.0f} kWh/d "
+              f"({pct(r['AE'], mean(pick('dry', 'PID'), 'AE')):+.1f} % vs PID), mean DO {r['S_O5_mean']:.2f} mg/L, "
+              f"S_NH {r['S_NH']:.2f}, ammonium above 4 g N/m³ {100 * r['viol_NH']:.0f} % of the week — about where "
+              "our fixed version lands. On our rebuilt plant the published version collapsed to zero aeration "
+              "(§3.5), which is why we added the fixes; on the official plant, for this seed, they were not needed."]
     L += ["", "Results per seed vary (DDPG is seed-sensitive); runs above are means.", ""]
     return L
 

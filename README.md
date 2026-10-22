@@ -12,7 +12,7 @@ each needed. We also improved the RL agent of the second. Every number below com
 | **What it is** | Two RL agents (oxygen, nitrate) on top of a PID. The learned part starts at zero, so day one is plain PID. | One DDPG agent that lets oxygen float instead of holding 2 mg/L, to save aeration energy. |
 | **Main claimed result** | Oxygen error 92–95% and nitrate error 71–76% below PID (Table II); still 86% / 69% under actuator noise (Table III); over 90% of 20 runs beat PID. | 5–7% less aeration energy than PID, effluent still within limits. |
 | **Exact replication** | Official BSM1 plant (`bsm2-python`, a port of the IWA benchmark code) with the official dry and rain influent; algorithm exactly as printed with the Table I values; 20 runs per case. | Same official plant and influent; PID and fuzzy comparators; DDPG-A and DDPG-B, 3 seeds each, dry and rain. |
-| **What we got** | Plant check: our PID is within ~30% of the paper's PID row in dry weather. **MAACC as printed equals PID** in every run (its learned term stays ~10⁻⁵); 0 of 180 runs beat PID. Larger initial weights only make it diverge. | PID and fuzzy: energy and effluent index within **1%** of the paper. DDPG-B saving: dry **10.6%**, rain **7.1%** (paper 7.24 / 5.52), with more ammonia than the paper. Seeds spread widely (dry 5.8–15.7%); one seed lands on the paper (dry: 3513 vs 3430 kWh/d, DO 1.01 vs 1.03). As published, the agent cannot learn; it needs 3 fixes. |
+| **What we got** | Plant check: our PID is within ~30% of the paper's PID row in dry weather. **MAACC as printed equals PID** in every run (its learned term stays ~10⁻⁵); 0 of 180 runs beat PID. Larger initial weights only make it diverge. | PID and fuzzy: energy and effluent index within **1%** of the paper. DDPG-B saving: dry **10.6%**, rain **7.1%** (paper 7.24 / 5.52), with more ammonia than the paper. Seeds spread widely (dry 5.8–15.7%); one seed lands on the paper (dry: 3513 vs 3430 kWh/d, DO 1.01 vs 1.03). Exactly as published (1 seed) it ends at a 10.7% saving, close to our fixed version, after shutting the air almost off mid-training. |
 | **Verdict** | **Not reproducible from the paper as printed.** Its numbers need details the paper does not give. | **Comparators reproduced exactly; DDPG reproduced in direction, not in exact size** |
 
 ### Paper vs ours
@@ -41,7 +41,8 @@ Table I.
 
 Where the papers do not run as written: paper 1's critic update (eq. 15)
 grows without bound. Paper 2's state is not Markov, and its 45 s decision step
-is too short for the ammonia response. Details: `docs/REPRODUCTION.md`.
+is too short for the ammonia response; on our rebuilt plant that made it
+collapse, though on the official plant it recovered. Details: `docs/REPRODUCTION.md`.
 
 ## What we found that the papers do not report
 
