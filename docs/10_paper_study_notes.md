@@ -5,6 +5,10 @@ we highlighted in our annotated copy of the paper (the PDFs are copyrighted and 
 in this public repository; `tools/annotate_papers.py` rebuilds the annotated copies
 from your own PDFs).
 
+Read the papers at their publishers:
+[paper 1, doi:10.1109/TII.2026.3659924](https://doi.org/10.1109/TII.2026.3659924) ·
+[paper 2, doi:10.1007/s11431-022-2403-8](https://doi.org/10.1007/s11431-022-2403-8).
+
 Tag: **matched** = we reproduced it; **problem** = it does not work as printed or
 did not reproduce; **key claim** = what the paper asserts; **parameter** = a setting we used.
 
