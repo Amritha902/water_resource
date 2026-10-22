@@ -307,6 +307,17 @@ def paper2_exact() -> list[str]:
     if all(dd.values()):
         L += ["", "Mean `S_O,5`, dry, evaluation week: " + ", ".join(
             f"{m} {mean(v, 'S_O5_mean'):.3f} (paper {pub['DO_mean_dry'][m]:.3f})" for m, v in dd.items()) + "."]
+    L += ["", "Per seed (saving vs PID / effluent S_NH): " + "; ".join(
+        f"{w} {m}: " + ", ".join(f"{pct(r['AE'], mean(pick(w, 'PID'), 'AE')):+.1f} % / {r['S_NH']:.2f}"
+                                 for r in sorted(pick(w, m), key=lambda r: r["seed"]))
+        for w in ("dry", "rain") for m in ("DDPG-A", "DDPG-B") if pick(w, m)) + ".",
+          "", "**Reading.** The comparators match the paper within 1 % on energy and effluent quality. All but one "
+          "DDPG run (dry DDPG-A, seed 0) move the plant the way the paper describes — less air, lower DO, more ammonium, less "
+          "total nitrogen — and one seed lands almost on the paper's numbers (dry DDPG-B, seed 1: AE 3513 vs "
+          "3430, DO 1.01 vs 1.03, S_NH 3.31 vs 3.26, EQ 6164 vs 6073). But the seeds spread widely: the "
+          "mean DDPG-B saving is larger than the paper's and comes with more ammonium, and dry DDPG-A saves "
+          "less. The paper reports one number per case without seeds or spread, so which point on this "
+          "spread it reports cannot be checked."]
     pubrun = [r for r in load_tags("aeration_official_published")]
     if pubrun:
         r = pubrun[0]

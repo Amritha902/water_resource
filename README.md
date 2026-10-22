@@ -11,9 +11,9 @@ each needed. We also improved the RL agent of the second. Every number below com
 |---|---|---|
 | **What it is** | Two RL agents (oxygen, nitrate) on top of a PID. The learned part starts at zero, so day one is plain PID. | One DDPG agent that lets oxygen float instead of holding 2 mg/L, to save aeration energy. |
 | **Main claimed result** | Oxygen error 92–95% and nitrate error 71–76% below PID (Table II); still 86% / 69% under actuator noise (Table III); over 90% of 20 runs beat PID. | 5–7% less aeration energy than PID, effluent still within limits. |
-| **Exact replication** | Official BSM1 plant (`bsm2-python`, a port of the IWA benchmark code) with the official dry and rain influent; algorithm exactly as printed with the Table I values; 20 runs per case. | Same official plant and influent; PID and fuzzy comparators; DDPG as published. |
-| **What we got** | Plant check: our PID is within ~30% of the paper's PID row in dry weather. **MAACC as printed equals PID** in every run (its learned term stays ~10⁻⁵); 0 of 180 runs beat PID. Larger initial weights only make it diverge. | PID energy within **1%** of the paper's (rain effluent index too). DDPG on the official plant: see `docs/REPRODUCTION.md` §3. On our rebuilt plant: saving 6.8 / 4.9 / 5.0% (paper 7.24 / 5.52 / 6.06). |
-| **Verdict** | **Not reproducible from the paper as printed.** Its numbers need details the paper does not give. | **Reproduced** (energy saving) |
+| **Exact replication** | Official BSM1 plant (`bsm2-python`, a port of the IWA benchmark code) with the official dry and rain influent; algorithm exactly as printed with the Table I values; 20 runs per case. | Same official plant and influent; PID and fuzzy comparators; DDPG-A and DDPG-B, 3 seeds each, dry and rain. |
+| **What we got** | Plant check: our PID is within ~30% of the paper's PID row in dry weather. **MAACC as printed equals PID** in every run (its learned term stays ~10⁻⁵); 0 of 180 runs beat PID. Larger initial weights only make it diverge. | PID and fuzzy: energy and effluent index within **1%** of the paper. DDPG-B saving: dry **10.6%**, rain **7.1%** (paper 7.24 / 5.52), with more ammonia than the paper. Seeds spread widely (dry 5.8–15.7%); one seed lands on the paper (dry: 3513 vs 3430 kWh/d, DO 1.01 vs 1.03). As published, the agent cannot learn; it needs 3 fixes. |
+| **Verdict** | **Not reproducible from the paper as printed.** Its numbers need details the paper does not give. | **Comparators reproduced exactly; DDPG reproduced in direction, not in exact size** |
 
 ### Paper vs ours
 
@@ -31,6 +31,9 @@ changes can take it: oxygen 81% / 75% below PID in dry / rain and 18 of 20
 runs beating PID, but still worse than PID under noise. Redraw with
 `python experiments/19_readme_figures.py`.
 
+Paper 2's figure: green = official plant (mean of 3 seeds), blue = our earlier
+rebuilt plant.
+
 What we got wrong earlier, and fixed: paper 1's Table I (all its
 hyperparameters) is printed as an image, and we missed it. We first wrote that
 those values were "not stated" and chose our own. The exact replication uses
@@ -42,13 +45,13 @@ is too short for the ammonia response. Details: `docs/REPRODUCTION.md`.
 
 ## What we found that the papers do not report
 
-The energy saving is bought by breaking the ammonia limit far more often:
+The energy saving is bought by breaking the ammonia limit far more often
+(official plant, evaluation week, mean of 3 seeds):
 
-| weather | saving | time above 4 g N/m³ (DDPG-B) | PID |
+| weather | DDPG-B saving | time above 4 g N/m³, DDPG-B | PID |
 |---|---|---|---|
-| dry | 6.8% | 38.1% | 12.2% |
-| rain | 4.9% | 35.2% | 19.6% |
-| storm | 5.0% | 37.0% | 23.2% |
+| dry | 10.6% | 56.0% | 21.0% |
+| rain | 7.1% | 56.9% | 33.5% |
 
 ## Our contribution: a better RL network
 
@@ -90,7 +93,7 @@ from `docs/data/site-data.js`, built by `experiments/14_build_site_data.py`.
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests -q                  # 75 tests
+python -m pytest tests -q                  # 80 tests
 python experiments/09_write_results.py     # regenerate docs/05_results.md
 ```
 
