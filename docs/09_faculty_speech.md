@@ -19,11 +19,6 @@ I also tried twelve different starting weights, the one thing the paper leaves
 open; none reproduces their table. So their results cannot be obtained from
 the paper alone.
 
-To see what the idea can do, I built a modified version, with bigger steps,
-scaled inputs and a safety fallback to the PID. It cuts oxygen error by 81% in
-dry weather and beats PID in 18 of 20 runs. But that is my variant, not their
-algorithm, and under noise it is worse than PID.
-
 **Paper 2, by Du and co-authors,** lets oxygen float to save aeration energy.
 They report 7.2% saving in dry weather and 5.5% in rain. On the official plant
 my PID and fuzzy comparators match their numbers within 1%. My DDPG agent
@@ -33,11 +28,6 @@ published, it shuts the air almost off during training, then recovers to a
 similar 10.7% saving. I also found what the paper does
 not report: with that saving, effluent ammonia is above its limit 56% of the
 week, against 21% under PID.
-
-**My contribution** is a better agent for paper 2. It adds an influent
-forecast and a risk-aware critic, and it treats the limits as constraints. On
-our rebuilt plant, at the same violation rate, it uses about 29 kWh per day
-less than paper 2's agent.
 
 In short: paper 2 reproduces in direction, paper 1 does not reproduce as
 printed, and every number I quoted comes from saved runs in the repository.

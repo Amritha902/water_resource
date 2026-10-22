@@ -8,11 +8,9 @@ def fmt(p):
 cues = {
   1: ("Set-up", None),
   2: ("Paper 1", "Claim: −95% oxygen, −74% nitrate vs PID"),
-  3: (None, "As printed: = PID in 180/180 runs"),
-  4: (None, "Our variant: −81% oxygen (dry), 18/20 runs"),
-  5: ("Paper 2", "PID ±1% · DDPG-B 10.6% / 7.1% (paper 7.2 / 5.5) · NH₄ over limit 56% vs 21%"),
-  6: ("Contribution", "−29 kWh/d at equal violations (rebuilt plant)"),
-  7: ("Close", None),
+  3: (None, "Reimplemented: = PID in 180/180 runs"),
+  4: ("Paper 2", "PID ±1% · DDPG-B 10.6% / 7.1% (paper 7.2 / 5.5) · NH₄ over limit 56% vs 21%"),
+  5: ("Close", None),
 }
 body = []
 for i, p in enumerate(paras):

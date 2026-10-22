@@ -4,7 +4,6 @@
 - **Their result:** two RL agents on top of a PID cut oxygen tracking error by about 95% and nitrate error by about 74% versus PID, still 86% / 69% with actuator noise, and over 90% of runs succeed.
 - **We obtained:** run exactly as printed, with all their Table I values, on the official BSM1 plant and influent, MAACC equals PID in all 180 runs; its learned correction never grows. The plant itself checks out (our PID is within ~30% of theirs). So their table cannot be reproduced from the paper alone.
 - **Mechanism followed:** yes, exactly: equations (7)–(19) and (27), Table I, raw units, 20 runs per case.
-- **Our modified version (not theirs):** bigger steps, scaled inputs and a safety fallback to PID reach oxygen 81% / 75% below PID in dry / rain, 18 of 20 runs better than PID, but it is worse than PID under noise.
 
 ## Paper 2: floating DO (Du et al., Sci China Tech Sci 2023)
 - **Their result:** letting dissolved oxygen float, instead of holding 2 mg/L, saves 7.24% (dry) and 5.52% (rain) aeration energy versus PID, effluent still within limits.

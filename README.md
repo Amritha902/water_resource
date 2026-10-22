@@ -1,9 +1,8 @@
 # RL control of a wastewater treatment plant
 
-We reimplemented two base papers on the BSM1 wastewater benchmark: first
-exactly as printed on the official benchmark plant, then with the changes
-each needed. We also improved the RL agent of the second. Every number below comes from
-`results/`; `docs/05_results.md` is generated from those files.
+We reimplemented two base papers on the official BSM1 wastewater benchmark
+plant and compared our results with the papers' own tables. Every number
+below comes from `results/`.
 
 ## The two base papers
 
@@ -12,37 +11,32 @@ each needed. We also improved the RL agent of the second. Every number below com
 | **What it is** | Two RL agents (oxygen, nitrate) on top of a PID. The learned part starts at zero, so day one is plain PID. | One DDPG agent that lets oxygen float instead of holding 2 mg/L, to save aeration energy. |
 | **Main claimed result** | Oxygen error 92–95% and nitrate error 71–76% below PID (Table II); still 86% / 69% under actuator noise (Table III); over 90% of 20 runs beat PID. | 5–7% less aeration energy than PID, effluent still within limits. |
 | **Exact replication** | Official BSM1 plant (`bsm2-python`, a port of the IWA benchmark code) with the official dry and rain influent; algorithm exactly as printed with the Table I values; 20 runs per case. | Same official plant and influent; PID and fuzzy comparators; DDPG-A and DDPG-B, 3 seeds each, dry and rain. |
-| **What we got** | Plant check: our PID is within ~30% of the paper's PID row in dry weather. **MAACC as printed equals PID** in every run (its learned term stays ~10⁻⁵); 0 of 180 runs beat PID. Larger initial weights only make it diverge. | PID and fuzzy: energy and effluent index within **1%** of the paper. DDPG-B saving: dry **10.6%**, rain **7.1%** (paper 7.24 / 5.52), with more ammonia than the paper. Seeds spread widely (dry 5.8–15.7%); one seed lands on the paper (dry: 3513 vs 3430 kWh/d, DO 1.01 vs 1.03). Exactly as published (1 seed) it ends at a 10.7% saving, close to our fixed version, after shutting the air almost off mid-training. |
+| **What we got** | Plant check: our PID is within ~30% of the paper's PID row in dry weather. **MAACC as printed equals PID** in every run (its learned term stays ~10⁻⁵); 0 of 180 runs beat PID. Larger initial weights only make it diverge. | PID and fuzzy: energy and effluent index within **1%** of the paper. DDPG-B saving: dry **10.6%**, rain **7.1%** (paper 7.24 / 5.52), with more ammonia than the paper. Seeds spread widely (dry 5.8–15.7%); one seed lands on the paper (dry: 3513 vs 3430 kWh/d, DO 1.01 vs 1.03). |
 | **Verdict** | **Not reproducible from the paper as printed.** Its numbers need details the paper does not give. | **Comparators reproduced exactly; DDPG reproduced in direction, not in exact size** |
 
-### Paper vs ours
+### Paper vs our reimplementation
 
-![Paper 1: error reduction vs PID, paper vs ours](docs/figures/readme_paper1_vs_ours.png)
+![Paper 1: error reduction vs PID, paper vs reimplementation](docs/figures/readme_paper1_vs_ours.png)
 
-![Paper 1: our tracking, PID vs MAACC](docs/figures/readme_paper1_tracking.png)
+![Paper 1 reimplemented: PID vs MAACC on the official plant](docs/figures/readme_paper1_tracking.png)
 
-![Paper 2: energy saving vs PID, paper vs ours](docs/figures/readme_paper2_vs_ours.png)
+![Paper 2: energy saving vs PID, paper vs reimplementation](docs/figures/readme_paper2_vs_ours.png)
 
-Orange = the papers' published numbers; green = paper 1 run exactly as
-printed on the official plant; blue = our own modified version of paper 1
-(bigger steps, normalised inputs, a safety fallback to PID) on our rebuilt
-plant. The blue bars are **not** the paper's algorithm. They show how far
-changes can take it: oxygen 81% / 75% below PID in dry / rain and 18 of 20
-runs beating PID, but still worse than PID under noise. Redraw with
-`python experiments/19_readme_figures.py`.
-
-Paper 2's figure: green = official plant (mean of 3 seeds), blue = our earlier
-rebuilt plant.
+Orange = the paper's published numbers; green = our reimplementation on the
+official plant. Paper 1 reimplemented exactly as printed: MAACC's learned
+correction stays around 10⁻⁵, so its trajectory sits on top of the PID's.
+Paper 2's DDPG uses three corrections (actuator setting in the state,
+15-minute decisions, reward scaled by 1 − γ); run exactly as published (one
+seed, dry) it ends at a similar 10.7% saving. Video of the runs:
+`docs/video/results.mp4`. Redraw: `python experiments/19_readme_figures.py`.
 
 What we got wrong earlier, and fixed: paper 1's Table I (all its
-hyperparameters) is printed as an image, and we missed it. We first wrote that
-those values were "not stated" and chose our own. The exact replication uses
-Table I.
+hyperparameters) is printed as an image, and we missed it at first. The
+reimplementation uses Table I.
 
 Where the papers do not run as written: paper 1's critic update (eq. 15)
-grows without bound. Paper 2's state is not Markov, and its 45 s decision step
-is too short for the ammonia response; on our rebuilt plant that made it
-collapse, though on the official plant it recovered. Details: `docs/REPRODUCTION.md`.
+grows without bound; paper 2's state is not Markov, and its 45 s decision step
+is short for the ammonia response. Details: `docs/REPRODUCTION.md`.
 
 ## What we found that the papers do not report
 

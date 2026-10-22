@@ -31,13 +31,13 @@ did not reproduce; **key claim** = what the paper asserts; **parameter** = a set
 | 7 | “set to 45 s, and the total simulation duration is set to 14 days” | matched | Same protocol in our runs: 45 s, 14 days, first day excluded (PID warm-up). |
 | 7 | “based on industry experience” | matched | Set points r = [1, 2] used as given. |
 | 7 | “diag{100, 100 000}” | matched | Same PID gains. On the official BSM1 plant our PID gives IAE S_O,5 = 0.0082, S_NO,2 = 0.0095 (paper 0.0114, 0.0145): same order, ~30 % lower. |
-| 8 | “Trajectories of SO,5 and SNO,2 under the dry weather” | matched | Comparable figure: docs/figures/readme_paper1_tracking.png - from our MODIFIED MAACC (not the paper as printed, which equals PID). |
+| 8 | “Trajectories of SO,5 and SNO,2 under the dry weather” | matched | Our version of this figure: docs/figures/readme_paper1_tracking.png - reimplemented on the official plant, the MAACC trajectory sits on top of the PID. |
 | 8 | “white noise with a mean of zero and a standard deviation of 3%” | problem / not reproduced | NOT REPRODUCED. With this noise our PID gets 3x worse on the official plant (IAE 0.0082 -> 0.0245); the paper's PID only +10 % (0.0114 -> 0.0125). Their noise must reach the plant differently. |
-| 9 | “TABLE II” | matched | NOT REPRODUCED AS PRINTED. Official BSM1 plant + official influent + Table I values, 20 runs: MAACC equals PID (0 % change, 0/20 runs better), for every critic-update reading. No initial-weight scale reproduces this table. Only our modified version (bigger steps, normalised inputs, safety fallback; not the paper) gets oxygen -81 / -75 % (dry/rain). |
-| 9 | “TABLE III” | problem / not reproduced | Noise case: paper -86 % (O2), -69 % (NO3). As printed on the official plant: equal to PID. Our modified version: worse than PID. |
+| 9 | “TABLE II” | matched | NOT REPRODUCED AS PRINTED. Official BSM1 plant + official influent + Table I values, 20 runs: MAACC equals PID (0 % change, 0/20 runs better), for every critic-update reading. No initial-weight scale reproduces this table. |
+| 9 | “TABLE III” | problem / not reproduced | Noise case: paper -86 % (O2), -69 % (NO3). Reimplemented as printed on the official plant: equal to PID. |
 | 9 | “and III are the average values obtained from 20 simulation” | matched | We also ran 20 runs per case: 360 runs in total (results/summary_paper1_full_*.json). |
-| 9 | “training is deemed successful” | matched | Same success definition used. As printed: 0/20 in every case (MAACC = PID). Our modified version: 18/20 dry, 18/20 rain. |
-| 9 | “the MAACC algorithm can reach over 90% across 20 simulation” | key claim | As printed: 0/20 - the learned term never grows. In our modified version 8/20 runs diverged in the first hour until we added a safety fallback to PID: then 18/20. |
+| 9 | “training is deemed successful” | matched | Same success definition used. Reimplemented as printed: 0/20 in every case (MAACC = PID). |
+| 9 | “the MAACC algorithm can reach over 90% across 20 simulation” | key claim | Reimplemented as printed: 0/20 - the learned term never exceeds ~1e-4. |
 
 ## Paper 2 — Du et al., *DO concentration control in WWTP based on RL*, Sci China Tech Sci 2023
 
