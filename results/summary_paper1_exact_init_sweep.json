@@ -1,0 +1,434 @@
+[
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-paper",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   0.1,
+   1
+  ],
+  "IAE_SO5": 0.008187126961804401,
+  "ISE_SO5": 0.00017233479003685826,
+  "DEVmax_SO5": 0.07464563769145727,
+  "IAE_SNO2": 0.009494074815308503,
+  "ISE_SNO2": 0.00022532583242199254,
+  "DEVmax_SNO2": 0.08219041700255958
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-paper",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   10,
+   1
+  ],
+  "IAE_SO5": 0.00824297251514541,
+  "ISE_SO5": 0.000169906035570573,
+  "DEVmax_SO5": 0.07521720080676964,
+  "IAE_SNO2": 0.27160202014132057,
+  "ISE_SNO2": 0.48356298494434696,
+  "DEVmax_SNO2": 1.9970950032986754
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-paper",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   10,
+   100
+  ],
+  "IAE_SO5": 1.5472476682053715,
+  "ISE_SO5": 5.485670330069718,
+  "DEVmax_SO5": 4.886454684729347,
+  "IAE_SNO2": 1.189030011363519,
+  "ISE_SNO2": 1.9368228829611902,
+  "DEVmax_SNO2": 3.2891837120467713
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-paper",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   0.1,
+   100
+  ],
+  "IAE_SO5": 0.008177568772106396,
+  "ISE_SO5": 0.0001722197126168824,
+  "DEVmax_SO5": 0.07464591492656081,
+  "IAE_SNO2": 0.009493434071663438,
+  "ISE_SNO2": 0.00022529394308975231,
+  "DEVmax_SNO2": 0.0821906122169398
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-paper",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   10,
+   10,
+   100
+  ],
+  "IAE_SO5": 0.9561950203713263,
+  "ISE_SO5": 0.9439491011177811,
+  "DEVmax_SO5": 0.9936932664013403,
+  "IAE_SNO2": 1.9270473372447112,
+  "ISE_SNO2": 3.8443388407602024,
+  "DEVmax_SNO2": 1.9995608184212237
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-paper",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   1,
+   1000
+  ],
+  "IAE_SO5": 2.4275259468999204,
+  "ISE_SO5": 7.724520182826888,
+  "DEVmax_SO5": 4.830765478071482,
+  "IAE_SNO2": 8.360265317960092,
+  "ISE_SNO2": 81.20774028246532,
+  "DEVmax_SNO2": 14.183706601503111
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-paper",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   100,
+   100
+  ],
+  "IAE_SO5": 3.0461051169440005,
+  "ISE_SO5": 11.15167255376157,
+  "DEVmax_SO5": 5.425310711469324,
+  "IAE_SNO2": 1.5751032988264855,
+  "ISE_SNO2": 2.8617804980080455,
+  "DEVmax_SNO2": 3.175522246360953
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-paper",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   100,
+   1,
+   100
+  ],
+  "IAE_SO5": 1.2730489332597548,
+  "ISE_SO5": 3.655489782688369,
+  "DEVmax_SO5": 4.808704538755046,
+  "IAE_SNO2": 6.2358196690889995,
+  "ISE_SNO2": 50.10893557873665,
+  "DEVmax_SNO2": 14.088250887262454
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-paper",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   1000,
+   100
+  ],
+  "IAE_SO5": 0.9496326781083472,
+  "ISE_SO5": 0.902713219057,
+  "DEVmax_SO5": 0.9902471987063204,
+  "IAE_SNO2": 1.6015860731882672,
+  "ISE_SNO2": 2.929216976596281,
+  "DEVmax_SNO2": 3.9617031893899846
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-paper",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   10,
+   10000
+  ],
+  "IAE_SO5": 0.06185071471896931,
+  "ISE_SO5": 0.006436281781349032,
+  "DEVmax_SO5": 0.27117768025378763,
+  "IAE_SNO2": 1.0617646380732704,
+  "ISE_SNO2": 1.5350444589145698,
+  "DEVmax_SNO2": 2.9935676893692023
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-paper",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   0.01,
+   10,
+   100
+  ],
+  "IAE_SO5": 0.00817990975072639,
+  "ISE_SO5": 0.0001722809480734913,
+  "DEVmax_SO5": 0.07468087568639592,
+  "IAE_SNO2": 0.009493690206334227,
+  "ISE_SNO2": 0.00022530722033345466,
+  "DEVmax_SNO2": 0.08219061326555477
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-paper",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   0.001,
+   1,
+   100
+  ],
+  "IAE_SO5": 0.008187225515290508,
+  "ISE_SO5": 0.00017233569831234563,
+  "DEVmax_SO5": 0.0746456376582344,
+  "IAE_SNO2": 0.009494072840796973,
+  "ISE_SNO2": 0.00022532579329974693,
+  "DEVmax_SNO2": 0.08219041696959839
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-td0",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   0.1,
+   1
+  ],
+  "IAE_SO5": 0.008187126962005164,
+  "ISE_SO5": 0.00017233479004970486,
+  "DEVmax_SO5": 0.07464563769206667,
+  "IAE_SNO2": 0.009494074816316802,
+  "ISE_SNO2": 0.00022532583247626922,
+  "DEVmax_SNO2": 0.08219041700328455
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-td0",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   0.1,
+   100
+  ],
+  "IAE_SO5": 0.008183871922784027,
+  "ISE_SO5": 0.00017233326728055507,
+  "DEVmax_SO5": 0.07468125238550327,
+  "IAE_SNO2": 0.009493420176688085,
+  "ISE_SNO2": 0.00022529411666561674,
+  "DEVmax_SNO2": 0.08219061404855976
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-td0",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   10,
+   1
+  ],
+  "IAE_SO5": 0.008162634759043951,
+  "ISE_SO5": 0.00017137611342792156,
+  "DEVmax_SO5": 0.07521719797495907,
+  "IAE_SNO2": 0.009493584324257369,
+  "ISE_SNO2": 0.00022529873925885752,
+  "DEVmax_SNO2": 0.0822004596656496
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-td0",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   10,
+   100
+  ],
+  "IAE_SO5": 0.008178002535309814,
+  "ISE_SO5": 0.00017217223292034334,
+  "DEVmax_SO5": 0.07501539455451134,
+  "IAE_SNO2": 0.009494121353083898,
+  "ISE_SNO2": 0.00022531569955729249,
+  "DEVmax_SNO2": 0.08217401474185415
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-td0",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   10,
+   10,
+   100
+  ],
+  "IAE_SO5": 2.7934171087523985,
+  "ISE_SO5": 10.216578634727037,
+  "DEVmax_SO5": 5.361170345238747,
+  "IAE_SNO2": 0.008436639115883146,
+  "ISE_SNO2": 0.00020436256176654046,
+  "DEVmax_SNO2": 0.09257522510381233
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-td0",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   100,
+   1,
+   100
+  ],
+  "IAE_SO5": 0.0026577032556268595,
+  "ISE_SO5": 2.063070743849227e-05,
+  "DEVmax_SO5": 0.04735049755617371,
+  "IAE_SNO2": 0.009476276721691533,
+  "ISE_SNO2": 0.00022446413557269054,
+  "DEVmax_SNO2": 0.08220556178413285
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-td0",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   1,
+   1000
+  ],
+  "IAE_SO5": 0.008180621545565746,
+  "ISE_SO5": 0.00017225025778427723,
+  "DEVmax_SO5": 0.0751875980350698,
+  "IAE_SNO2": 0.009494068547177714,
+  "ISE_SNO2": 0.00022533323014938296,
+  "DEVmax_SNO2": 0.08220592890652223
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-td0",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   100,
+   100
+  ],
+  "IAE_SO5": 3.0521662127740568,
+  "ISE_SO5": 11.085607888982272,
+  "DEVmax_SO5": 5.367227372704109,
+  "IAE_SNO2": 1.4540525957925048,
+  "ISE_SNO2": 2.6657268629118422,
+  "DEVmax_SNO2": 1.991930961910834
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-td0",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   1000,
+   100
+  ],
+  "IAE_SO5": 0.9834076682422467,
+  "ISE_SO5": 0.967796513058488,
+  "DEVmax_SO5": 0.99368977238915,
+  "IAE_SNO2": 2.013309591701853,
+  "ISE_SNO2": 4.11578671778922,
+  "DEVmax_SNO2": 3.9671367411064073
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-td0",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   1,
+   10,
+   10000
+  ],
+  "IAE_SO5": 0.008203077916555702,
+  "ISE_SO5": 0.00017243890738248926,
+  "DEVmax_SO5": 0.07533505126833917,
+  "IAE_SNO2": 0.012223138556814589,
+  "ISE_SNO2": 0.0008827146879177923,
+  "DEVmax_SNO2": 0.3786879670799821
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-td0",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   0.01,
+   10,
+   100
+  ],
+  "IAE_SO5": 0.008180864305239352,
+  "ISE_SO5": 0.0001722886870273704,
+  "DEVmax_SO5": 0.07468087372975563,
+  "IAE_SNO2": 0.009493647910012417,
+  "ISE_SNO2": 0.0002253048304753757,
+  "DEVmax_SNO2": 0.08219061326574395
+ },
+ {
+  "weather": "dry",
+  "noise": false,
+  "controller": "MAACC-td0",
+  "seed": 0,
+  "finite": true,
+  "init": [
+   0.001,
+   1,
+   100
+  ],
+  "IAE_SO5": 0.008187225515314187,
+  "ISE_SO5": 0.00017233569831239114,
+  "DEVmax_SO5": 0.07464563765825638,
+  "IAE_SNO2": 0.009494072840798501,
+  "ISE_SNO2": 0.00022532579329982927,
+  "DEVmax_SNO2": 0.0821904169694947
+ }
+]

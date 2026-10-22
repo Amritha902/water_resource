@@ -49,6 +49,80 @@ def pct(a, b):
     return 100.0 * (b - a) / b
 
 
+def exact_section() -> list[str]:
+    """§2.0: the paper exactly as printed, on the official plant."""
+    rows = load("summary_paper1_exact.json") or []
+    sweep = load("summary_paper1_exact_init_sweep.json") or []
+    pub = load("published_paper1.json")
+    L = ["### 2.0 Exact replication — the paper as printed, on the official BSM1", ""]
+    if not rows or not pub:
+        return L + ["Not run yet: `python experiments/20_exact_paper1.py --seeds 20 --noise`.", ""]
+    pick = lambda w, n, c: [r for r in rows if r["weather"] == w and r["noise"] == n and r["controller"] == c]
+    L += ["**Set-up.** Plant: the official BSM1 code as ported by `bsm2-python` (FAU-EVT, BSD-3). Influent: the "
+          "official dry and rain files (the package's rain file writes flows with '.' as thousands separator — "
+          "repaired on load). The official storm file is not in that package or any source we could reach, so "
+          "storm is not in this section. Controller: `wwtp/maacc/exact.py` — Table I values, raw units, "
+          "eqs. (7)–(19) and (27) as printed, nothing tuned by us. Not given in the paper and chosen by us: "
+          "initial weight scales (inner U[−1,1], critic outer U[−0.1,0.1]). Protocol: 14 days dry weather under "
+          "PID from the benchmark steady state, then 14 days of the weather file at 45 s; metrics over all 14 days.", "",
+          "**Check 1 — the PID row (no randomness, so it tests plant + protocol):**", "",
+          "| weather | | IAE S_O,5 | ISE S_O,5 | DEVmax S_O,5 | IAE S_NO,2 | ISE S_NO,2 | DEVmax S_NO,2 |",
+          "|---|---|---|---|---|---|---|---|"]
+    for w in ("dry", "rain"):
+        p = pick(w, False, "PID")
+        if p:
+            L.append(f"| {w} | paper | " + " | ".join(f"{pub[w]['PID'][k]:.3g}" for k in METRICS) + " |")
+            L.append(f"| {w} | ours | " + " | ".join(f"{p[0][k]:.3g}" for k in METRICS) + " |")
+    L += ["", "Dry: same order everywhere, DEVmax within 15 %, IAE ~30 % lower than the paper's. Rain: oxygen "
+          "matches; nitrate does not — in the official rain event (days 8.5–11, inflow up to 52 000 m³/d) the "
+          "PID drives `Q_a` to its 92 230 m³/d limit and `S_NO,2` falls to ≈0.6, which no controller limited "
+          "to that range can avoid. The paper's PID DEVmax of 0.19 there means its rain run was not this file "
+          "with this actuator range; we cannot tell what differs.", "",
+          "**Check 2 — MAACC exactly as printed (20 runs each; mean):**", "",
+          "| case | critic update | IAE S_O,5 | IAE S_NO,2 | vs PID (O / NO) | runs > 1 % better than PID on both | runs that diverged |",
+          "|---|---|---|---|---|---|---|"]
+    cases = [("dry", False, "dry"), ("rain", False, "rain"), ("dry", True, "dry + noise")]
+    for w, n, label in cases:
+        pid = pick(w, n, "PID")
+        if not pid:
+            continue
+        po, pn = mean(pid, "IAE_SO5"), mean(pid, "IAE_SNO2")
+        ref = pub["noisy_dry"] if n else pub[w]
+        L.append(f"| {label} | paper (Table {'III' if n else 'II'}) | {ref['MAACC']['IAE_SO5']:.3g} | {ref['MAACC']['IAE_SNO2']:.3g} "
+                 f"| {pct(ref['MAACC']['IAE_SO5'], ref['PID']['IAE_SO5']):+.0f} % / {pct(ref['MAACC']['IAE_SNO2'], ref['PID']['IAE_SNO2']):+.0f} % | > 90 % | — |")
+        for c, name in (("MAACC-paper", "eq. (18) as printed"), ("MAACC-td0", "TD(0)"), ("MAACC-residual", "residual gradient")):
+            m = pick(w, n, c)
+            if not m:
+                continue
+            pmap = {r["seed"]: r for r in pid} if n else {r["seed"]: pid[0] for r in m}
+            ok = sum(r["IAE_SO5"] < 0.99 * pmap[r["seed"]]["IAE_SO5"]
+                     and r["IAE_SNO2"] < 0.99 * pmap[r["seed"]]["IAE_SNO2"] for r in m)
+            bad = sum((not r["finite"]) or r["IAE_SO5"] > 0.5 for r in m)
+            L.append(f"| {label} | {name} | {mean(m, 'IAE_SO5'):.3g} | {mean(m, 'IAE_SNO2'):.3g} "
+                     f"| {pct(mean(m, 'IAE_SO5'), po):+.1f} % / {pct(mean(m, 'IAE_SNO2'), pn):+.1f} % | {ok}/{len(m)} | {bad}/{len(m)} |")
+    L += ["", "With the printed equations and Table I values the learned term stays near 10⁻⁵ (the raw-unit "
+          "utility is ~10⁻⁴, so neither network moves): MAACC equals its PID prior to three digits. "
+          "\"Beats PID\" above counts differences in the fourth digit.", ""]
+    if sweep:
+        L += ["**Check 3 — the one freedom the paper leaves: initial weight scales** (dry, seed 0; "
+              "`(inner CN, outer CN, inner AN)` half-widths of the uniform draws; PID: IAE 8.19e-3 / 9.49e-3):", "",
+              "| init | eq. (18) as printed: IAE O / NO | TD(0): IAE O / NO |", "|---|---|---|"]
+        inits = sorted({tuple(r["init"]) for r in sweep})
+        for i in inits:
+            g = lambda c: next((r for r in sweep if tuple(r["init"]) == i and r["controller"] == c), None)
+            f = lambda r: "—" if r is None else ("diverged" if not r["finite"] else f"{r['IAE_SO5']:.3g} / {r['IAE_SNO2']:.3g}")
+            L.append(f"| {i} | {f(g('MAACC-paper'))} | {f(g('MAACC-td0'))} |")
+        L += ["", "No initialisation reproduces Table II. With the printed critic update every larger "
+              "initialisation destroys tracking (IAE ≈ 1); small ones leave MAACC equal to PID. With TD(0) "
+              "the best case improves oxygen only.", ""]
+    L += ["**Conclusion.** Followed exactly, the paper does not produce its own Table II on the official plant: "
+          "MAACC equals PID or diverges. Its numbers must depend on implementation details not in the paper "
+          "(input scaling, initial weights, or code differing from eqs. (15)–(19)). §2.4 shows what our modified "
+          "version — larger steps, normalised inputs, safety fallback, on our rebuilt plant — achieves; it is "
+          "*not* the paper's algorithm as printed.", ""]
+    return L
+
+
 def paper1(lines: list[str]) -> None:
     runs = load("summary_paper1.json") or []
     pick = lambda c, w, n: [r for r in runs if r["condition"] == c and r["weather"] == w and r["controller"] == n]
@@ -56,6 +130,7 @@ def paper1(lines: list[str]) -> None:
     lines += ["## 2. Paper 1 — Multiagent adaptive critic control (MAACC)", "",
               "> D. Wang, X. Li, J. Ren, J. Qiao, *Multiagent Adaptive Critic Control With Expert",
               "> Knowledge for Wastewater Treatment Plants*, IEEE Trans. Ind. Informat., 2026.", "",
+              "<<EXACT>>",
               "### 2.1 What the paper specifies, and where it is in the code", "",
               "| Paper | Content | Code |", "|---|---|---|",
               "| eq. (4) | decentralised model `s(k+1,i) = F_i(s(k,i), u(k,i)) + G_i(s(k))`; `G_i` never identified | — |",
@@ -76,8 +151,8 @@ def paper1(lines: list[str]) -> None:
               "| 4 | raw units, scale in `W, Y, R, P` | inputs and effort terms normalised by actuator range | equivalent re-parameterisation; lets both agents share learning rates |",
               "| 5 | `a` unbounded | `a` clipped to ±10 % of each range (±24 1/d, ±9 223 m³/d); `Δa = Δa_max·tanh(·)` with 4 1/d, 1 500 m³/d per step | keeps `a` a correction to the prior |",
               "| 6 | plain gradient steps | actor outer-weight decay 2.0, critic 1e−4, gradient norm clip 10 | without decay a start-up transient latched the actor at its tanh rail |",
-              "| 7 | `W, Y, R, P`, network sizes not all stated | `W=1, P=0.25, Y=0.02, R=0.05`, critic 16 hidden, actor 12, `l_c=0.02`, `l_a=0.002` | chosen by us |",
-              "| 8 | official BSM1 code and influent files | re-implementation; statistically equivalent influent | files not redistributable — **absolute values differ from Table II** |",
+              "| 7 | **Table I gives them**: `W=(1,2), Y=(0.5,0.05), R=(1e-4,1e-8), P=(2I, I)`, λ 0.95, `l_c` 0.01, `l_a` 0.005, critic 12/14 hidden, actor 10/12 | `W=1, P=0.25, Y=0.02, R=0.05`, critic 16, actor 12, `l_c=0.02`, `l_a=0.002`, λ 0.9 | **our error**: Table I is an image and was missed; we wrongly recorded these as unstated. §2.0 uses the Table I values |",
+              "| 8 | official BSM1 code and influent files | §2.3–2.4: our re-implementation with statistically equivalent influent. §2.0: the official plant (`bsm2-python`) and official dry/rain files | the official files were found later (§2.0); absolute values in §2.3–2.4 differ from Table II |",
               "| 9 | — | 1-day PID warm-up; first day of each run excluded from metrics | every controller starts from the same plant state |",
               "| 10 | (`MAACC-tuned`, §2.4) | 10× increment and authority (40 1/d, 15 000 m³/d per step; ±240, ±92 230), no actor decay, `W=30, P=1, Y=0.02, R=0`, `l_c=0.05`, `l_a=0.01` | the conservative defaults above stay at PID level; these reach the paper's gains. 20-seed search on dry weather |",
               "| 11 | — (`MAACC-tuned`) | **safety fallback**: if the 1-h mean of `|z_i|/z_scale` exceeds 0.15 or of `|tanh|` exceeds 0.7, the actor is zeroed, its `a` is handed to the PID (bumpless) and it waits 1 h | without it 8/20 runs diverge: the untrained critic's slope sends the actor to its rail within ~40 steps |",
@@ -148,7 +223,7 @@ def full_section(lines: list[str]) -> None:
     """Paper protocol, 20 runs per case, against Tables II and III."""
     pub = load("published_paper1.json")
     runs = load_tags("paper1_full")
-    lines += ["### 2.4 Full reproduction against the paper's Tables II and III", ""]
+    lines += ["### 2.4 Our modified MAACC (rebuilt plant) against Tables II and III", ""]
     if not pub or not runs:
         lines += ["Not run yet: `python experiments/03_run_control.py --conditions clean paper_noise "
                   "--controllers PID MAACC-tuned --seeds 20 --tag paper1_full`.", ""]
@@ -163,6 +238,8 @@ def full_section(lines: list[str]) -> None:
               "**Table II (no noise) and Table III (actuator noise, dry)** — mean of runs:", "",
               "| case | method | IAE S_O,5 | ISE S_O,5 | DEVmax S_O,5 | IAE S_NO,2 | ISE S_NO,2 | DEVmax S_NO,2 |",
               "|---|---|---|---|---|---|---|---|"]
+    lines.insert(len(lines) - 4, "*This section is our modified MAACC on our rebuilt plant — not the paper as printed (that is §2.0).*")
+    lines.insert(len(lines) - 4, "")
     cases = [("clean", w, pub[w], w) for w in W3] + [("paper_noise", "dry", pub["noisy_dry"], "dry + noise")]
     for cond, w, ref, label in cases:
         for name, ours in (("PID", "PID"), ("MAACC", "MAACC-tuned")):
@@ -287,6 +364,8 @@ def main() -> None:
              "equivalent, not the official files. **Consequence: every claim is a comparison between methods on the "
              "same simulator; absolute values are not expected to equal the papers' tables.**", ""]
     paper1(lines)
+    i = lines.index("<<EXACT>>")
+    lines[i:i + 1] = exact_section()
     paper2(lines)
     lines += ["## 4. Reproduce", "", "```",
               "python -m pytest tests -q",
