@@ -26,13 +26,13 @@ P1 = [
  (7, "set to 45 s, and the total simulation duration is set to 14 days.", G, "Same protocol in our runs: 45 s, 14 days, first day excluded (PID warm-up)."),
  (7, "based on industry experience.", G, "Set points r = [1, 2] used as given."),
  (7, "diag{100, 100 000}", G, "Same PID gains. On the official BSM1 plant our PID gives IAE S_O,5 = 0.0082, S_NO,2 = 0.0095 (paper 0.0114, 0.0145): same order, ~30 % lower."),
- (8, "Trajectories of SO,5 and SNO,2 under the dry weather.", G, "Comparable figure: docs/figures/readme_paper1_tracking.png - from our MODIFIED MAACC (not the paper as printed, which equals PID)."),
+ (8, "Trajectories of SO,5 and SNO,2 under the dry weather.", G, "Our version of this figure: docs/figures/readme_paper1_tracking.png - reimplemented on the official plant, the MAACC trajectory sits on top of the PID."),
  (8, "white noise with a mean of zero and a standard deviation of 3%", R, "NOT REPRODUCED. With this noise our PID gets 3x worse on the official plant (IAE 0.0082 -> 0.0245); the paper's PID only +10 % (0.0114 -> 0.0125). Their noise must reach the plant differently."),
- (9, "TABLE II", G, "NOT REPRODUCED AS PRINTED. Official BSM1 plant + official influent + Table I values, 20 runs: MAACC equals PID (0 % change, 0/20 runs better), for every critic-update reading. No initial-weight scale reproduces this table. Only our modified version (bigger steps, normalised inputs, safety fallback; not the paper) gets oxygen -81 / -75 % (dry/rain)."),
- (9, "TABLE III", R, "Noise case: paper -86 % (O2), -69 % (NO3). As printed on the official plant: equal to PID. Our modified version: worse than PID."),
+ (9, "TABLE II", G, "NOT REPRODUCED AS PRINTED. Official BSM1 plant + official influent + Table I values, 20 runs: MAACC equals PID (0 % change, 0/20 runs better), for every critic-update reading. No initial-weight scale reproduces this table."),
+ (9, "TABLE III", R, "Noise case: paper -86 % (O2), -69 % (NO3). Reimplemented as printed on the official plant: equal to PID."),
  (9, "and III are the average values obtained from 20 simulation", G, "We also ran 20 runs per case: 360 runs in total (results/summary_paper1_full_*.json)."),
- (9, "training is deemed successful", G, "Same success definition used. As printed: 0/20 in every case (MAACC = PID). Our modified version: 18/20 dry, 18/20 rain."),
- (9, "the MAACC algorithm can reach over 90% across 20 simulation", Y, "As printed: 0/20 - the learned term never grows. In our modified version 8/20 runs diverged in the first hour until we added a safety fallback to PID: then 18/20."),
+ (9, "training is deemed successful", G, "Same success definition used. Reimplemented as printed: 0/20 in every case (MAACC = PID)."),
+ (9, "the MAACC algorithm can reach over 90% across 20 simulation", Y, "Reimplemented as printed: 0/20 - the learned term never exceeds ~1e-4."),
 ]
 
 P2 = [
@@ -109,6 +109,6 @@ if __name__ == "__main__":
         write_notes(sys.argv[2])
         sys.exit()
     run(sys.argv[1], sys.argv[3], P1,
-        "SUMMARY - Exact replication: official BSM1 plant and influent, algorithm as printed, Table I values, 20 runs per case. PID matches the paper's PID row within ~30 % (dry). MAACC as printed EQUALS PID in all 180 runs: Table II/III NOT reproducible from the text. Our modified version (bigger steps, normalised inputs, safety fallback - not the paper) reaches oxygen -81/-75 % vs PID in dry/rain. Legend: green = matched, red = problem / not reproduced, yellow = key claim, blue = parameter.")
+        "SUMMARY - Exact replication: official BSM1 plant and influent, algorithm as printed, Table I values, 20 runs per case. PID matches the paper's PID row within ~30 % (dry). MAACC as printed EQUALS PID in all 180 runs: Table II/III NOT reproducible from the text. Legend: green = matched, red = problem / not reproduced, yellow = key claim, blue = parameter.")
     run(sys.argv[2], sys.argv[4], P2,
         "SUMMARY - Official BSM1 plant and influent: PID and fuzzy match the paper within 1 % (energy, effluent index). DDPG-B saves 10.6 % (dry) / 7.1 % (rain) on average vs paper 7.24 / 5.52 %, with more ammonium; seeds spread widely and one lands on the paper's numbers. Exactly as published (1 seed) it also ends near 10.7 %, after shutting the air almost off mid-training; our fixes (KLa5 in the state, 15-min decisions, reward scaled by (1 - gamma)) were needed on our rebuilt plant. Not reported by the paper: the ammonia limit is broken far more often than under PID. Legend: green = matched, red = problem / not reported, yellow = key claim, blue = parameter.")

@@ -54,29 +54,22 @@ def bars(ax, labels, series, title, ylabel, fmt="{:+.0f}%"):
 
 def paper1_bars():
     pub = json.loads((RES / "published_paper1.json").read_text())
-    runs = rep.load_tags("paper1_full")
     exact = rep.load("summary_paper1_exact.json") or []
-    pick = lambda c, w, n: [r for r in runs if r["condition"] == c and r["weather"] == w and r["controller"] == n]
     ex = lambda w, n, c: [r for r in exact if r["weather"] == w and r["noise"] == n and r["controller"] == c]
-    cases = [("clean", "dry", pub["dry"], "Dry", False), ("clean", "rain", pub["rain"], "Rain", False),
-             ("paper_noise", "dry", pub["noisy_dry"], "Dry +\nnoise", True)]
+    cases = [("dry", pub["dry"], "Dry", False), ("rain", pub["rain"], "Rain", False),
+             ("dry", pub["noisy_dry"], "Dry +\nnoise", True)]
     fig, axes = plt.subplots(1, 2, figsize=(10.5, 3.9), sharey=True)
     for ax, key, name in zip(axes, ("IAE_SO5", "IAE_SNO2"), ("oxygen S_O,5", "nitrate S_NO,2")):
-        paper = [rep.pct(r["MAACC"][key], r["PID"][key]) for _, _, r, _, _ in cases]
-        printed = [rep.pct(rep.mean(ex(w, n, "MAACC-paper"), key), rep.mean(ex(w, n, "PID"), key))
-                   for _, w, _, _, n in cases]
-        ours = [rep.pct(rep.mean(pick(c, w, "MAACC-tuned"), key), rep.mean(pick(c, w, "PID"), key))
-                for c, w, _, _, _ in cases]
-        bars(ax, [l for _, _, _, l, _ in cases],
-             [("Paper (published)", paper, PAPER),
-              ("Paper as printed, official BSM1 (ours)", printed, EXACT),
-              ("Our modified MAACC, rebuilt plant", ours, OURS)],
+        paper = [rep.pct(r["MAACC"][key], r["PID"][key]) for _, r, _, _ in cases]
+        ours = [rep.pct(rep.mean(ex(w, n, "MAACC-paper"), key), rep.mean(ex(w, n, "PID"), key))
+                for w, _, _, n in cases]
+        bars(ax, [l for _, _, l, _ in cases],
+             [("Paper (published)", paper, PAPER), ("Our reimplementation", ours, EXACT)],
              f"Paper 1 · {name}", "error reduction vs PID (IAE)")
-    axes[0].set_ylim(-240, 125)
-    axes[0].legend(frameon=False, loc="lower left", fontsize=8)
-    fig.text(0.01, 0.01, "Mean of 20 runs per case. Up = MAACC better than PID. "
-             "As printed, MAACC equals PID (0%) or does worse - the published gains are not reproduced.",
-             fontsize=8, color=MUTED)
+    axes[0].set_ylim(-130, 125)
+    axes[0].legend(frameon=False, loc="lower left", fontsize=8.5)
+    fig.text(0.01, 0.01, "Official BSM1 plant and influent, algorithm and Table I values as printed, mean of 20 runs. "
+             "Up = MAACC better than PID. Reimplemented, MAACC equals PID.", fontsize=8, color=MUTED)
     fig.tight_layout(rect=(0, 0.04, 1, 1))
     fig.savefig(FIG / "readme_paper1_vs_ours.png", dpi=150)
 
@@ -92,11 +85,9 @@ def paper2_bars():
     pub = json.loads((RES / "published_paper2.json").read_text())
     paper = [rep.pct(pub[w]["DDPG-B"]["AE"], pub[w]["PID"]["AE"]) for w in ws]
     official = [rep.pct(rep.mean(pick(off, w, "DDPG-B"), "AE"), rep.mean(pick(off, w, "PID"), "AE")) for w in ws]
-    rebuilt = [rep.pct(rep.mean(pick(aer, w, "DDPG-B"), "AE"), rep.mean(pick(aer, w, "PID"), "AE")) for w in ws]
     fig, ax = plt.subplots(figsize=(6.4, 3.8))
-    bars(ax, ["Dry", "Rain"], [("Paper", paper, PAPER),
-                               ("Ours, official BSM1 (mean of 3 seeds)", official, EXACT),
-                               ("Ours, rebuilt plant (mean of 2 seeds)", rebuilt, OURS)],
+    bars(ax, ["Dry", "Rain"], [("Paper (published)", paper, PAPER),
+                               ("Our reimplementation (mean of 3 seeds)", official, EXACT)],
          "Paper 2 · DDPG-B aeration energy saved vs PID", "saving (%)", fmt="{:.1f}%")
     ax.set_ylim(0, 14)
     ax.legend(frameon=False, loc="upper right", fontsize=8)
@@ -105,26 +96,24 @@ def paper2_bars():
 
 
 def paper1_tracking():
-    from wwtp.baselines.pid_controller import PIDController
-    from wwtp.bsm1 import influent
-    from wwtp.envs import run_closed_loop
-    from wwtp.maacc.agent import MAACCController, tuned_agent_configs
-    s = influent.canonical_scenario("dry")
-    pid = run_closed_loop(PIDController(), s, seed=100)
-    m = run_closed_loop(MAACCController(configs=tuned_agent_configs(), seed=0), s, seed=100)
-    t = pid.time_days
-    win = (t >= 8.1) & (t <= 10.1)
-    fig, axes = plt.subplots(2, 1, figsize=(10, 4.6), sharex=True)
-    for ax, i, name, sp in zip(axes, (0, 1), ("S_O,5 [mg/L]", "S_NO,2 [mg N/L]"), (1.0, 2.0)):
-        ax.plot(t[win], pid.state[win, i], color=PAPER, lw=1.4, label="PID (expert prior)")
-        ax.plot(t[win], m.state[win, i], color=OURS, lw=1.4, label="MAACC (ours)")
-        ax.axhline(sp, color=MUTED, lw=0.8, ls="--")
+    d = np.load(RES / "video_data.npz")
+    t = np.arange(len(d["off_pid"])) * 45 / 86400
+    win = (t >= 8.0) & (t <= 10.0)
+    fig, axes = plt.subplots(3, 1, figsize=(10, 6.2), sharex=True)
+    for ax, i, name, sp in zip(axes[:2], (0, 1), ("S_O,5 [mg/L]", "S_NO,2 [mg N/L]"), (1.0, 2.0)):
+        ax.plot(t[win], d["off_pid"][win, i], color=PAPER, lw=1.6, label="PID (expert prior)")
+        ax.plot(t[win], d["off_exact"][win, i], color=EXACT, lw=1.6, ls="--", label="MAACC, reimplemented as printed")
+        ax.axhline(sp, color=MUTED, lw=0.8, ls=":")
         ax.set_ylabel(name)
         ax.grid(axis="y", color=GRID, lw=0.8)
-    axes[0].set_title("Paper 1 · our modified MAACC vs PID, dry weather, 2 days (rebuilt plant, seed 0)",
+    a = d["off_exact_a"][win]
+    axes[2].plot(t[win], a[:, 0], color=EXACT, lw=1.4)
+    axes[2].set_ylabel("learned correction\na on KLa_5 [1/d]")
+    axes[2].grid(axis="y", color=GRID, lw=0.8)
+    axes[0].set_title("Paper 1 reimplemented · official BSM1, dry weather, days 8–10 (seed 0)",
                       loc="left", fontsize=10.5, color=INK)
-    axes[0].legend(frameon=False, ncol=2, loc="lower right", bbox_to_anchor=(1.0, 1.0))
-    axes[1].set_xlabel("time [days]")
+    axes[0].legend(frameon=True, framealpha=0.9, edgecolor="none", ncol=2, loc="upper right", fontsize=9)
+    axes[2].set_xlabel("time [days]")
     fig.tight_layout()
     fig.savefig(FIG / "readme_paper1_tracking.png", dpi=150)
 
