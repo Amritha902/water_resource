@@ -274,6 +274,49 @@ def full_section(lines: list[str]) -> None:
               "20–39, fallback without critic restart: 20/20.", ""]
 
 
+def paper2_exact() -> list[str]:
+    """§3.0: paper 2 on the official plant and influent."""
+    rows = load_tags("aeration_official")
+    pub = load("published_paper2.json")
+    L = ["### 3.0 Exact replication — official BSM1 plant and influent", ""]
+    if not rows or not pub:
+        return L + ["Not run yet: `python experiments/06_aeration_benchmark.py --official --weathers dry rain`.", ""]
+    rows = [r for r in rows if "published" not in r.get("method", "")]
+    pick = lambda w, m, src=None: [r for r in rows if r["weather"] == w and r["method"] == m]
+    L += ["Plant and influent as in §2.0 (official BSM1 code via `bsm2-python`; official dry and rain files). "
+          "Paper 2's set-up: `Q_a` at the BSM1 default, PID holds DO at 2 mg/L, learn on week 1 and evaluate "
+          "on week 2. The plant is first run 14 days on dry weather under that PID. DDPG uses the corrections of "
+          "§3.5 (as published it collapses to zero aeration — below). Storm: no official file (§2.0).", "",
+          "| weather | method | runs | AE paper | AE ours | EQ paper | EQ ours | S_NH,e paper | ours | N_tot,e paper | ours | saving vs PID paper | ours |",
+          "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    for w in ("dry", "rain"):
+        pid = pick(w, "PID")
+        if not pid:
+            continue
+        pae = mean(pid, "AE")
+        for m in ("PID", "Fuzzy", "DDPG-A", "DDPG-B"):
+            r, ref = pick(w, m), pub[w][m]
+            if not r:
+                continue
+            sav_p = pct(ref["AE"], pub[w]["PID"]["AE"])
+            sav_o = pct(mean(r, "AE"), pae)
+            L.append(f"| {w} | {m} | {len(r)} | {ref['AE']:.1f} | {mean(r, 'AE'):.1f} | {ref['EQ']:.0f} | {mean(r, 'EQ'):.0f} "
+                     f"| {ref['S_NH']:.2f} | {mean(r, 'S_NH'):.2f} | {ref['N_tot']:.2f} | {mean(r, 'N_tot'):.2f} "
+                     f"| {'—' if m == 'PID' else f'{sav_p:+.2f} %'} | {'—' if m == 'PID' else f'{sav_o:+.2f} %'} |")
+    dd = {m: pick("dry", m) for m in ("PID", "DDPG-A", "DDPG-B")}
+    if all(dd.values()):
+        L += ["", "Mean `S_O,5`, dry, evaluation week: " + ", ".join(
+            f"{m} {mean(v, 'S_O5_mean'):.3f} (paper {pub['DO_mean_dry'][m]:.3f})" for m, v in dd.items()) + "."]
+    pubrun = [r for r in load_tags("aeration_official_published")]
+    if pubrun:
+        r = pubrun[0]
+        L += ["", f"**As published** (paper's state, 45 s incremental action, unscaled reward), DDPG-B, dry: "
+              f"AE {r['AE']:.0f} kWh/d, mean DO {r['S_O5_mean']:.2f} mg/L, ammonium above 4 g N/m³ "
+              f"{100 * r['viol_NH']:.0f} % of the week."]
+    L += ["", "Results per seed vary (DDPG is seed-sensitive); runs above are means.", ""]
+    return L
+
+
 def paper2(lines: list[str]) -> None:
     aer = load("summary_aeration.json") or []
     for extra in ("summary_aeration_rs.json", "summary_aeration_storm_base.json"):
@@ -284,6 +327,7 @@ def paper2(lines: list[str]) -> None:
     lines += ["## 3. Paper 2 — DO control by reinforcement learning (DDPG)", "",
               "> S. L. Du, P. X. Chen, H. G. Han, J. F. Qiao, *Dissolved oxygen concentration control in wastewater",
               "> treatment process based on reinforcement learning*, Sci. China Tech. Sci. 66(9), 2549–2560, 2023.", "",
+              "<<EXACT2>>",
               "### 3.1 What the paper specifies", "",
               "| Item | Specification | Code |", "|---|---|---|",
               "| control | `KLa_5` only, no DO set point; `Q_a` at the BSM1 default | `rl/env.py` |",
@@ -367,6 +411,8 @@ def main() -> None:
     i = lines.index("<<EXACT>>")
     lines[i:i + 1] = exact_section()
     paper2(lines)
+    i = lines.index("<<EXACT2>>")
+    lines[i:i + 1] = paper2_exact()
     lines += ["## 4. Reproduce", "", "```",
               "python -m pytest tests -q",
               "python experiments/03_run_control.py --seeds 2          # paper 1 (results/summary_paper1.json)",
