@@ -14,6 +14,19 @@ and improved the RL agent of the second. Every number below comes from
 | **What we got** | Oxygen error vs PID: **−81%** dry, **−75%** rain, **−32%** storm (paper −95/−95/−92%). Nitrate: median run −84% dry, −83% rain (paper −74/−71%); storm no gain. Runs that beat PID: **18/20** dry and rain (paper: >90%). Under the noise test: **not reproduced** — worse than PID. | Saving reproduced: dry **6.8%** (paper 7.24), rain **4.9%** (5.52), storm **5.0%** (6.06). |
 | **Verdict** | **Reproduced for dry and rain; not for storm nitrate or noise** | **Reproduced** |
 
+### Paper vs ours
+
+![Paper 1: error reduction vs PID, paper vs ours](docs/figures/readme_paper1_vs_ours.png)
+
+![Paper 1: our tracking, PID vs MAACC](docs/figures/readme_paper1_tracking.png)
+
+![Paper 2: energy saving vs PID, paper vs ours](docs/figures/readme_paper2_vs_ours.png)
+
+Orange = the papers' published numbers (from their tables); blue = our runs.
+Paper 1's nitrate bars are means: two bad runs out of 20 pull rain below zero,
+while the typical run is 83% better than PID. Redraw with
+`python experiments/19_readme_figures.py`.
+
 Paper 1 needed bigger learning steps than our first, cautious version, plus a
 safety fallback we added: if the learned part makes tracking clearly worse, it
 is reset to zero and the PID takes over smoothly. Without it 8 of 20 runs
@@ -87,4 +100,4 @@ with other counts they land elsewhere on the same energy/violation trade-off.
 
 Docs: `docs/00_code_walkthrough.md` (modules), `01`–`02` paper 1, `03` our
 contribution, `04` paper 2, `05` results, `07_viva_prep.md` (questions to
-expect), `STATUS.md` (what is left).
+expect), `09_faculty_speech.md` (two-minute talk), `STATUS.md` (what is left).
