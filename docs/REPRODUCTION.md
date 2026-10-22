@@ -188,7 +188,7 @@ Part of what the agent learns on the recycle loop is a slowly varying negative c
 
 ### 3.0 Exact replication — official BSM1 plant and influent
 
-Plant and influent as in §2.0 (official BSM1 code via `bsm2-python`; official dry and rain files). Paper 2's set-up: `Q_a` at the BSM1 default, PID holds DO at 2 mg/L, learn on week 1 and evaluate on week 2. The plant is first run 14 days on dry weather under that PID. DDPG uses the corrections of §3.5 (as published it collapses to zero aeration — below). Storm: no official file (§2.0).
+Plant and influent as in §2.0 (official BSM1 code via `bsm2-python`; official dry and rain files). Paper 2's set-up: `Q_a` at the BSM1 default, PID holds DO at 2 mg/L, learn on week 1 and evaluate on week 2. The plant is first run 14 days on dry weather under that PID. DDPG uses the corrections of §3.5; the published version is reported below the table. Storm: no official file (§2.0).
 
 | weather | method | runs | AE paper | AE ours | EQ paper | EQ ours | S_NH,e paper | ours | N_tot,e paper | ours | saving vs PID paper | ours |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -206,6 +206,8 @@ Mean `S_O,5`, dry, evaluation week: PID 1.998 (paper 2.000), DDPG-A 1.876 (paper
 Per seed (saving vs PID / effluent S_NH): dry DDPG-A: -2.2 % / 2.94, +4.1 % / 3.18, +4.2 % / 4.09; dry DDPG-B: +10.5 % / 4.50, +5.8 % / 3.31, +15.7 % / 7.30; rain DDPG-A: +2.8 % / 3.94, +7.6 % / 4.68, +3.1 % / 4.57; rain DDPG-B: +12.7 % / 6.15, +0.4 % / 3.45, +8.1 % / 4.56.
 
 **Reading.** The comparators match the paper within 1 % on energy and effluent quality. All but one DDPG run (dry DDPG-A, seed 0) move the plant the way the paper describes — less air, lower DO, more ammonium, less total nitrogen — and one seed lands almost on the paper's numbers (dry DDPG-B, seed 1: AE 3513 vs 3430, DO 1.01 vs 1.03, S_NH 3.31 vs 3.26, EQ 6164 vs 6073). But the seeds spread widely: the mean DDPG-B saving is larger than the paper's and comes with more ammonium, and dry DDPG-A saves less. The paper reports one number per case without seeds or spread, so which point on this spread it reports cannot be checked.
+
+**As published** (paper's state, 45 s incremental action, unscaled reward), DDPG-B, dry, 1 seed: mid-training it shut the air almost off (DO 0.03 mg/L, S_NH 11 at episodes 14–19), but by the end it settled at AE 3328 kWh/d (+10.7 % vs PID), mean DO 0.51 mg/L, S_NH 4.28, ammonium above 4 g N/m³ 52 % of the week — about where our fixed version lands. On our rebuilt plant the published version collapsed to zero aeration (§3.5), which is why we added the fixes; on the official plant, for this seed, they were not needed.
 
 Results per seed vary (DDPG is seed-sensitive); runs above are means.
 

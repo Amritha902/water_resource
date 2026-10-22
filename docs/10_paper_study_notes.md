@@ -44,7 +44,7 @@ did not reproduce; **key claim** = what the paper asserts; **parameter** = a set
 | page | passage | tag | our note |
 |---|---|---|---|
 | 1 | “reward functions and by analysing the relationships among” | key claim | Two rewards: A (effluent limits, eq. 19) and B (energy + ammonia, eq. 23). Code: src/wwtp/rl/rewards.py. |
-| 7 | “this paper selects S NH, S s, and S O as the input of the agent” | problem / not reproduced | PROBLEM FOUND: with an incremental action the actuator KLa5 is a hidden state - not Markov. As published the agent collapsed to zero air. We add KLa5/240 to the state. |
+| 7 | “this paper selects S NH, S s, and S O as the input of the agent” | problem / not reproduced | PROBLEM FOUND: with an incremental action the actuator KLa5 is a hidden state - not Markov. On our rebuilt plant the published agent collapsed to zero air, so we add KLa5/240 to the state. On the official plant the published agent shut the air almost off mid-training but recovered (10.7 % saving, 1 seed). |
 | 7 | “Figure 4 shows the variation of effluent parameters when” | matched | Reproduced: NH4 falls and Ntot rises with DO, COD/BOD/TSS barely move, energy rises (results/summary_fig4.json). |
 | 8 | “environment at an interval of 45 s and obtain the required DO” | problem / not reproduced | 45 s steps with gamma = 0.99 give a ~75 min horizon, but effluent NH4 responds over hours. We hold each action 15 min. |
 | 8 | “the influent data are taken as the influent of WWTPs in the” | matched | Same protocol: learn on week 1, evaluate on week 2. |
