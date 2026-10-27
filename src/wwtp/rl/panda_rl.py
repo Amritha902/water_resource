@@ -1,7 +1,7 @@
 """PANDA-RL -- the modified reinforcement-learning network.
 
 Starting point is the DDPG agent of Du et al. (2023).  Reproducing it exposed
-three problems (``docs/04_second_paper.md`` Sec. 5): the reward that should
+three problems (``docs/archive/04_second_paper.md`` Sec. 5): the reward that should
 punish under-aeration arrives hours after the action, the penalty weights that
 trade energy against discharge limits are hand-tuned by trial and error, and
 a scalar critic optimises the *mean* return although what a discharge consent
@@ -115,7 +115,7 @@ class PandaRLConfig(DDPGConfig):
     #: boundary provides dual steps -- with ``dyna_ratio = 3`` the policy
     #: learns roughly four times faster and a once-per-week multiplier simply
     #: cannot keep up: the agent drives aeration down and the constraint only
-    #: catches up an episode later.  See docs/03_novelty.md.
+    #: catches up an episode later.  See docs/archive/03_novelty.md.
     lambda_every: int = 0
     lambda_lr_online: float = 0.05     # dual step for the intra-episode update
     rate_ema_beta: float = 2e-3        # ~500-decision window on the violation rate

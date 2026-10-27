@@ -1,0 +1,68 @@
+[
+ {
+  "weather": "dry",
+  "dynamic": false,
+  "method": "PIDx2",
+  "seed": 0,
+  "IAE": 0.005696766387049234,
+  "ISE": 7.794409946743492e-05,
+  "DEVmax": 0.036927414201952447,
+  "cpu_s": 14.898273810000003,
+  "finite": true
+ },
+ {
+  "weather": "dry",
+  "dynamic": false,
+  "method": "PID",
+  "seed": 0,
+  "IAE": 0.011283822554168113,
+  "ISE": 0.0003090102818381269,
+  "DEVmax": 0.07177618568397715,
+  "cpu_s": 14.981308031000005,
+  "finite": true
+ },
+ {
+  "weather": "dry",
+  "dynamic": false,
+  "method": "PIDx3",
+  "seed": 0,
+  "IAE": 0.003851062562580907,
+  "ISE": 3.50785469860619e-05,
+  "DEVmax": 0.02515093890359177,
+  "cpu_s": 14.615582016999994,
+  "finite": true
+ },
+ {
+  "weather": "dry",
+  "dynamic": false,
+  "method": "PIDx4",
+  "seed": 0,
+  "IAE": 0.002968128559258657,
+  "ISE": 2.0255431848061378e-05,
+  "DEVmax": 0.019986436535145424,
+  "cpu_s": 14.998183458,
+  "finite": true
+ },
+ {
+  "weather": "dry",
+  "dynamic": false,
+  "method": "PIDx5",
+  "seed": 0,
+  "IAE": 0.002569782577985901,
+  "ISE": 1.4081908268978797e-05,
+  "DEVmax": 0.016872663646530173,
+  "cpu_s": 14.775101298000003,
+  "finite": true
+ },
+ {
+  "weather": "dry",
+  "dynamic": false,
+  "method": "PIDx6",
+  "seed": 0,
+  "IAE": 0.09914208726130394,
+  "ISE": 0.015957843024034524,
+  "DEVmax": 0.3468519686574767,
+  "cpu_s": 16.28463152999999,
+  "finite": true
+ }
+]

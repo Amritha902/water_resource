@@ -23,7 +23,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from wwtp.baselines.pid import IncrementalPID  # noqa: E402
+from wwtp.baselines.pid import PAPER_KD, PAPER_KI, PAPER_KP, IncrementalPID  # noqa: E402
 from wwtp.maacc.exact import ExactMAACC, U_MAX, U_MIN  # noqa: E402
 from wwtp.official.plant import OfficialBSM1, U_NOMINAL  # noqa: E402
 
@@ -61,6 +61,22 @@ def run(job):
     if ctrl == "PID":
         pid = IncrementalPID(u_min=U_MIN, u_max=U_MAX, u0=u_end.copy())
         law = lambda s: pid(R - s)
+    elif ctrl.startswith("PIDx"):
+        # retuned prior: the paper's PID with all gains scaled (chosen on dry weather)
+        g = float(ctrl[4:])
+        pid = IncrementalPID(PAPER_KP * g, PAPER_KI * g, PAPER_KD * g, U_MIN, U_MAX, u0=u_end.copy())
+        law = lambda s: pid(R - s)
+    elif ctrl == "OURS":
+        # our corrected MAACC (bigger steps, scaled inputs, safety fallback)
+        from wwtp.maacc.agent import MAACCController, tuned_agent_configs
+        m = MAACCController(configs=tuned_agent_configs(), seed=seed)
+        m.pid.u = u_end.copy()
+        step = {"k": 0}
+
+        def law(s, m=m, step=step):
+            u = m.act(step["k"], s, R, {})
+            step["k"] += 1
+            return u
     else:
         law = ExactMAACC(seed=seed, critic=ctrl.split("-")[1], u0=u_end.copy(), init=init)
         law = (lambda m: (lambda s: m(s, R)))(law)
@@ -100,12 +116,21 @@ def main():
     ap.add_argument("--noise", action="store_true", help="also the Table III case (dry + noise)")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--tag", default="exact")
+    ap.add_argument("--controllers", nargs="*", default=None,
+                    help="run only these controllers (e.g. OURS), with PID")
     ap.add_argument("--init-sweep", action="store_true",
                     help="dry, seed 0: every initial-weight scale in INITS, both critic readings")
     a = ap.parse_args()
     if a.init_sweep:
         jobs = [("dry", False, f"MAACC-{c}", 0, i) for c in ("paper", "td0") for i in INITS]
         a.tag = "exact_init_sweep"
+        return _go(jobs, a)
+    if a.controllers:
+        jobs = [(w, False, "PID", 0) for w in a.weathers]
+        jobs += [(w, False, c, s) for w in a.weathers for c in a.controllers for s in range(a.seeds)]
+        if a.noise:
+            jobs += [("dry", True, "PID", s) for s in range(a.seeds)]
+            jobs += [("dry", True, c, s) for c in a.controllers for s in range(a.seeds)]
         return _go(jobs, a)
     jobs = [(w, False, "PID", 0) for w in a.weathers]
     # paper Fig. 9 compares the ideal and the noisy control input of the same run

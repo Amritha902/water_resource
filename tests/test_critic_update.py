@@ -1,4 +1,4 @@
-"""The critic-update correction documented in ``docs/02_reproduction.md``.
+"""The critic-update correction documented in ``docs/archive/02_reproduction.md``.
 
 Equation (15) of the reference paper forms the approximation error
 ``e_k = U_k + lambda Q(x_k) - Q(x_{k-1})`` and eq. (18) descends it in the

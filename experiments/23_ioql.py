@@ -44,9 +44,12 @@ def run(job):
     st, u0 = warm()
     p = OfficialBSM1(weather)
     p.set_state(st)
-    if method == "PID":
+    if method == "PID" or method.startswith("PIDx"):
         c = IOQL(seed=seed, u0=u0, learn=False)
         c.A[:] = 0.0
+        if method.startswith("PIDx"):            # retuned prior: gains scaled
+            g = float(method[4:])
+            c.pid.kp, c.pid.ki, c.pid.kd = c.pid.kp * g, c.pid.ki * g, c.pid.kd * g
     else:
         prior = method.split("-")[1] if "-" in method else "default"
         c = IOQL(seed=seed, prior=prior, omega_decay=prior != "default", u0=u0)
@@ -74,13 +77,25 @@ def main():
     ap.add_argument("--seeds", type=int, default=5)
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--tag", default="ioql")
+    ap.add_argument("--methods", nargs="*", default=None,
+                    help="run only these methods (e.g. PIDx3), for all cases, one seed")
+    ap.add_argument("--weathers", nargs="*", default=["dry", "rain", "storm"])
+    ap.add_argument("--fixed-only", action="store_true")
     a = ap.parse_args()
+    if a.methods:
+        jobs = [(w, dyn, m, 0) for dyn in ((False,) if a.fixed_only else (False, True))
+                for w in a.weathers for m in a.methods]
+        return _go(jobs, a)
     jobs = []
     for dyn in (False, True):
         for w in ("dry", "rain", "storm"):
             jobs.append((w, dyn, "PID", 0))
             for m in ("IOQL", "IOQL-K1", "IOQL-K2", "IOQL-K3"):
                 jobs += [(w, dyn, m, s) for s in range(a.seeds)]
+    return _go(jobs, a)
+
+
+def _go(jobs, a):
     rows, traces = [], {}
     with Pool(a.workers) as pool:
         for i, (row, (X, R)) in enumerate(pool.imap_unordered(run, jobs), 1):

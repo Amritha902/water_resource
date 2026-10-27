@@ -156,7 +156,7 @@ Not given in the paper and chosen by us:
 - initial inner weights uniform on [−1, 1];
 - initial critic outer weights uniform on [−0.1, 0.1].
 
-A sweep of twelve other initial scales is reported in `docs/REPRODUCTION.md`.
+A sweep of twelve other initial scales is in `results/summary_paper1_exact_init_sweep.json` and is summarised in `docs/REPORT.md`.
 Code: `src/wwtp/maacc/exact.py`, `experiments/20_exact_paper1.py`.
 
 ### 5.2 Paper 2, DDPG
@@ -228,4 +228,4 @@ These follow eq. (36) of paper 1 and eq. (32) of paper 3. Paper 2 uses:
 | `results/summary_fig_p2_*.json`, `traces_fig_p2_*.json` | paper 2 runs and trajectories |
 | `results/summary_ioql.json`, `traces_ioql.json` | paper 3 runs and trajectories |
 | `docs/figures/reproduced/` | every figure of the three papers, redrawn from these runs |
-| `docs/REPRODUCTION.md` | the full comparison with the papers |
+| `docs/REPORT.md` | the full comparison with the papers |

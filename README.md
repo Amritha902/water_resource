@@ -1,124 +1,90 @@
-# RL control of a wastewater treatment plant
+# RL control of a wastewater treatment plant: three base papers on BSM1
 
-We reimplemented two base papers on the official BSM1 wastewater benchmark
-plant and compared our results with the papers' own tables. Every number
-below comes from `results/`.
+Three published learning controllers for the Benchmark Simulation Model No. 1
+(BSM1) are reimplemented exactly as printed, run on the official BSM1 plant
+with the official dry, rain and storm influent, and compared with the papers'
+own tables and figures. All 24 figures of the three papers are redrawn from
+our runs.
 
-## Three base papers, reimplemented figure by figure
+| | Paper |
+|---|---|
+| 1 | D. Wang, X. Li, J. Ren, J. Qiao, "Multiagent Adaptive Critic Control With Expert Knowledge for Wastewater Treatment Plants", IEEE Trans. Ind. Informat., 2026, doi:10.1109/TII.2026.3659924 |
+| 2 | S. L. Du, P. X. Chen, H. G. Han, J. F. Qiao, "Dissolved oxygen concentration control in wastewater treatment process based on reinforcement learning", Sci. China Tech. Sci. 66(9), 2549–2560, 2023, doi:10.1007/s11431-022-2403-8 |
+| 3 | M. Zhao, D. Wang, J. Ren, J. Qiao, "Integrated Online Q-Learning Design for Wastewater Treatment Processes", IEEE Trans. Ind. Informat. 21(2), 1833–1842, 2025, doi:10.1109/TII.2024.3488790 |
 
-The third base paper, Zhao et al., *Integrated Online Q-Learning Design for
-Wastewater Treatment Processes* (IEEE T-II 2025), is now included. All three
-papers were rerun on the official BSM1 plant with the official dry, rain and
-storm influent, using the settings printed in each paper. Every figure of the
-three papers (24 in all) is redrawn in `docs/figures/reproduced/`.
+## Results
 
 | | Paper 1 (MAACC) | Paper 2 (DDPG, floating DO) | Paper 3 (IOQL) |
 |---|---|---|---|
-| Plant check: PID against the paper | oxygen IAE 1.14·10⁻² vs 1.14·10⁻² (dry) | energy within 1% | IAE 1.13·10⁻² vs 1.16·10⁻² (dry) |
-| Algorithm as printed | equals PID in 80/80 runs | saves 9.4% / 6.5% / 8.1% vs paper's 7.2 / 5.5 / 6.1% (dry / rain / storm) | unstable: equals PID or oxygen collapses |
+| Plant check: our PID vs the paper's | oxygen IAE 1.14·10⁻² vs 1.14·10⁻² (dry) | energy and effluent index within 1 % | IAE 1.13·10⁻² vs 1.16·10⁻² (dry) |
+| Algorithm as printed | equals its PID prior (IAE within 1 %) in 80 of 80 runs | saves 9.4 / 6.5 / 8.0 % energy (dry / rain / storm; paper 7.2 / 5.5 / 6.1 %), with the ammonium limit broken 54–65 % of the week (PID 21–34 %) | unstable: stays at PID or the oxygen collapses |
 | Verdict | not reproducible as printed | reproduced in direction | not reproducible as printed |
+| Our improvement | PID prior retuned (gain ×3): oxygen error −63 to −66 %, nitrate −46 to −73 % | none: an agent held to the PID's compliance saves at most 2.5 % | PID prior retuned (gain ×4): oxygen error −64 to −74 % |
 
-- **Data and settings:** `docs/DATASET.md`.
-- **Code:**
-  - paper 1: `experiments/20_exact_paper1.py`;
-  - paper 2: `experiments/06_aeration_benchmark.py --official`;
-  - paper 3: `experiments/23_ioql.py`;
-  - figures: `experiments/24_diagrams.py` and `experiments/25_paper_figures.py`.
-- **Set points:** paper 1's text gives [1, 2] for [S_O,5, S_NO,2], but its own
-  figures, and the PID numbers we reproduce, correspond to [2, 1].
+The retuned gains were chosen on dry weather only, with a margin below the
+gain where the loop starts to oscillate, and applied unchanged to the other
+weathers. Under paper 1's actuator noise the gain falls to −26 % (oxygen) and
+−42 % (nitrate).
 
-## The two base papers
+Paper 1's text gives set points [1, 2] for [S_O,5, S_NO,2]; its figures and the
+PID numbers we reproduce correspond to [2, 1], which we use.
 
-| | **Paper 1: MAACC** (Wang et al., IEEE T-II 2026) | **Paper 2: floating DO** (Du et al., Sci China Tech Sci 2023) |
-|---|---|---|
-| **What it is** | Two RL agents (oxygen, nitrate) on top of a PID. The learned part starts at zero, so day one is plain PID. | One DDPG agent that lets oxygen float instead of holding 2 mg/L, to save aeration energy. |
-| **Main claimed result** | Oxygen error 92–95% and nitrate error 71–76% below PID (Table II); still 86% / 69% under actuator noise (Table III); over 90% of 20 runs beat PID. | 5–7% less aeration energy than PID, effluent still within limits. |
-| **Exact replication** | Official BSM1 plant (`bsm2-python`, a port of the IWA benchmark code) with the official dry and rain influent; algorithm exactly as printed with the Table I values; 20 runs per case. | Same official plant and influent; PID and fuzzy comparators; DDPG-A and DDPG-B, 3 seeds each, dry and rain. |
-| **What we got** | Plant check: our PID is within ~30% of the paper's PID row in dry weather. **MAACC as printed equals PID** in every run (its learned term stays ~10⁻⁵); 0 of 180 runs beat PID. Larger initial weights only make it diverge. | PID and fuzzy: energy and effluent index within **1%** of the paper. DDPG-B saving: dry **10.6%**, rain **7.1%** (paper 7.24 / 5.52), with more ammonia than the paper. Seeds spread widely (dry 5.8–15.7%); one seed lands on the paper (dry: 3513 vs 3430 kWh/d, DO 1.01 vs 1.03). |
-| **Verdict** | **Not reproducible from the paper as printed.** Its numbers need details the paper does not give. | **Comparators reproduced exactly; DDPG reproduced in direction, not in exact size** |
+## Documents
 
-### Paper vs our reimplementation
-
-![Paper 1: error reduction vs PID, paper vs reimplementation](docs/figures/readme_paper1_vs_ours.png)
-
-![Paper 1 reimplemented: PID vs MAACC on the official plant](docs/figures/readme_paper1_tracking.png)
-
-![Paper 2: energy saving vs PID, paper vs reimplementation](docs/figures/readme_paper2_vs_ours.png)
-
-Orange = the paper's published numbers; green = our reimplementation on the
-official plant. Paper 1 reimplemented exactly as printed: MAACC's learned
-correction stays around 10⁻⁵, so its trajectory sits on top of the PID's.
-Paper 2's DDPG uses three corrections (actuator setting in the state,
-15-minute decisions, reward scaled by 1 − γ); run exactly as published (one
-seed, dry) it ends at a similar 10.7% saving. Video of the runs:
-`docs/video/results.mp4`. Redraw: `python experiments/19_readme_figures.py`.
-
-What we got wrong earlier, and fixed: paper 1's Table I (all its
-hyperparameters) is printed as an image, and we missed it at first. The
-reimplementation uses Table I.
-
-Where the papers do not run as written: paper 1's critic update (eq. 15)
-grows without bound; paper 2's state is not Markov, and its 45 s decision step
-is short for the ammonia response. Details: `docs/REPRODUCTION.md`.
-
-## What we found that the papers do not report
-
-The energy saving is bought by breaking the ammonia limit far more often
-(official plant, evaluation week, mean of 3 seeds):
-
-| weather | DDPG-B saving | time above 4 g N/m³, DDPG-B | PID |
-|---|---|---|---|
-| dry | 10.6% | 56.0% | 21.0% |
-| rain | 7.1% | 56.9% | 33.5% |
-
-## Our contribution: a better RL network
-
-Four changes to paper 2's agent: **(1)** a 2-hour influent forecast as input,
-**(2)** a risk-aware critic that optimises the worst 30% of outcomes,
-**(3)** violation budgets via Lagrange multipliers instead of hand-tuned
-weights, **(4)** a learned plant model for extra training data.
-
-Same objective, arms differing only in the network; gap versus paper 2's agent
-at equal violation rate (positive = cheaper):
-
-| forecast only | risk-aware critic only | both |
-|---|---|---|
-| +19.5 kWh/d | +25.9 kWh/d | **+28.6 kWh/d** |
-
-## Limits (read these)
-
-- Everything is simulated. The plant and influent are rebuilt from the model
-  definition, not the official files, so numbers match the papers in direction,
-  not exactly.
-- Each sweep point is a single seed, and our agent has more inputs than paper
-  2's, so part of the gain could be capacity.
-- Change (4) did not work: it saves training data but broke the ammonia limit
-  (14% → 67% violations), and our attempted fix did not help.
-- The forecaster's weather-class head is at chance on fresh scenarios; its
-  95.8% validation accuracy was a leak from overlapping windows. The flow and
-  ammonia forecasts themselves hold up on unseen data.
-- Two of our own earlier claims were withdrawn after the full benchmark.
-
-## Project website
-
-`docs/` is a static site: an overview with a claim-by-claim verification
-ledger, one interactive page per base paper, and one for the prediction
-models. Open `docs/index.html` directly, or publish it via Settings → Pages →
-branch `claude/water-resource-ml-prediction-680kno`, folder `/docs`. Data comes
-from `docs/data/site-data.js`, built by `experiments/14_build_site_data.py`.
+- `docs/REPORT.md`: the full report, paper by paper, with every table.
+- `docs/DATASET.md` (and `.pdf`): plant, influent data, correction made to the
+  influent files, simulation protocol and every setting.
+- `docs/figures/reproduced/`: the 24 redrawn figures; `docs/figures/ours/`:
+  figures of our improved controller.
+- `results/`: every number in the report; `published_paper{1,2,3}.json` holds
+  the values typed in from the papers.
 
 ## Run it
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests -q                  # 82 tests
-python experiments/09_write_results.py     # regenerate docs/05_results.md
+python -m pytest tests -q           # 82 tests
+
+# paper 1: as printed (20 runs per case) and retuned prior
+python experiments/20_exact_paper1.py --seeds 20 --noise --critics paper --tag exact2
+python experiments/20_exact_paper1.py --controllers PIDx3 --seeds 1 --weathers dry rain storm --tag ours_p1_clean
+# paper 2
+python experiments/06_aeration_benchmark.py --official --weathers dry rain storm --methods PID Fuzzy DDPG-A DDPG-B
+python experiments/26_fig4_official.py
+# paper 3
+python experiments/23_ioql.py --seeds 3
+python experiments/23_ioql.py --methods PID PIDx4 --tag ours_p3
+# figures and report
+python experiments/24_diagrams.py && python experiments/25_paper_figures.py && python experiments/27_ours_figures.py
+python tools/build_report.py --md docs/REPORT.md
 ```
 
-RL learners reproduce exactly at the benchmark's thread count (`--threads 2`);
-with other counts they land elsewhere on the same energy/violation trade-off.
+The influent files are downloaded on first use into `data/official/`.
 
-Docs: `docs/00_code_walkthrough.md` (modules), `01`–`02` paper 1, `03` our
-contribution, `04` paper 2, `05` results, `07_viva_prep.md` (questions to
-expect), `09_faculty_speech.md` (two-minute talk),
-`10_paper_study_notes.md` (page-by-page notes on both papers), `STATUS.md` (what is left).
+## Code
+
+| | |
+|---|---|
+| `src/wwtp/official/plant.py` | official BSM1 plant (bsm2-python 0.0.16), influent loading and correction |
+| `src/wwtp/maacc/exact.py` | paper 1, MAACC as printed |
+| `src/wwtp/rl/` | paper 2: environment, DDPG, rewards, comparators; constrained agent (`panda_rl.py`) |
+| `src/wwtp/ioql/ioql.py` | paper 3, IOQL as printed |
+| `experiments/20`, `23`–`27` | the runs and figures behind the report |
+| `tools/` | report builders |
+
+## Earlier work
+
+Before the official plant was used, the plant was rebuilt from the model
+definition (`src/wwtp/bsm1/`), and an influent forecaster, a digital twin and
+an ammonium early-warning model were trained on it (`experiments/01`–`19`,
+`21`–`22`). Those notes, the old website and the earlier talk and slides are
+in `docs/archive/`. Their numbers come from the rebuilt plant and are
+superseded by the report above.
+
+## Limits
+
+- Everything is simulated, on one benchmark plant.
+- The retuned prior is a fixed controller, not a learning method.
+- Paper 1's nitrate-loop PID error is about half the paper's in every weather,
+  and its noise experiment cannot be matched; the paper does not give enough
+  detail to find out why.

@@ -18,7 +18,7 @@ together turn a purely *reactive* controller into an *anticipatory* one:
        digital twin through the *predicted* influent trajectory.
 
 The feed-forward solve is **closed-loop aware and offset-free**, which took
-two corrections to get right (both documented in ``docs/03_novelty.md``).
+two corrections to get right (both documented in ``docs/archive/03_novelty.md``).
 
 *Closed-loop aware*: the rollout carries a differentiable copy of the
 incremental PID, so the twin predicts what the **closed loop** will do under

@@ -25,7 +25,7 @@ Timing inside one control period, following Algorithm 1:
          ->  actor step on   L_a = 0.5 Q_k^2                      (eq. 17)
          ->  u_k = a_k + b_k                                      (eq. 7)
 
-Four implementation choices, all discussed in ``docs/02_reproduction.md``:
+Four implementation choices, all discussed in ``docs/archive/02_reproduction.md``:
 
 1. Network inputs and the control-effort terms of the utility are normalised
    by the actuator ranges.  The paper keeps raw units and absorbs the scale
@@ -40,7 +40,7 @@ Four implementation choices, all discussed in ``docs/02_reproduction.md``:
    ``pi(0) = 0`` and -- with the pure integration of eq. (8), ``leak = 1`` --
    the learned term only moves in response to tracking error.  An actor bias
    plus a leaky integrator made ``a`` drift into its clip and act as a
-   constant offset (``docs/02_reproduction.md`` Sec. 4).
+   constant offset (``docs/archive/02_reproduction.md`` Sec. 4).
 4. **Critic update.**  Equation (15) writes the approximation error as
    ``e_k = U_k + lambda Q(x_k) - Q(x_{k-1})`` and eq. (18) descends it in the
    weights that produce ``Q(x_k)`` -- i.e. it corrects the *later* prediction.
@@ -139,7 +139,7 @@ def tuned_agent_configs() -> tuple[AgentConfig, AgentConfig]:
     increment and authority, no actor weight decay, a heavier own-error
     weight, a faster critic, and the safety fallback.  Chosen by 20-seed
     searches on dry weather and checked on 20 held-out seeds
-    (``docs/REPRODUCTION.md`` Sec. 2.4).
+    (``docs/archive/REPRODUCTION.md`` Sec. 2.4).
     """
     return tuple(replace(c, da_max=c.da_max * 10, a_max=c.a_max * 10,
                          lr_actor=0.01, lr_critic=0.05, wd_actor=0.0,

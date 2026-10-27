@@ -17,7 +17,7 @@ Everything below is taken from the paper:
 * eqs. (15), (16), (18)  ``e_k = U_k + lambda Q(x_k) - Q(x_{k-1})``, descend ``e^2 / 2``.
   As printed (and as Lemma 1 analyses it) the gradient is taken through
   ``Q(x_k)``: ``beta <- beta - l_c e lambda vartheta_k``  (``critic="paper"``).
-  Because that recursion has gain > 1 (docs/REPRODUCTION.md), two standard
+  Because that recursion has gain > 1 (docs/archive/REPRODUCTION.md), two standard
   readings are offered for comparison: ``"td0"`` (through ``Q(x_{k-1})``) and
   ``"residual"`` (through both).
 * eqs. (17), (19), (27)  ``L_a = Q^2 / 2``; the gradient reaches ``alpha`` through

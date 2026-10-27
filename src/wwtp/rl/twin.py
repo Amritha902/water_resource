@@ -2,7 +2,7 @@
 
 Reproducing Du et al. showed the agent needs roughly fifteen simulated weeks
 of interaction to converge, against the seven days of online learning the
-paper describes (``docs/04_second_paper.md`` Sec. 5.3).  On a real plant those
+paper describes (``docs/archive/04_second_paper.md`` Sec. 5.3).  On a real plant those
 extra weeks are spent exploring at the actuator rails, discharging illegal
 effluent the whole time.  A learned model is the only way to buy that
 experience without running it.

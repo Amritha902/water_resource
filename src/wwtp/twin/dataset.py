@@ -6,7 +6,7 @@ under feedback is not enough: with the PID in the loop, ``KLa_5`` rises
 exactly when the oxygen demand rises, so the apparent correlation between
 aeration and dissolved oxygen is close to zero -- or inverted.  A twin fitted
 on such data reports a near-zero aeration gain and the anticipatory solver
-then moves the actuator the wrong way (see ``docs/03_novelty.md``).
+then moves the actuator the wrong way (see ``docs/archive/03_novelty.md``).
 
 The collector therefore mixes two excitation modes:
 

@@ -4,8 +4,9 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 # Results: keep the summaries and aggregates, which are the data behind every
-# number in docs/05_results.md and are small enough to version (~170 KB).
-# The per-run traces are 3.5 MB and are only needed to redraw trajectories.
+# number in docs/REPORT.md and are small enough to version.
+# The per-run traces (results/traces_*.json) are only needed to redraw the
+# trajectory figures; the experiments write them again.
 results/*
 !results/summary_*.json
 !results/summary_*.csv

@@ -67,7 +67,7 @@ class AerationEnvConfig:
     #: ``"paper"``   -> [S_S,5, S_O,5, S_NH,5] exactly as Du et al. specify;
     #: ``"augmented"`` appends the actuator position KLa_5/240.  With an
     #: incremental action the actuator is a hidden integrator, so the paper's
-    #: observation is not Markov -- see docs/04_second_paper.md.
+    #: observation is not Markov -- see docs/archive/04_second_paper.md.
     obs_mode: str = "paper"
     #: ``"incremental"`` -> KLa_5 += a * da_max (the paper);
     #: ``"absolute"``    -> KLa_5 = (a + 1)/2 * 240

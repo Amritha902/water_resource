@@ -79,7 +79,7 @@ def apply() -> None:
         "figure.dpi": 130,
     })
 
-#: early-warning methods (docs/05_early_warning.md).  The analyser alarm is
+#: early-warning methods (docs/archive/05_results.md).  The analyser alarm is
 #: today's practice and takes the neutral reference colour.
 WARNING = {
     "Early-warning net": "#2a78d6",

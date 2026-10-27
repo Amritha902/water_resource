@@ -82,6 +82,12 @@ def make(method: str, seed: int, artifacts: Path, published: bool = False):
     forecaster: str | None = fc
     if method == "PANDA-RL":
         pass
+    elif method == "PANDA-RL-pidbudget":
+        # violation budgets close to the PID comparator's own rates in dry
+        # weather on the official plant (PID: NH 21 %, TN 18 % of the week)
+        from wwtp.rl.panda_rl import Constraint, NH_LIMIT, TN_LIMIT
+        panda["constraints"] = (Constraint("NH_peak", NH_LIMIT, 0.20, "S_NH,e"),
+                                Constraint("TN_peak", TN_LIMIT, 0.18, "N_tot,e"))
     elif method == "PANDA-noForecast":
         forecaster = None
         panda["use_forecast"] = False

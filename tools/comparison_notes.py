@@ -106,10 +106,11 @@ the copyright of IEEE and Science China Press and are not redistributed.</p>"""
     n["p1_fig2"] = "Redrawn. Each agent: action network giving Δa, critic Q(z, Δa, a), integrator a = a + Δa, and the PID prior b; u = a + b."
     n["p1_fig3"] = "Official BSM1 influent files. Matches the published figure, including the rain period (days 8.4–10.4) and the two storm peaks of 60 000 m³/d."
     for k, w in (("p1_fig4", "dry"), ("p1_fig5", "rainy"), ("p1_fig6", "stormy")):
-        n[k] = (f"Our PID trace has the same shape and size as the paper's ({w} weather). Our MAACC, exactly as "
-                "printed, lies on top of the PID line: the learned correction changes the inputs by at most "
-                "0.6 d⁻¹ on KLa,5 and 10 m³/d on Q_a (well under 1 %). The paper's MAACC trace is almost flat "
-                "at the set point; we could not obtain that.")
+        n[k] = (f"Our PID oxygen trace has the same shape and size as the paper's ({w} weather); our nitrate "
+                "error is about half the paper's. Our MAACC, exactly as printed, lies on top of the PID line: "
+                "in all three weathers the learned correction changes the inputs by at most 0.6 d⁻¹ on KLa,5 and "
+                "10 m³/d on Q_a (well under 1 %). The paper's MAACC trace is almost flat at the set point; we "
+                "could not obtain that.")
     n["p1_fig4"] += " Dry-weather PID oxygen IAE: ours 1.14·10⁻², paper 1.14·10⁻²."
     n["p1_fig7"] = ("Same daily pattern and range of KLa,5 and Q_a; in rain and storm Q_a rises towards its "
                     "upper limit during the high flows, as in the paper.")
@@ -149,7 +150,7 @@ the copyright of IEEE and Science China Press and are not redistributed.</p>"""
     n["closing"] = """
 <div class='pb'></div><h2>Summary</h2>
 <p><b>What matches.</b> The plant and the test conditions: the influent figures, the PID rows of papers 1 and 3
-(oxygen IAE within 1–10 %), the PID and fuzzy rows of paper 2 (energy and effluent index within 1 %), and the
+(oxygen IAE within 1–10 %), the PID and fuzzy rows of paper 2 (energy and effluent index within about 1 %), and the
 effect of DO on effluent quality (paper 2, Fig. 4).</p>
 <p><b>What does not.</b> Paper 1's MAACC and paper 3's IOQL, run exactly as printed, do not reproduce the
 published improvements. MAACC stays equal to its PID prior because, with the Table I weights in raw units, the

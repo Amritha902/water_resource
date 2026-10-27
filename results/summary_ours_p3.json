@@ -1,0 +1,134 @@
+[
+ {
+  "weather": "dry",
+  "dynamic": false,
+  "method": "PID",
+  "seed": 0,
+  "IAE": 0.011283822554168113,
+  "ISE": 0.0003090102818381269,
+  "DEVmax": 0.07177618568397715,
+  "cpu_s": 14.573399692000002,
+  "finite": true
+ },
+ {
+  "weather": "dry",
+  "dynamic": false,
+  "method": "PIDx4",
+  "seed": 0,
+  "IAE": 0.002968128559258657,
+  "ISE": 2.0255431848061378e-05,
+  "DEVmax": 0.019986436535145424,
+  "cpu_s": 14.723664925000001,
+  "finite": true
+ },
+ {
+  "weather": "rain",
+  "dynamic": false,
+  "method": "PID",
+  "seed": 0,
+  "IAE": 0.01054169534993771,
+  "ISE": 0.0002709474579770962,
+  "DEVmax": 0.07177618568397715,
+  "cpu_s": 14.376284779999999,
+  "finite": true
+ },
+ {
+  "weather": "rain",
+  "dynamic": false,
+  "method": "PIDx4",
+  "seed": 0,
+  "IAE": 0.0027885835077784207,
+  "ISE": 1.7860627296031463e-05,
+  "DEVmax": 0.019076702401242374,
+  "cpu_s": 14.360255559000002,
+  "finite": true
+ },
+ {
+  "weather": "storm",
+  "dynamic": false,
+  "method": "PID",
+  "seed": 0,
+  "IAE": 0.011294772962252071,
+  "ISE": 0.00030703099032619065,
+  "DEVmax": 0.07271990165886177,
+  "cpu_s": 14.311308555000004,
+  "finite": true
+ },
+ {
+  "weather": "storm",
+  "dynamic": false,
+  "method": "PIDx4",
+  "seed": 0,
+  "IAE": 0.003144248884655223,
+  "ISE": 3.248131498364217e-05,
+  "DEVmax": 0.0725049166614331,
+  "cpu_s": 14.630835181000002,
+  "finite": true
+ },
+ {
+  "weather": "dry",
+  "dynamic": true,
+  "method": "PID",
+  "seed": 0,
+  "IAE": 0.011450028584664207,
+  "ISE": 0.00034157518153968264,
+  "DEVmax": 0.4009281083581666,
+  "cpu_s": 14.762384384999997,
+  "finite": true
+ },
+ {
+  "weather": "dry",
+  "dynamic": true,
+  "method": "PIDx4",
+  "seed": 0,
+  "IAE": 0.0031248145852730935,
+  "ISE": 4.5219355122350324e-05,
+  "DEVmax": 0.40097278451786944,
+  "cpu_s": 14.901667021999991,
+  "finite": true
+ },
+ {
+  "weather": "rain",
+  "dynamic": true,
+  "method": "PID",
+  "seed": 0,
+  "IAE": 0.010698992613588741,
+  "ISE": 0.00030285451431642443,
+  "DEVmax": 0.40056931396195616,
+  "cpu_s": 14.482466734999988,
+  "finite": true
+ },
+ {
+  "weather": "rain",
+  "dynamic": true,
+  "method": "PIDx4",
+  "seed": 0,
+  "IAE": 0.0029463535523331103,
+  "ISE": 4.2302869033408334e-05,
+  "DEVmax": 0.4005615758806347,
+  "cpu_s": 14.577879366999994,
+  "finite": true
+ },
+ {
+  "weather": "storm",
+  "dynamic": true,
+  "method": "PID",
+  "seed": 0,
+  "IAE": 0.012765576686490275,
+  "ISE": 0.0006432956241521274,
+  "DEVmax": 0.4012399306139518,
+  "cpu_s": 14.52281907999999,
+  "finite": true
+ },
+ {
+  "weather": "storm",
+  "dynamic": true,
+  "method": "PIDx4",
+  "seed": 0,
+  "IAE": 0.004634509083116527,
+  "ISE": 0.0003605574197209052,
+  "DEVmax": 0.3998312436706868,
+  "cpu_s": 14.717989966000005,
+  "finite": true
+ }
+]
