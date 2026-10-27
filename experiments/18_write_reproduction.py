@@ -402,7 +402,7 @@ def paper2(lines: list[str]) -> None:
               "for weeks. Scale the reward by `1 − γ`; actor weight decay 1e−4 and a 1e−3 pre-tanh penalty.", "",
               "Further deviations: AE enters the reward as `KLa_5/240` (the paper does not give units; raw AE ≈ 3 500 "
               "would swamp the 0.42 term — affine, so the same objective up to scale); OU σ annealed 0.35 → 0.05, "
-              "buffer 80 000; 20 passes over the training week instead of 7 days.", "",
+              "buffer 80 000; 30 passes over the training week instead of 7 days.", "",
               "### 3.6 Reproducibility", "",
               "Re-training DDPG-B and PANDA-RL (dry, seed 0) in a fresh session with the benchmark's settings "
               "(`--threads 2`) gives the committed numbers exactly. With a different thread count the first training "

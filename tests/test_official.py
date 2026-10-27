@@ -50,3 +50,22 @@ def test_exact_maacc_starts_as_the_pid_prior():
 def test_bipolar_is_the_papers_activation():
     x = np.linspace(-5, 5, 11)
     assert np.allclose(bipolar(x), (1 - np.exp(-x)) / (1 + np.exp(-x)))
+
+
+def test_ioql_prior_alone_is_the_pid():
+    from wwtp.ioql.ioql import IOQL, reference
+    c = IOQL(seed=0, learn=False)
+    c.A[:] = 0.0
+    from wwtp.baselines.pid import IncrementalPID
+    pid = IncrementalPID(kp=np.array([100.0]), ki=np.array([20.0]), kd=np.array([1.0]),
+                         u_min=np.array([0.0]), u_max=np.array([240.0]), u0=np.array([84.0]))
+    for x in (1.9, 2.05, 2.0, 1.97):
+        assert abs(c(x, 2.0) - float(pid(np.array([2.0 - x]))[0])) < 1e-9
+    assert reference(3.0, True) == 2.2 and reference(5.0, True) == 1.8 and reference(5.0, False) == 2.0
+
+
+def test_storm_file_has_the_two_storms():
+    s = load_influent("storm")
+    assert s[:, 15].max() == 60000.0
+    peaks = s[s[:, 15] > 50000, 0]
+    assert peaks.min() < 9.5 and peaks.max() > 10.5

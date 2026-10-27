@@ -15,33 +15,57 @@ from bsm2_python.bsm1_base import BSM1Base
 import bsm2_python
 
 DATA = os.path.join(os.path.dirname(bsm2_python.__file__), "data")
-FILES = {"dry": "dryinfluent.csv", "rain": "raininfluent.csv"}
 DT_DAYS = 45.0 / 86400.0
 U_NOMINAL = np.array([84.0, 55338.0])
 
+#: the IWA BSM1 influent files (Inf_dry/rain/strm_2006), as spreadsheets in
+#: github.com/davidfernand/BSM1_in_Python (GPL-3).  Not redistributed here:
+#: downloaded on first use into data/official/.
+_SRC = "https://raw.githubusercontent.com/davidfernand/BSM1_in_Python/{rev}/code/Influent%20files/{name}"
+_REV = "5dadb209a5a34ecb0e2f83a2e79c060bf3470582"
+_NAMES = {"dry": "Inf_dry_2006.xlsx", "rain": "Inf_rain_2006.xlsx", "storm": "Inf_strm_2006.xlsx"}
+_CACHE = os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "official")
+
+
+def _official_table(weather: str) -> np.ndarray:
+    """(1345, 15) array: t [d], 13 ASM1 concentrations, Q [m3/d]."""
+    cache = os.path.abspath(_CACHE)
+    npy = os.path.join(cache, weather + ".npy")
+    if os.path.exists(npy):
+        return np.load(npy)
+    os.makedirs(cache, exist_ok=True)
+    xlsx = os.path.join(cache, _NAMES[weather])
+    if not os.path.exists(xlsx):
+        import urllib.request
+        urllib.request.urlretrieve(_SRC.format(rev=_REV, name=_NAMES[weather]), xlsx)
+    import openpyxl
+    ws = openpyxl.load_workbook(xlsx, read_only=True, data_only=True).worksheets[0]
+    rows = [r[:15] for r in ws.iter_rows(values_only=True)
+            if r and isinstance(r[0], (int, float))]
+    arr = np.array(rows, dtype=float)
+    np.save(npy, arr)
+    return arr
+
 
 def load_influent(weather: str) -> np.ndarray:
-    """Official influent as a (1344, 22) array: 14 days at 15 min.
+    """Official influent as a (1345, 22) array: 14 days at 15 min.
 
-    The package's rain file is malformed: flows are written with '.' as a
-    thousands separator (``21.477`` = 21 477 m3/d, ``30.044.50`` = 30 044.50)
-    and times are rounded to 0.01 d.  Both are repaired here; its
-    concentrations are rounded to two decimals (< 0.1 %), left as they are.
+    Columns as ``bsm2-python`` expects: t, 13 ASM1 components, TSS, Q, T and
+    five dummy states.  One correction: the spreadsheets keep the inert
+    soluble COD ``S_I`` at 30 g/m3 in every row, whereas in the official rain
+    data it is diluted by the rain water, ``S_I = 30 Q_dry / Q`` (checked
+    against the ``bsm2-python`` rain file to 0.005 g/m3).  The same rule is
+    applied to rain and storm; dry is unchanged.
     """
-    with open(os.path.join(DATA, FILES[weather])) as f:
-        rows = [line.strip().split(",") for line in f if line.strip()]
-    out = np.zeros((len(rows), 22))
-    for i, r in enumerate(rows):
-        for j, c in enumerate(r):
-            if j == 15:                                     # flow column
-                if c.count(".") > 1:
-                    head, rest = c.split(".", 1)
-                    c = head + rest                         # 30.044.50 -> 30044.50
-                v = float(c)
-                out[i, j] = v * 1000.0 if v < 1000.0 else v
-            else:
-                out[i, j] = float(c)
-    out[:, 0] = np.arange(len(rows)) * 15.0 / 1440.0
+    d = _official_table(weather)
+    dry = _official_table("dry")
+    out = np.zeros((len(d), 22))
+    out[:, 0] = d[:, 0]
+    out[:, 1:14] = d[:, 1:14]
+    out[:, 1] = 30.0 * dry[:, 14] / d[:, 14]
+    out[:, 14] = 0.75 * d[:, [3, 4, 5, 6, 7]].sum(axis=1)
+    out[:, 15] = d[:, 14]
+    out[:, 16] = 15.0
     return out
 
 

@@ -37,7 +37,8 @@ def evaluate(agent, series: InfluentSeries, reward: RewardSpec,
     q_eff: list[float] = []
     rewards: list[float] = []
     trace: dict[str, list] = {k: [] for k in
-                              ("t", "S_O5", "KLa5", "S_NH", "N_tot", "q_in")}
+                              ("t", "S_O5", "KLa5", "S_NH", "N_tot", "COD", "BOD5",
+                               "TSS", "q_in")}
     last_bucket = -1
     while True:
         action = agent.act(np.concatenate([obs, ctx]), info=None, explore=False)
@@ -53,7 +54,7 @@ def evaluate(agent, series: InfluentSeries, reward: RewardSpec,
         if bucket != last_bucket:
             last_bucket = bucket
             trace["t"].append(info["t_days"])
-            for key in ("S_O5", "KLa5", "S_NH", "N_tot", "q_in"):
+            for key in ("S_O5", "KLa5", "S_NH", "N_tot", "COD", "BOD5", "TSS", "q_in"):
                 trace[key].append(info[key])
         if done:
             break

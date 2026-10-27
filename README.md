@@ -4,6 +4,29 @@ We reimplemented two base papers on the official BSM1 wastewater benchmark
 plant and compared our results with the papers' own tables. Every number
 below comes from `results/`.
 
+## Three base papers, reimplemented figure by figure
+
+The third base paper, Zhao et al., *Integrated Online Q-Learning Design for
+Wastewater Treatment Processes* (IEEE T-II 2025), is now included. All three
+papers were rerun on the official BSM1 plant with the official dry, rain and
+storm influent, using the settings printed in each paper. Every figure of the
+three papers (24 in all) is redrawn in `docs/figures/reproduced/`.
+
+| | Paper 1 (MAACC) | Paper 2 (DDPG, floating DO) | Paper 3 (IOQL) |
+|---|---|---|---|
+| Plant check: PID against the paper | oxygen IAE 1.14·10⁻² vs 1.14·10⁻² (dry) | energy within 1% | IAE 1.13·10⁻² vs 1.16·10⁻² (dry) |
+| Algorithm as printed | equals PID in 80/80 runs | saves 9.4% / 6.5% / 8.1% vs paper's 7.2 / 5.5 / 6.1% (dry / rain / storm) | unstable: equals PID or oxygen collapses |
+| Verdict | not reproducible as printed | reproduced in direction | not reproducible as printed |
+
+- **Data and settings:** `docs/DATASET.md`.
+- **Code:**
+  - paper 1: `experiments/20_exact_paper1.py`;
+  - paper 2: `experiments/06_aeration_benchmark.py --official`;
+  - paper 3: `experiments/23_ioql.py`;
+  - figures: `experiments/24_diagrams.py` and `experiments/25_paper_figures.py`.
+- **Set points:** paper 1's text gives [1, 2] for [S_O,5, S_NO,2], but its own
+  figures, and the PID numbers we reproduce, correspond to [2, 1].
+
 ## The two base papers
 
 | | **Paper 1: MAACC** (Wang et al., IEEE T-II 2026) | **Paper 2: floating DO** (Du et al., Sci China Tech Sci 2023) |
@@ -88,7 +111,7 @@ from `docs/data/site-data.js`, built by `experiments/14_build_site_data.py`.
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests -q                  # 80 tests
+python -m pytest tests -q                  # 82 tests
 python experiments/09_write_results.py     # regenerate docs/05_results.md
 ```
 
