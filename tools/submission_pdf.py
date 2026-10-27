@@ -161,7 +161,7 @@ def main(theirs: Path, out: Path):
 lets dissolved oxygen float (paper 2) and an integrated online Q-learning scheme (paper 3). We reimplemented all
 three exactly as printed on the official BSM1 plant with the official dry, rain and storm influent, and redrew
 every figure of the three papers from our runs. The plant and test conditions are largely confirmed: the
-oxygen-loop PID results of papers 1 and 3 and the PID energy of paper 2 are reproduced within 1–10 % (one case
+oxygen-loop PID results of papers 1 and 3 and the PID energy of paper 2 are reproduced within 10 % (one case
 16 %), while paper 1's nitrate-loop PID error comes out about half the published value. The learning controllers
 are not reproduced: paper 1's controller stays equal to its
 PID prior (IAE within 1 %) in 80 of 80 runs, and paper 3's is unstable as printed; paper 2's DDPG reproduces the direction of its

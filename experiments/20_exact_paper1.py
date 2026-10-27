@@ -127,10 +127,11 @@ def main():
         return _go(jobs, a)
     if a.controllers:
         jobs = [(w, False, "PID", 0) for w in a.weathers]
-        jobs += [(w, False, c, s) for w in a.weathers for c in a.controllers for s in range(a.seeds)]
+        ctrls = [c for c in a.controllers if c != "PID"]     # PID is always run
+        jobs += [(w, False, c, s) for w in a.weathers for c in ctrls for s in range(a.seeds)]
         if a.noise:
             jobs += [("dry", True, "PID", s) for s in range(a.seeds)]
-            jobs += [("dry", True, c, s) for c in a.controllers for s in range(a.seeds)]
+            jobs += [("dry", True, c, s) for c in ctrls for s in range(a.seeds)]
         return _go(jobs, a)
     jobs = [(w, False, "PID", 0) for w in a.weathers]
     # paper Fig. 9 compares the ideal and the noisy control input of the same run
