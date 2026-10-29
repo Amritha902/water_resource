@@ -120,7 +120,7 @@ def main() -> None:
     ap.add_argument("--threads", type=int, default=2)
     ap.add_argument("--tag", default="aeration")
     ap.add_argument("--official", action="store_true",
-                    help="official BSM1 plant and influent (dry, rain only)")
+                    help="official BSM1 plant and influent (dry, rain, storm)")
     args = ap.parse_args()
 
     torch.set_num_threads(args.threads)
