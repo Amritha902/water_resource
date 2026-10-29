@@ -39,7 +39,42 @@ PID numbers we reproduce correspond to [2, 1], which we use.
 - `results/`: every number in the report; `published_paper{1,2,3}.json` holds
   the values typed in from the papers.
 
+## What is in this folder
+
+```
+water_resource/
+├── README.md               this file
+├── requirements.txt        Python packages (tested with Python 3.13)
+├── src/wwtp/               the library
+│   ├── official/           official BSM1 plant and influent (papers 1–3 run on this)
+│   ├── maacc/              paper 1: MAACC controller (exact.py = as printed)
+│   ├── rl/                 paper 2: environment, DDPG, rewards, PID/fuzzy comparators
+│   ├── ioql/               paper 3: IOQL controller
+│   ├── baselines/          PID controllers
+│   ├── metrics.py          IAE, energy and effluent indices
+│   └── bsm1/, forecast/, twin/, warning/, panda/, utils/   earlier work (see below)
+├── experiments/            numbered scripts that produce every result and figure
+├── tests/                  82 automated tests (pytest)
+├── results/                summaries and aggregates behind every number in the report
+├── artifacts/              trained models from the earlier work (.pt) and their training logs
+├── docs/
+│   ├── REPORT.md           full report, paper by paper
+│   ├── DATASET.md / .pdf   plant, influent data and simulation settings
+│   ├── comparison_notes.json  notes used when comparing with the papers
+│   ├── figures/reproduced/ the 24 redrawn paper figures (p1_fig1 … p3_fig7)
+│   ├── figures/ours/       figures of our improved controllers
+│   └── archive/            earlier notes, talk, slides (Presentation.pdf),
+│                           faculty PDF, old website and results video
+├── tools/                  report and PDF builders
+└── .github/workflows/      GitHub release workflow (not needed to run the code)
+```
+
+`data/` (influent files) and the per-run traces in `results/` are not included;
+they are recreated when the code runs.
+
 ## Run it
+
+Needs Python 3.10 or newer. From inside the unzipped `water_resource` folder:
 
 ```bash
 pip install -r requirements.txt
