@@ -43,7 +43,7 @@ src/wwtp/               the library
   baselines/              incremental PID used as the prior
   bsm1/, forecast/, twin/, warning/, panda/   earlier work (see below)
 experiments/            numbered scripts; 20, 23–27 produce the final results
-demo/                   live demo (live_demo.py) and its cached start states
+demo/                   live demo (run_demo.py runs it all) and its cached start states
 tools/                  report builders (build_report.py writes docs/REPORT.md)
 tests/                  82 tests
 results/                every result file behind the report (JSON and CSV)
@@ -80,6 +80,13 @@ an internet connection is needed once.
 `demo/live_demo.py` runs the controllers side by side on three copies of the
 official plant and plots them as they run, with the tracking error updated
 live; at the end it prints the 14-day results of the report.
+
+```bash
+python demo/run_demo.py --check     # the evening before: is this computer ready?
+python demo/run_demo.py             # the whole demo: three live runs, hands-free (about 5 min)
+```
+
+On Windows `demo\run_demo.bat` can be double-clicked. Single runs:
 
 ```bash
 python demo/live_demo.py                                          # paper 1 set-up, 2 days of dry weather (about 1 min)

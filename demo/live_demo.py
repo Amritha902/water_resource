@@ -188,6 +188,8 @@ def main():
     ap.add_argument("--every", type=int, default=20, help="redraw every N control periods (45 s each)")
     ap.add_argument("--save", help="write an .mp4 instead of opening a window")
     ap.add_argument("--fps", type=int, default=15)
+    ap.add_argument("--hold", type=float, default=0.0,
+                    help="keep the finished window this many seconds, then close (0: until closed by hand)")
     a = ap.parse_args()
 
     import matplotlib
@@ -281,8 +283,12 @@ def main():
             f"{nm}: {iae[j, o]:.4f}" for j, nm in enumerate(setup.names)))
     stored_results(a.paper)
     if not a.save:
-        plt.ioff()
-        plt.show()
+        if a.hold > 0:
+            plt.pause(a.hold)
+            plt.close(fig)
+        else:
+            plt.ioff()
+            plt.show()
 
 
 if __name__ == "__main__":
