@@ -43,6 +43,7 @@ src/wwtp/               the library
   baselines/              incremental PID used as the prior
   bsm1/, forecast/, twin/, warning/, panda/   earlier work (see below)
 experiments/            numbered scripts; 20, 23–27 produce the final results
+demo/                   live demo (live_demo.py) and its cached start states
 tools/                  report builders (build_report.py writes docs/REPORT.md)
 tests/                  82 tests
 results/                every result file behind the report (JSON and CSV)
@@ -73,6 +74,24 @@ python -m pytest tests -q        # 82 tests, about 1–2 minutes
 The official influent files (dry, rain, storm) are downloaded on first use
 into `data/official/` from the public repository davidfernand/BSM1_in_Python;
 an internet connection is needed once.
+
+## Live demo
+
+`demo/live_demo.py` runs the controllers side by side on three copies of the
+official plant and plots them as they run, with the tracking error updated
+live; at the end it prints the 14-day results of the report.
+
+```bash
+python demo/live_demo.py                                          # paper 1 set-up, 2 days of dry weather (about 1 min)
+python demo/live_demo.py --weather storm --start-day 8 --days 3   # paper 1 set-up through the storm
+python demo/live_demo.py --paper 3 --days 7                       # paper 3 set-up, dynamic reference
+python demo/live_demo.py --save demo.mp4                          # write a video instead of a window
+```
+
+Orange is the paper's PID prior, green the paper's learner exactly as printed,
+blue our retuned prior. The plant states the runs start from (the 14-day
+warm-up, and day 8 of the storm) are cached in `demo/cache/`; if they are
+missing or unreadable they are recomputed, which takes a few minutes once.
 
 ## Reproduce every result
 
