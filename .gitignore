@@ -14,3 +14,6 @@ results/*
 !results/curves_*.json
 !results/published_*.json
 /data/
+
+# training logs
+logs_*/

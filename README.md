@@ -29,6 +29,25 @@ gain falls to −26 % (oxygen) and −42 % (nitrate).
 Paper 1's text gives set points [1, 2] for [S_O,5, S_NO,2]; its figures and the
 PID numbers we reproduce correspond to [2, 1], which we use.
 
+## New controller for paper 1: PID ×3 + daily ILC + safe SAC-IL
+
+Paper 1's MAACC replaced by a controller built from the same expert PID:
+the retuned prior (×3), a daily iterative learning control (ILC) of the
+load cycle, and a soft actor-critic with imitation learning (SAC-IL) that
+corrects the aeration, behind a safety gate. Tuned and trained on dry
+weather only; 3 training runs. Oxygen IAE over 14 days against the paper's
+PID prior (= MAACC as printed):
+
+| | Dry | Rain | Storm | Dry + noise |
+|---|---|---|---|---|
+| PID ×3 | −66 % | −66 % | −63 % | −26 % |
+| + daily ILC | −83 % | −81 % | −77 % | −26 % |
+| **+ safe SAC-IL (ours)** | **−87 %** | **−84 %** | **−80 %** | −24 % |
+| Paper's claim (not reproducible) | −95 % | −95 % | −92 % | −86 % |
+
+Nitrate stays at the retuned PID's level (−73 / −54 / −46 %). Details,
+figures and the honest reading: `docs/NEW_METHOD.md`.
+
 ## What is in the repository
 
 ```
@@ -40,19 +59,23 @@ src/wwtp/               the library
   rl/                     paper 2: environment, DDPG, rewards, PID and fuzzy comparators,
                           constrained agent (panda_rl.py)
   ioql/ioql.py            paper 3, IOQL exactly as printed
+  sacil/                  new paper 1 controller: daily ILC (ilc.py), SAC with imitation learning (sacil.py)
   baselines/              incremental PID used as the prior
   bsm1/, forecast/, twin/, warning/, panda/   earlier work (see below)
-experiments/            numbered scripts; 20, 23–27 produce the final results
+experiments/            numbered scripts; 20, 23–27 produce the reimplementation results,
+                        28–31 the new paper 1 controller
 demo/                   live demo (run_demo.py runs it all) and its cached start states
 tools/                  report builders (build_report.py writes docs/REPORT.md)
 tests/                  82 tests
 results/                every result file behind the report (JSON and CSV)
 docs/
   REPORT.md               the full report: every table, figure notes, appendices
+  NEW_METHOD.md           the new paper 1 controller: method, results, figures
   DATASET.md, DATASET.pdf plant, influent data, the correction made to it,
                           simulation protocol and every setting
   figures/reproduced/     the 24 figures of the three papers, redrawn from our runs
-  figures/ours/           figures of our improved controller
+  figures/ours/           figures of the retuned prior
+  figures/new/            figures of the new paper 1 controller
   comparison_notes.json   per-figure notes used by the report builder
   archive/                earlier notes, website, talk and slides (superseded)
 artifacts/              trained models from the earlier work
