@@ -31,6 +31,7 @@ import torch.nn.functional as F
 from ..baselines.pid import PAPER_KD, PAPER_KI, PAPER_KP, IncrementalPID
 from ..maacc.exact import U_MAX, U_MIN
 from ..official.plant import DT_DAYS, OfficialBSM1, load_influent
+from .ilc import PERIOD as ILC_PERIOD
 
 R = np.array([2.0, 1.0])                 # set points [S_O,5, S_NO,2]
 RES_SCALE = np.array([6.0, 3000.0])      # action 1 = this extra increment per period
@@ -112,7 +113,13 @@ class Paper1Env:
         self.q1 = self._qin(self.k)
         s = self.p.step(u_apply)
         if self.ilc is not None:
+            ff_before = self.ilc.ff(self.k + 1)
             self.ilc.record(self.k, R - s, self.u)
+            if self.ilc.bumpless and (self.k + 1) % ILC_PERIOD == 0:
+                # bumpless transfer: the nightly update moves part of the PID's
+                # work into the feedforward; take the same amount out of the
+                # PID's state so the total input does not jump at midnight
+                self.u = np.clip(self.u - (self.ilc.ff(self.k + 1) - ff_before), U_MIN, U_MAX)
         self.k += 1
         self.e2, self.e1, self.e = self.e1, self.e, s - R
         r = -float(np.sum(np.abs(self.e) * self.w)) - 0.05 * float(np.sum(a ** 2))

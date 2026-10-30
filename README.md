@@ -33,24 +33,29 @@ PID numbers we reproduce correspond to [2, 1], which we use.
 
 Paper 1's MAACC replaced by a controller built from the same expert PID: the
 retuned prior (×3), a daily iterative learning control (ILC) of the load
-cycle, and a soft actor-critic trained by imitation learning (SAC-IL) that
+cycle on the oxygen loop (bumpless nightly update), and a soft actor-critic trained by imitation learning (SAC-IL) that
 corrects the aeration, behind a safety gate. Everything tuned and trained on
 dry weather, week 1 only; tested on week 2 of every weather (unseen); 5
 training runs. Energy and effluent quality are unchanged; the actuators move
 about twice as much.
 
-| Oxygen IAE, test week (unseen) vs paper's PID | Dry | Rain | Storm |
+| Oxygen IAE, test week vs paper's PID | Dry | Rain | Storm |
 |---|---|---|---|
 | MAACC as printed | 0 % | 0 % | 0 % |
 | PID ×3 | −66 % | −67 % | −60 % |
-| PID ×3 + daily ILC | −85 % | −81 % | −72 % |
+| PID ×3 + daily ILC | −85 % | −82 % | −72 % |
 | PID ×3 + SAC-IL (no ILC) | −83 % | −69 % | −67 % |
-| **Ours: PID ×3 + ILC + SAC-IL + gate** | −88 % | −80 % | −70 % |
+| **Ours: PID ×3 + ILC + SAC-IL + gate** | −87 % | −82 % | −74 % |
 | Paper's claim (14 days, not reproducible) | −95 % | −95 % | −92 % |
 
-Found and reported: the ILC on the nitrate loop helps in dry weather but
-harms nitrate in rain, the ILC's daily profile switch causes a short
-deviation at midnight, and the SAC-IL part adds mostly in dry weather.
+Nitrate, test week: −73 / −46 / −34 % (from the retuned PID). Round 2: the
+first full test showed that an ILC on the nitrate loop harmed nitrate in rain
+and that the ILC's nightly profile switch made the oxygen jump at midnight;
+both were fixed and everything re-tuned, retrained and re-tested (round 1
+kept in `results/*_round1.json`; since these fixes were chosen after seeing
+the test week, it is no longer fully unseen for them). The SAC-IL part adds
+−17 / −5 / −7 % on top of PID ×3 + ILC, and needs its safety gate outside
+dry weather.
 Step by step, with every figure, table and trade-off: `docs/PAPER1_STUDY.md`.
 
 ## What is in the repository

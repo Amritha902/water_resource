@@ -16,7 +16,10 @@ the time of day:
   and to days that differ from the others (weekends, rain, storms).
 
 The profile is updated online at the end of each day of the run; it starts at
-zero unless a profile learned beforehand is given.
+zero unless a profile learned beforehand is given.  Switching to the new
+profile at midnight makes the feedforward jump; with ``bumpless`` the
+controller takes the same jump out of its PID state (Paper1Env.step), so the
+total input stays continuous.
 """
 
 from __future__ import annotations
@@ -41,13 +44,16 @@ class DailyILC:
     Over the days the PID has to correct less and less, and the input arrives
     ahead of the load instead of after it."""
 
-    def __init__(self, beta, lead, smooth=15, forget=1.0, profile=None):
+    def __init__(self, beta, lead, smooth=15, forget=1.0, profile=None, bumpless=False):
         self.beta = np.asarray(beta, float)
         self.lead = np.asarray(lead, int)
         self.w, self.q = int(smooth), float(forget)
         n = len(self.beta)
         self.f = np.zeros((PERIOD, n)) if profile is None else np.array(profile, float)
         self._u = np.zeros((PERIOD, n))
+        #: the controller moves the same amount out of its PID state at the
+        #: nightly update (see Paper1Env.step), so the total input stays continuous
+        self.bumpless = bool(bumpless)
 
     def ff(self, k):
         return self.f[k % PERIOD]
@@ -63,6 +69,6 @@ class DailyILC:
         for i in range(len(self.beta)):
             dev = self._u[:, i] - self._u[:, i].mean()
             upd = self.f[:, i] + self.beta[i] * np.roll(dev, -self.lead[i])
-            pad = np.concatenate([upd[-self.w:], upd, upd[: self.w]])     # the day is periodic
+            pad = np.concatenate([upd[PERIOD - self.w:], upd, upd[: self.w]])     # the day is periodic
             new[:, i] = self.q * np.convolve(pad, kern, mode="valid")
         self.f = new

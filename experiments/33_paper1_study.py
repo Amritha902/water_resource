@@ -46,7 +46,10 @@ T = json.loads((ROOT / "results" / "paper1_tuning.json").read_text())
 ILC, GAIN = T["ilc"], float(T["gain"])
 MARGIN = 0.10
 NOISE_RUNS, NOISE_RUNS_SAC = 10, 5
-SAC_SEEDS = {"sacil_v2": (0, 1, 2, 3, 4), "sacil_noilc": (0, 1, 2)}
+#: round 2 policies (trained with the oxygen-only, bumpless ILC); the policy
+#: without ILC does not depend on the ILC and is the same as in round 1
+OURS_TAG = "sacil_v3"
+SAC_SEEDS = {OURS_TAG: (0, 1, 2, 3, 4), "sacil_noilc": (0, 1, 2)}
 
 
 def warm():
@@ -112,7 +115,7 @@ def run(job):
     env = make_env(weather, ctrl, seed=seed, noise=noise, noise_seed=noise_seed)
     stats = {"gated": 0, "n": 1}
     if "SAC" in ctrl or ctrl.startswith("Ours"):
-        tag = "sacil_noilc" if ctrl == "PIDx3+SAC-IL" else "sacil_v2"
+        tag = "sacil_noilc" if ctrl == "PIDx3+SAC-IL" else OURS_TAG
         pol, stats = sac_policy(tag, seed, ctrl, gated=ctrl != "Ours (no gate)")
     else:
         pol = lambda o, e: np.zeros(2)
@@ -132,7 +135,7 @@ def jobs():
     for c in ("MAACC", "MAACC+ILC"):
         J += [(c, w, s, False, 0, s == 0) for w in ("dry", "rain", "storm") for s in (0, 1, 2)]
         J += [(c, "dry", n, True, n, n == 0) for n in range(NOISE_RUNS)]
-    for c, tag in (("PIDx3+SAC-IL", "sacil_noilc"), ("Ours", "sacil_v2"), ("Ours (no gate)", "sacil_v2")):
+    for c, tag in (("PIDx3+SAC-IL", "sacil_noilc"), ("Ours", OURS_TAG), ("Ours (no gate)", OURS_TAG)):
         for s in SAC_SEEDS[tag]:
             J += [(c, w, s, False, 0, s == 0) for w in ("dry", "rain", "storm")]
             if c != "Ours (no gate)":

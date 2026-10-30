@@ -1,4 +1,5 @@
-"""Write docs/PAPER1_STUDY.md from results/paper1_study_tables.json (35) and paper1_tuning.json (32).
+"""Write docs/PAPER1_STUDY.md from results/paper1_study_tables.json (35) and paper1_tuning.json (32),
+with round 1 (paper1_study_tables_round1.json, paper1_tuning_round1.json) for comparison.
 
     python experiments/36_paper1_study_md.py
 """
@@ -12,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 RES = ROOT / "results"
 T = json.loads((RES / "paper1_study_tables.json").read_text())
 TU = json.loads((RES / "paper1_tuning.json").read_text())
+T1 = json.loads((RES / "paper1_study_tables_round1.json").read_text())
+TU1 = json.loads((RES / "paper1_tuning_round1.json").read_text())
 W3 = ("dry", "rain", "storm")
 
 
@@ -71,12 +74,20 @@ def tradeoff_table():
 
 
 C = T["compute"]
-PH = json.loads((RES / "summary_paper1_posthoc_oxygen_ilc.json").read_text())["runs"]
 
 
-def ph(c, w, k):
-    import numpy as np
-    return float(np.mean([r[k] for r in PH if r["controller"] == c and r["weather"] == w and not r["noise"]]))
+def v1(case, c, k):
+    return T1[case][c][k][0]
+
+
+def mid(tab, c, w, where):
+    m = tab["midnight"]
+    return m.get("round2", m)[f"{c}|{w}|clean"][where]
+
+
+def dpct(new, old):
+    """Change from round 1 to round 2, in %."""
+    return pct(100 * (new / old - 1))
 lab3 = {w: w.capitalize() for w in W3}
 labn = {"noise": "Dry + actuator noise"}
 o = {c: [red(w, c, "IAE_SO5_test") for w in W3] for c in ABL}
@@ -87,6 +98,11 @@ ours_vs_x3 = [100 * (1 - v(w, "Ours", "IAE_SO5_test") / v(w, "PIDx3", "IAE_SO5_t
 maacc_ilc = [red(w, "MAACC+ILC", "IAE_SO5_test") for w in W3]
 rng = lambda xs: (f"{min(xs):.0f}–{max(xs):.0f} %" if round(min(xs)) != round(max(xs)) else f"{round(min(xs)):.0f} %").replace("-0 %", "0 %")
 n_seeds = T["dry"]["Ours"]["IAE_SO5"][2]
+_best = min(r["IAE_SO5"] for r in TU["ilc_grid"] if r["ilc"] == TU["ilc"])
+n_bad = sum(r["IAE_SO5_test"] > 3 * v(r["weather"], "PIDx3", "IAE_SO5_test") for r in
+            json.loads((RES / "summary_paper1_study.json").read_text())["runs"]
+            if r["controller"] == "Ours (no gate)" and r["weather"] == "rain")
+n_near = sum(r["IAE_SO5"] <= 1.05 * _best for r in TU["ilc_grid"])
 
 md = f"""# Paper 1 study: base paper, reimplementation, and our controller
 
@@ -99,8 +115,8 @@ error against its PID. Rebuilt exactly as printed, MAACC equals its PID. Our
 controller keeps the paper's expert PID and adds three things: a stronger
 tuning, a daily iterative learning control (ILC) and a soft actor-critic
 trained by imitation learning (SAC-IL), behind a safety gate. Tuned and trained
-on one week of dry weather only, it reduces the oxygen error on the unseen
-test week by **{rng(o['Ours'])}** against the paper's PID (dry, rain, storm),
+on one week of dry weather only, it reduces the oxygen error on the test
+week (see the note in step 9) by **{rng(o['Ours'])}** against the paper's PID (dry, rain, storm),
 where MAACC gives {rng(o['MAACC'])}. The reduction is real but smaller than the
 paper's claim, and it has costs, listed in step 10.
 
@@ -193,10 +209,12 @@ which of them he had in mind.
    peak has moved the oxygen. The ILC stores, for every time of day, the
    correction the PID had to make, and each night takes over a share β of it,
    applied a little earlier (feedback-error learning). It learns on-line, from
-   zero, while it controls. Settings from step 6: oxygen loop β =
-   {TU['ilc']['beta'][0]}, lead {TU['ilc']['lead'][0]} step; nitrate loop β =
-   {TU['ilc']['beta'][1]}, lead {TU['ilc']['lead'][1]} steps; smoothing ±{TU['ilc']['smooth']} steps.
-   `src/wwtp/sacil/ilc.py`.
+   zero, while it controls. It acts on the **oxygen loop only**, and the
+   nightly update is **bumpless**: when the new profile takes over part of
+   the PID's work, the same amount is taken out of the PID's state, so the
+   total aeration does not jump at midnight. Settings from step 6: β =
+   {TU['ilc']['beta'][0]}, lead {TU['ilc']['lead'][0]} steps ({TU['ilc']['lead'][0] * 45 / 60:.0f} min), smoothing
+   ±{TU['ilc']['smooth']} steps. `src/wwtp/sacil/ilc.py`.
 3. **SAC-IL correction (the guide's method).** A small actor network (inputs:
    last three errors of both loops, both inputs, influent flow) adds a bounded
    correction to the aeration. Trained by imitation of PID ×3 + ILC, then by
@@ -212,12 +230,12 @@ which of them he had in mind.
 
 * Gain sweep ×1 … ×6: the loop becomes unstable at ×{TU['gain_limit']}; the
   rule (largest whole factor below 70 % of that) gives **×{TU['gain']}**.
-* ILC: 60 settings tried; the best is chosen. The map is flat: shares 0.75–1.0
-  with leads up to 4 steps all give 1.96–2.08 ×10⁻³, so the result does not
-  depend on a lucky setting. Long leads (16 steps) with a full share are
-  worse, as expected.
-* ILC on the nitrate loop: a small share (0.25) helps; larger shares or long
-  leads make it worse.
+* ILC: {len(TU['ilc_grid'])} settings tried (share β, lead, smoothing). Rule fixed
+  before the run: the lowest oxygen error among the settings whose largest
+  oxygen deviation is no larger than PID ×3's alone, so the ILC may not add
+  a worse moment. {TU['ilc_admissible']} of {len(TU['ilc_grid'])} settings pass. The map is flat:
+  {n_near} settings are within 5 % of the best, so the result does not depend
+  on a lucky setting (cells marked "peak ↑" break the rule).
 
 ![tuning](figures/study/tuning.png)
 
@@ -237,7 +255,7 @@ Oxygen and nitrate IAE. Percentages are against the paper's PID (MAACC as
 printed is equal to it). Learned controllers: mean of their runs
 ({n_seeds} for ours, 3 for MAACC and for SAC-IL without ILC).
 
-**Test week (week 2, unseen), oxygen S_O,5**
+**Test week (week 2, never used for tuning or training), oxygen S_O,5**
 
 {table('IAE_SO5_test', W3, lab3)}
 **Test week, nitrate S_NO,2**
@@ -273,34 +291,50 @@ printed is equal to it). Learned controllers: mean of their runs
 * **A bug we found and fixed.** In the noise test the earlier code dropped the
   ILC's feedforward before adding the noise; after the fix the ILC acts in
   every case. The earlier noise results were redone.
-* **The nitrate ILC is not robust (a finding, not hidden).** Chosen on dry
-  week 1, where it lowers the nitrate error, it makes nitrate worse in rain:
-  test week {v('rain','PIDx3+ILC','IAE_SNO2_test'):.4f} with it against
-  {v('rain','PIDx3','IAE_SNO2_test'):.4f} for PID ×3 alone. The nitrate loop is fast, and
-  a profile learned on dry days is wrong on rain days. A check made after
-  seeing this (so not part of the main result): with the ILC on the oxygen
-  loop only, nitrate returns to the PID ×3 level in rain
-  ({ph('PIDx3+ILC','rain','IAE_SNO2_test'):.4f}) while the oxygen stays as good
-  ({ph('PIDx3+ILC','rain','IAE_SO5_test'):.4f}). But our SAC-IL policies, trained with
-  the nitrate ILC in the loop, then lose their dry-weather gain (dry, test
-  week, {ph('Ours','dry','IAE_SO5_test'):.4f} instead of {v('dry','Ours','IAE_SO5_test'):.4f}):
-  a fair oxygen-only version needs SAC-IL retrained, which is the next step.
-  On the paper's slower PID the same nitrate ILC is worse still (nitrate
-  +72 / +103 / +27 % on the test week): its settings were tuned for PID ×3.
-* **A second flaw: a jump at midnight.** The ILC replaces its whole profile
-  once a day, at midnight, so the feedforward jumps a little at that moment.
-  This causes the largest oxygen deviations of the ILC controllers: for ours,
-  all ten largest deviations of the dry run are within 15 minutes of
-  midnight (largest {v('dry','Ours','DEVmax_SO5'):.3f} mg/L, against
-  {v('dry','PIDx3','DEVmax_SO5'):.3f} for PID ×3); away from midnight our largest
-  deviation is 0.025 mg/L, smaller than PID ×3's. The fix is simple (blend the
-  old and new profile over the first hour of the day) and is listed as the
-  next step, together with the oxygen-only ILC and retraining SAC-IL.
+* **Round 1 → round 2: two flaws found and fixed.** The first full test
+  (round 1) showed two problems in the feedback-learning part:
+  1. *The nitrate ILC was not robust.* Chosen on dry week 1, it made nitrate
+     worse in rain (test week {v1('rain','PIDx3+ILC','IAE_SNO2_test'):.4f} against
+     {v('rain','PIDx3','IAE_SNO2_test'):.4f} for PID ×3 alone): the nitrate loop is fast and
+     a profile learned on dry days is wrong on rain days.
+  2. *A jump at midnight.* The ILC switched its whole profile once a day, so
+     the feedforward jumped at midnight. All ten largest oxygen deviations of
+     our dry run were within 15 minutes of midnight.
+  Round 2 drops the nitrate ILC and makes the nightly update bumpless; the
+  ILC was re-tuned and SAC-IL retrained on dry week 1 exactly as before, and
+  everything re-tested. **Honest note:** these two changes were decided after
+  seeing round 1's test results, so for them the test week is no longer
+  fully unseen. Round 1's files are kept (`results/*_round1.json`).
+
+| Dry / rain / storm, test week | Round 1 | Round 2 |
+|---|---|---|
+| Ours, oxygen IAE | {' / '.join(f"{v1(w,'Ours','IAE_SO5_test'):.5f}" for w in W3)} | {' / '.join(f"{v(w,'Ours','IAE_SO5_test'):.5f}" for w in W3)} |
+| Ours, nitrate IAE | {' / '.join(f"{v1(w,'Ours','IAE_SNO2_test'):.5f}" for w in W3)} | {' / '.join(f"{v(w,'Ours','IAE_SNO2_test'):.5f}" for w in W3)} |
+| Ours, largest oxygen deviation, 14 days (mg/L) | {' / '.join(f"{v1(w,'Ours','DEVmax_SO5'):.3f}" for w in W3)} | {' / '.join(f"{v(w,'Ours','DEVmax_SO5'):.3f}" for w in W3)} |
+| Ours, largest deviation within 15 min of midnight | {' / '.join(f"{mid(T1,'Ours',w,'midnight'):.3f}" for w in W3)} | {' / '.join(f"{mid(T,'Ours',w,'midnight'):.3f}" for w in W3)} |
+| PID ×3 + ILC, oxygen IAE | {' / '.join(f"{v1(w,'PIDx3+ILC','IAE_SO5_test'):.5f}" for w in W3)} | {' / '.join(f"{v(w,'PIDx3+ILC','IAE_SO5_test'):.5f}" for w in W3)} |
+| PID ×3 + ILC, nitrate IAE | {' / '.join(f"{v1(w,'PIDx3+ILC','IAE_SNO2_test'):.5f}" for w in W3)} | {' / '.join(f"{v(w,'PIDx3+ILC','IAE_SNO2_test'):.5f}" for w in W3)} |
+
+  The midnight jump is gone (largest deviation near midnight in dry weather
+  {mid(T1,'Ours','dry','midnight'):.3f} → {mid(T,'Ours','dry','midnight'):.3f} mg/L), and our largest dry-weather deviation
+  is now {v('dry','Ours','DEVmax_SO5'):.3f} mg/L, below PID ×3's {v('dry','PIDx3','DEVmax_SO5'):.3f}. Nitrate in rain is back to the
+  PID ×3 level; the price is dry weather, where the nitrate ILC had helped
+  ({v1('dry','Ours','IAE_SNO2_test'):.5f} → {v('dry','Ours','IAE_SNO2_test'):.5f}). In the storm the largest deviation ({v('storm','Ours','DEVmax_SO5'):.2f}) is set by
+  the storm itself, the same for PID ×3. A small dip (about 0.01 mg/L, in
+  the half hour before midnight) remains: the load is not exactly the same
+  from one day to the next, so the learned profile does not quite join up
+  at midnight, and the smoothing spreads that step over the last half hour.
+
+![midnight](figures/study/midnight.png)
+
 * **Gate.** On: {v('dry','Ours','gated_share'):.1%} of the time in dry,
   {v('rain','Ours','gated_share'):.1%} in rain, {v('storm','Ours','gated_share'):.1%}
   in storm, {v('noise','Ours','gated_share'):.1%} with actuator noise. Without
   it, SAC-IL extrapolates in rain and storm (row "ours without the safety
-  gate").
+  gate"): {n_bad} of {n_seeds} trained policies go badly wrong there, which the
+  gate prevents. Training is also not always smooth: one of the {n_seeds} runs
+  became unstable after its first SAC episode; since the policy kept is the
+  best one on the training week, that run kept its first-episode policy.
 
 ![daily learning](figures/study/daily.png)
 
@@ -326,37 +360,37 @@ learn. The ILC needs no training, only a few days of operation.
   movement); the stability margin is smaller (×3 is 60 % of the unstable
   gain); the ILC relies on the daily repetition of the load; the learned part
   needs training data and a safety gate to stay reliable outside its training
-  range, and its gain is mostly in the weather it was trained on; the ILC on
-  the nitrate loop helps in dry weather but harms nitrate in rain, and the
-  ILC's daily profile switch causes a short deviation at midnight that sets
-  the largest oxygen deviation (step 9).
+  range, and its gain is mostly in the weather it was trained on; nitrate
+  gains come from the PID ×3 alone (no learning on that loop).
 
 ## Step 11. What we can claim
 
 * On the official BSM1, with the paper's data, set points and metrics, our
-  controller reduces the oxygen tracking error on unseen test data by
+  controller reduces the oxygen tracking error on the test week by
   **{rng(o['Ours'])}** against the paper's PID and against MAACC as printed
   (which gives {rng(o['MAACC'])}).
 * Over the paper's 14-day protocol: {rng(of['Ours'])} on oxygen.
-* Nitrate, test week: {pct(-n['Ours'][0])} / {pct(-n['Ours'][1])} / {pct(-n['Ours'][2])} (dry / rain / storm); the
-  small gain in rain is the nitrate ILC's fault (step 9).
-* **The most robust part** is PID ×3 + the daily ILC on oxygen: −85 / −81 /
-  −72 % on oxygen in the test week, with no learned network.
+* Nitrate, test week: {pct(-n['Ours'][0])} / {pct(-n['Ours'][1])} / {pct(-n['Ours'][2])} (dry / rain / storm), all from
+  the retuned PID.
+* The largest oxygen deviation is no worse than PID ×3's in any weather
+  (step 9).
+* **The most robust part** is PID ×3 + the daily ILC on oxygen:
+  {pct(-o['PIDx3+ILC'][0])} / {pct(-o['PIDx3+ILC'][1])} / {pct(-o['PIDx3+ILC'][2])} on oxygen in the test week, with no learned network.
 * What the guide's SAC-IL part adds on top of PID ×3 + ILC (oxygen, test
   week): {pct(-ours_vs_ilc[0])} in dry weather (the kind it was trained on),
-  {pct(-ours_vs_ilc[1])} in rain and {pct(-ours_vs_ilc[2])} in the storm (a + sign means worse). On its own (without
+  {pct(-ours_vs_ilc[1])} in rain and {pct(-ours_vs_ilc[2])} in the storm. On its own (without
   the ILC) it gives {pct(-o['PIDx3+SAC-IL'][0])} / {pct(-o['PIDx3+SAC-IL'][1])} / {pct(-o['PIDx3+SAC-IL'][2])}
   against the paper's PID, close to what the ILC gives alone.
 * **Not claimed:** the paper's −92 to −95 %, which no setting the paper allows
   reproduces; a real-plant result; a gain under heavy actuator noise beyond
   the retuned PID.
 
-## Next step (to make the feedback part clean)
+## Next step
 
-1. Blend the ILC profile at midnight instead of switching (removes the jump).
-2. ILC on the oxygen loop only (the nitrate ILC is not robust).
-3. Retrain SAC-IL with that ILC in the loop, and test again on the same
-   unseen week. About 1.5 hours of computing.
+1. Give the gate a smooth blend instead of an on/off switch.
+2. Let the ILC learn the weekly cycle too (weekends raise the error).
+3. A fresh test on data never looked at (e.g. BSM2 influent), since round 2's
+   two fixes were chosen after seeing week 2.
 
 ## Step 12. Questions to brainstorm
 
@@ -372,12 +406,11 @@ learn. The ILC needs no training, only a few days of operation.
 
 ```bash
 python experiments/32_paper1_tuning.py            # step 6
-python experiments/28_sac_il_paper1.py --seed 0 --episodes 5 --train-days 7 --noise-runs 0 --ilc --balanced --oxygen-only --tag sacil_v2   # seeds 0-4
+python experiments/28_sac_il_paper1.py --seed 0 --episodes 5 --train-days 7 --noise-runs 0 --ilc --balanced --oxygen-only --tag sacil_v3   # seeds 0-4
 python experiments/28_sac_il_paper1.py --seed 0 --episodes 5 --train-days 7 --noise-runs 0 --balanced --oxygen-only --tag sacil_noilc      # seeds 0-2
 python experiments/33_paper1_study.py             # step 8: every controller, every case
 python experiments/34_paper1_diagrams.py          # diagrams
 python experiments/35_paper1_study_doc.py         # figures and tables
-python experiments/37_paper1_posthoc_oxygen_ilc.py  # step 9, the after-the-fact check
 python experiments/36_paper1_study_md.py          # this document
 ```
 """

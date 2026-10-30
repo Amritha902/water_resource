@@ -7,10 +7,17 @@ touched here.
    The loop is called unstable at the first g whose oxygen IAE is more than
    twice that of g - 1; the chosen gain is the largest whole number below 70 %
    of that g.
-2. Daily ILC on the oxygen loop, with the chosen gain: a grid over the share
-   beta, the lead and the smoothing; the best IAE on dry days 0-7 is chosen and
-   the whole grid is kept to show how sensitive the result is.
-3. ILC on the nitrate loop as well, at the chosen oxygen settings.
+2. Daily ILC on the oxygen loop only, with the chosen gain and bumpless
+   transfer at the nightly update: a grid over the share beta, the lead and the
+   smoothing.  Criterion, fixed before the run: the lowest oxygen IAE on dry
+   days 0-7 among the settings whose largest oxygen deviation is no larger than
+   that of the PID alone (the ILC must not add a worse moment).  The whole grid
+   is kept to show how sensitive the result is.
+
+Round 1 (results/paper1_tuning_round1.json) also put an ILC on the nitrate
+loop and switched the profile at midnight without bumpless transfer; the test
+showed the nitrate ILC hurt in rain and the switch made the oxygen jump at
+midnight, so round 2 drops the first and fixes the second.
 
 Writes results/paper1_tuning.json.
 
@@ -48,7 +55,8 @@ def run(job):
     env = Paper1Env("dry", st, u0, days=TRAIN_DAYS, base_gain=(gain, gain), act_mask=(0.0, 0.0),
                     ilc=None if ilc is None else DailyILC(**ilc))
     r = evaluate(env, lambda o, e: np.zeros(2))
-    return dict(gain=gain, ilc=ilc, IAE_SO5=r["IAE_SO5"], IAE_SNO2=r["IAE_SNO2"], fail=r["fail"])
+    return dict(gain=gain, ilc=ilc, IAE_SO5=r["IAE_SO5"], IAE_SNO2=r["IAE_SNO2"],
+                DEVmax_SO5=r["DEVmax_SO5"], fail=r["fail"])
 
 
 def main():
@@ -62,20 +70,18 @@ def main():
         out["gain_limit"], out["gain"] = limit, gain
         print("gain sweep:", [(s["gain"], round(s["IAE_SO5"], 5)) for s in sweep], "-> limit", limit, "chosen", gain)
 
-        grid = [dict(beta=[b, 0.0], lead=[l, 0], smooth=w) for b, l, w in itertools.product(BETAS, LEADS, SMOOTHS)]
+        grid = [dict(beta=[b, 0.0], lead=[l, 0], smooth=w, bumpless=True)
+                for b, l, w in itertools.product(BETAS, LEADS, SMOOTHS)]
         res = list(pool.map(run, [(gain, g) for g in grid]))
         out["ilc_grid"] = res
-        best = min((r for r in res if not r["fail"]), key=lambda r: r["IAE_SO5"])
-        print("ILC best:", best["ilc"], round(best["IAE_SO5"], 5))
-
-        nit = [dict(beta=[best["ilc"]["beta"][0], bn], lead=[best["ilc"]["lead"][0], ln], smooth=best["ilc"]["smooth"])
-               for bn, ln in itertools.product((0.25, 0.5, 1.0), (0, 2, 8))]
-        resn = list(pool.map(run, [(gain, g) for g in nit]))
-        out["ilc_nitrate"] = resn
-        bestn = min(resn + [best], key=lambda r: r["IAE_SO5"] / best["IAE_SO5"] + r["IAE_SNO2"] / best["IAE_SNO2"])
-        print("nitrate ILC:", [(r["ilc"]["beta"][1], r["ilc"]["lead"][1], round(r["IAE_SNO2"], 5)) for r in resn],
-              "-> chosen", bestn["ilc"])
-        out["ilc"] = bestn["ilc"]
+        dev_pid = next(s["DEVmax_SO5"] for s in sweep if s["gain"] == gain)
+        ok = [r for r in res if not r["fail"] and r["DEVmax_SO5"] <= dev_pid]
+        best = min(ok, key=lambda r: r["IAE_SO5"])
+        out["criterion"] = "lowest IAE_SO5 with DEVmax_SO5 <= that of the PID alone"
+        out["ilc_admissible"] = len(ok)
+        print(f"ILC: {len(ok)}/{len(res)} settings keep DEVmax <= {dev_pid:.4f}; best {best['ilc']}",
+              round(best["IAE_SO5"], 5), round(best["DEVmax_SO5"], 4))
+        out["ilc"] = best["ilc"]
     (ROOT / "results" / "paper1_tuning.json").write_text(json.dumps(out, indent=1))
 
 

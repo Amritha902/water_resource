@@ -1,7 +1,8 @@
 """Figures and tables of the paper 1 study (docs/figures/study/, results/paper1_study_tables.json).
 
-Reads results/paper1_tuning.json (32), curves_sacil_v2_seed*.json (28) and
-summary_paper1_study.json / traces_paper1_study.json (33).
+Reads results/paper1_tuning.json (32), curves_sacil_v3_seed*.json (28) and
+summary_paper1_study.json / traces_paper1_study.json (33), and for the
+midnight comparison the round 1 files (*_round1.json) when present.
 
     python experiments/35_paper1_study_doc.py
 """
@@ -59,6 +60,45 @@ def tables(study):
     return T
 
 
+def midnight_stats(tr, ctrls=("PIDx3", "PIDx3+ILC", "Ours")):
+    """Largest oxygen deviation within 15 minutes of midnight, and elsewhere (seed 0, no noise)."""
+    out = {}
+    for c in ctrls:
+        for w in W3:
+            k = f"{c}|{w}|clean"
+            if k not in tr:
+                continue
+            e = np.abs(np.array(tr[k]["s"])[:, 0] - 2)
+            t = np.arange(len(e)) * 4 * 45 / 86400
+            near = np.minimum(t % 1, 1 - t % 1) <= 15 / 1440
+            out[k] = {"midnight": float(e[near].max()), "elsewhere": float(e[~near].max())}
+    return out
+
+
+def fig_midnight(tr1, tr2):
+    """Oxygen around three midnights, dry weather: round 1 (switch) and round 2 (bumpless)."""
+    fig, axes = plt.subplots(1, 3, figsize=(11.5, 3.0), sharey=True)
+    dt = 4 * 45 / 86400
+    for ax, day in zip(axes, (2, 3, 9)):
+        for tr, c, lab, col, lw in ((tr2, "PIDx3", "PID ×3", COL["PIDx3"], 0.9),
+                                    (tr1, "Ours", "ours, round 1 (profile switched)", "#c0392b", 1.0),
+                                    (tr2, "Ours", "ours, round 2 (bumpless)", COL["Ours"], 1.4)):
+            if tr is None:
+                continue
+            s = np.array(tr[f"{c}|dry|clean"]["s"])[:, 0]
+            t = np.arange(len(s)) * dt
+            m = (t >= day - 0.08) & (t <= day + 0.08)
+            ax.plot((t[m] - day) * 24, s[m], color=col, lw=lw, label=lab)
+        ax.axvline(0, color="k", ls=":", lw=0.7)
+        ax.set_title(f"midnight, start of day {day + 1}", loc="left", fontsize=9)
+        ax.set_xlabel("hours from midnight")
+    axes[0].set_ylabel("S_O,5 (mg/L), dry")
+    axes[0].legend(frameon=False, fontsize=7)
+    fig.tight_layout()
+    fig.savefig(OUT / "midnight.png", dpi=170)
+    plt.close(fig)
+
+
 def fig_gain_ilc():
     t = J("paper1_tuning.json")
     fig, axes = plt.subplots(1, 2, figsize=(11, 3.4), gridspec_kw={"width_ratios": [1, 1.25]})
@@ -81,9 +121,14 @@ def fig_gain_ilc():
     M = np.array([[next(r["IAE_SO5"] for r in g if r["ilc"]["beta"][0] == b and r["ilc"]["lead"][0] == l)
                    for l in leads] for b in betas])
     im = ax.imshow(M * 1000, cmap="viridis_r", aspect="auto")
-    for i in range(len(betas)):
-        for j in range(len(leads)):
-            ax.text(j, i, f"{M[i, j] * 1000:.2f}", ha="center", va="center", fontsize=7.5,
+    dev_pid = next(s["DEVmax_SO5"] for s in sw if s["gain"] == t["gain"])
+    for i, b in enumerate(betas):
+        for j, l in enumerate(leads):
+            r = next(r for r in g if r["ilc"]["beta"][0] == b and r["ilc"]["lead"][0] == l)
+            mark = "" if r["DEVmax_SO5"] <= dev_pid else "\n(peak ↑)"
+            if r["ilc"] == t["ilc"]:
+                ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False, ec="#eb6834", lw=2))
+            ax.text(j, i, f"{M[i, j] * 1000:.2f}{mark}", ha="center", va="center", fontsize=7,
                     color="white" if M[i, j] > np.median(M) else "black")
     ax.set_xticks(range(len(leads)), [f"{l} ({l * 45 / 60:.1f} min)" for l in leads], fontsize=7.5)
     ax.set_yticks(range(len(betas)), betas)
@@ -100,7 +145,7 @@ def fig_gain_ilc():
 def fig_training():
     fig, ax = plt.subplots(figsize=(7, 3.2))
     for s in range(5):
-        f = RES / f"curves_sacil_v2_seed{s}.json"
+        f = RES / f"curves_sacil_v3_seed{s}.json"
         if not f.exists():
             continue
         log = json.loads(f.read_text())
@@ -225,6 +270,15 @@ def main():
     fig_tracking()
     fig_daily()
     fig_tradeoffs(T)
+    tr2 = J("traces_paper1_study.json")
+    f1 = RES / "traces_paper1_study_round1.json"
+    tr1 = json.loads(f1.read_text()) if f1.exists() else None
+    fig_midnight(tr1, tr2)
+    T["midnight"] = {"round2": midnight_stats(tr2)}
+    if tr1 is not None:
+        T["midnight"]["round1"] = midnight_stats(tr1)
+    (RES / "paper1_study_tables.json").write_text(json.dumps(T, indent=1))
+    print("midnight:", json.dumps(T["midnight"], indent=1))
     for case in W3 + ("noise",):
         print(case)
         for c in CTRL:
