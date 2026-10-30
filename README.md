@@ -29,24 +29,29 @@ gain falls to −26 % (oxygen) and −42 % (nitrate).
 Paper 1's text gives set points [1, 2] for [S_O,5, S_NO,2]; its figures and the
 PID numbers we reproduce correspond to [2, 1], which we use.
 
-## New controller for paper 1: PID ×3 + daily ILC + safe SAC-IL
+## New controller for paper 1: PID ×3 + daily ILC + SAC with imitation learning
 
-Paper 1's MAACC replaced by a controller built from the same expert PID:
-the retuned prior (×3), a daily iterative learning control (ILC) of the
-load cycle, and a soft actor-critic with imitation learning (SAC-IL) that
-corrects the aeration, behind a safety gate. Tuned and trained on dry
-weather only; 3 training runs. Oxygen IAE over 14 days against the paper's
-PID prior (= MAACC as printed):
+Paper 1's MAACC replaced by a controller built from the same expert PID: the
+retuned prior (×3), a daily iterative learning control (ILC) of the load
+cycle, and a soft actor-critic trained by imitation learning (SAC-IL) that
+corrects the aeration, behind a safety gate. Everything tuned and trained on
+dry weather, week 1 only; tested on week 2 of every weather (unseen); 5
+training runs. Energy and effluent quality are unchanged; the actuators move
+about twice as much.
 
-| | Dry | Rain | Storm | Dry + noise |
-|---|---|---|---|---|
-| PID ×3 | −66 % | −66 % | −63 % | −26 % |
-| + daily ILC | −83 % | −81 % | −77 % | −26 % |
-| **+ safe SAC-IL (ours)** | **−87 %** | **−84 %** | **−80 %** | −24 % |
-| Paper's claim (not reproducible) | −95 % | −95 % | −92 % | −86 % |
+| Oxygen IAE, test week (unseen) vs paper's PID | Dry | Rain | Storm |
+|---|---|---|---|
+| MAACC as printed | 0 % | 0 % | 0 % |
+| PID ×3 | −66 % | −67 % | −60 % |
+| PID ×3 + daily ILC | −85 % | −81 % | −72 % |
+| PID ×3 + SAC-IL (no ILC) | −83 % | −69 % | −67 % |
+| **Ours: PID ×3 + ILC + SAC-IL + gate** | −88 % | −80 % | −70 % |
+| Paper's claim (14 days, not reproducible) | −95 % | −95 % | −92 % |
 
-Nitrate stays at the retuned PID's level (−73 / −54 / −46 %). Details,
-figures and the honest reading: `docs/NEW_METHOD.md`.
+Found and reported: the ILC on the nitrate loop helps in dry weather but
+harms nitrate in rain, the ILC's daily profile switch causes a short
+deviation at midnight, and the SAC-IL part adds mostly in dry weather.
+Step by step, with every figure, table and trade-off: `docs/PAPER1_STUDY.md`.
 
 ## What is in the repository
 
@@ -63,19 +68,19 @@ src/wwtp/               the library
   baselines/              incremental PID used as the prior
   bsm1/, forecast/, twin/, warning/, panda/   earlier work (see below)
 experiments/            numbered scripts; 20, 23–27 produce the reimplementation results,
-                        28–31 the new paper 1 controller
+                        28 and 32–36 the new paper 1 controller and its study
 demo/                   live demo (run_demo.py runs it all) and its cached start states
 tools/                  report builders (build_report.py writes docs/REPORT.md)
 tests/                  82 tests
 results/                every result file behind the report (JSON and CSV)
 docs/
   REPORT.md               the full report: every table, figure notes, appendices
-  NEW_METHOD.md           the new paper 1 controller: method, results, figures
+  PAPER1_STUDY.md         paper 1 step by step: base paper, reimplementation, our controller, trade-offs
   DATASET.md, DATASET.pdf plant, influent data, the correction made to it,
                           simulation protocol and every setting
   figures/reproduced/     the 24 figures of the three papers, redrawn from our runs
   figures/ours/           figures of the retuned prior
-  figures/new/            figures of the new paper 1 controller
+  figures/study/          figures of the paper 1 study
   comparison_notes.json   per-figure notes used by the report builder
   archive/                earlier notes, website, talk and slides (superseded)
 artifacts/              trained models from the earlier work

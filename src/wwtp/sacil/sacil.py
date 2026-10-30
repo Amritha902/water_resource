@@ -51,13 +51,15 @@ class Paper1Env:
     W_BALANCED = (1 / 0.004, 1 / 0.002)
 
     def __init__(self, weather, warm_state, u0, days=None, noise=False, seed=0, ilc=None, weights=None,
-                 base_gain=(1.0, 1.0), act_mask=(1.0, 1.0)):
+                 base_gain=(1.0, 1.0), act_mask=(1.0, 1.0), base_law=None):
         self.w = np.array(self.W_DEFAULT if weights is None else weights, float)
         #: gain of the PID kept in the loop, per loop, and which loops the learner may correct
         self.base_gain, self.mask = np.asarray(base_gain, float), np.asarray(act_mask, float)
         self.fallback_gain = None             # set by a safety layer for one period
         self.weather, self.warm, self.u0 = weather, warm_state, np.asarray(u0, float)
         self.ilc_proto = ilc                  # DailyILC feedforward (copied at every reset)
+        #: optional factory of another base controller (e.g. MAACC as printed): law(s, r) -> u
+        self.base_law_factory = base_law
         self.days, self.noise = days, noise
         self.rng = np.random.default_rng(1000 + seed)
         d = load_influent(weather)
@@ -79,6 +81,7 @@ class Paper1Env:
         self.e = e
         self.q1 = self._qin(0)
         self.ilc = None if self.ilc_proto is None else copy.deepcopy(self.ilc_proto)
+        self.base_law = None if self.base_law_factory is None else self.base_law_factory()
         return self._obs()
 
     def _obs(self):
@@ -90,17 +93,22 @@ class Paper1Env:
 
     def step(self, a):
         a = np.clip(np.asarray(a, float), -1.0, 1.0)
-        if self.fallback_gain is not None:
+        if self.base_law is not None:
+            # another base controller computes the input from the current measurement
+            self.u = np.clip(self.base_law(self.e + R, R), U_MIN, U_MAX)
+            du = None
+        elif self.fallback_gain is not None:
             # safety fallback for this period: the demonstrator PID alone, unbounded
             g = np.where(self.mask > 0, self.fallback_gain, self.base_gain)
             du = expert_increment(self.e, self.e1, self.e2, g)
             self.fallback_gain = None
         else:
             du = expert_increment(self.e, self.e1, self.e2, self.base_gain) + self.mask * a * RES_SCALE
-        self.u = np.clip(self.u + du, U_MIN, U_MAX)
+        if du is not None:
+            self.u = np.clip(self.u + du, U_MIN, U_MAX)
         u_apply = self.u if self.ilc is None else np.clip(self.u + self.ilc.ff(self.k), U_MIN, U_MAX)
         if self.noise:
-            u_apply = np.clip(self.u + self.rng.normal(0.0, NOISE_STD), U_MIN, U_MAX)
+            u_apply = np.clip(u_apply + self.rng.normal(0.0, NOISE_STD), U_MIN, U_MAX)
         self.q1 = self._qin(self.k)
         s = self.p.step(u_apply)
         if self.ilc is not None:
@@ -291,23 +299,46 @@ def run_expert(env, agent=None, gain=1.0):
     return total
 
 
-def evaluate(env, policy, record_every=4):
-    """Run a policy over the episode; IAE/ISE/DEVmax of both loops and actuator use."""
+def evaluate(env, policy, record_every=4, test_from_day=7.0):
+    """Run a policy over the episode.
+
+    Tracking (IAE, ISE, DEVmax) of both loops over the whole run and over the
+    test window (from ``test_from_day``: the second week, never used for tuning
+    or training), and the trade-offs: aeration and pumping energy, actuator
+    movement, time at the actuator limits, effluent ammonium and total
+    nitrogen, and the controller's computing time per period."""
+    import time
     o, done = env.reset(), False
-    E, U, S = [], [], []
+    E, U, S, EFF, T = [], [], [], [], []
     while not done:
-        o, _, done, info = env.step(policy(o, env))
+        t0 = time.perf_counter()
+        a = policy(o, env)
+        T.append(time.perf_counter() - t0)
+        o, _, done, info = env.step(a)
         E.append(info["s"] - R)
         U.append(info["u"])
         S.append(info["s"])
-    E, U = np.array(E), np.array(U)
+        y = env.p.sim.ys_eff
+        EFF.append((y[9], y[8] + y[9] + y[10] + y[11] + 0.08 * (y[4] + y[5]) + 0.06 * (y[6] + y[2])))
+    E, U, EFF = np.array(E), np.array(U), np.array(EFF)
+    k0 = min(int(round(test_from_day / DT_DAYS)), len(E) - 1)
     out = {"steps": len(E), "fail": bool(info["fail"])}
     for i, n in enumerate(("SO5", "SNO2")):
-        out[f"IAE_{n}"] = float(np.mean(np.abs(E[:, i])))
-        out[f"ISE_{n}"] = float(np.mean(E[:, i] ** 2))
-        out[f"DEVmax_{n}"] = float(np.max(np.abs(E[:, i])))
-    out["KLa_move_per_day"] = float(np.abs(np.diff(U[:, 0])).sum() / (len(U) * DT_DAYS))
-    out["Qa_move_per_day"] = float(np.abs(np.diff(U[:, 1])).sum() / (len(U) * DT_DAYS))
-    out["AE"] = float(np.mean(8 / 1800 * (1333 * 240 + 1333 * 240 + 1333 * U[:, 0])))
+        for tag, x in (("", E[:, i]), ("_test", E[k0:, i])):
+            out[f"IAE_{n}{tag}"] = float(np.mean(np.abs(x)))
+            out[f"ISE_{n}{tag}"] = float(np.mean(x ** 2))
+            out[f"DEVmax_{n}{tag}"] = float(np.max(np.abs(x)))
+    days = len(U) * DT_DAYS
+    out["KLa_move_per_day"] = float(np.abs(np.diff(U[:, 0])).sum() / days)
+    out["Qa_move_per_day"] = float(np.abs(np.diff(U[:, 1])).sum() / days)
+    out["AE"] = float(np.mean(8 / 1800 * (1333 * 240 + 1333 * 240 + 1333 * U[:, 0])))   # kWh/d
+    out["PE_Qa"] = float(np.mean(0.004 * U[:, 1]))                                       # kWh/d, recycle part
+    out["at_limit_KLa"] = float(np.mean((U[:, 0] <= U_MIN[0] + 1e-6) | (U[:, 0] >= U_MAX[0] - 1e-6)))
+    out["at_limit_Qa"] = float(np.mean((U[:, 1] <= U_MIN[1] + 1e-6) | (U[:, 1] >= U_MAX[1] - 1e-6)))
+    out["eff_SNH"] = float(EFF[:, 0].mean())
+    out["eff_TN"] = float(EFF[:, 1].mean())
+    out["eff_SNH_over_4"] = float(np.mean(EFF[:, 0] > 4.0))
+    out["eff_TN_over_18"] = float(np.mean(EFF[:, 1] > 18.0))
+    out["ms_per_step"] = float(1000 * np.mean(T))
     out["_trace"] = {"s": np.array(S)[::record_every].tolist(), "u": U[::record_every].tolist()}
     return out

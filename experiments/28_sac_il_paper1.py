@@ -29,9 +29,12 @@ sys.path.insert(0, str(ROOT / "src"))
 from wwtp.sacil.ilc import DailyILC  # noqa: E402
 from wwtp.sacil.sacil import Paper1Env, SACIL, SACILConfig, evaluate, expert_action, run_expert  # noqa: E402
 
-#: daily ILC on the oxygen loop (beta, lead in periods, smoothing half-width),
-#: chosen on dry weather only; the nitrate loop is too fast to gain from it
-ILC = dict(beta=[0.5, 0.0], lead=[4, 0], smooth=15)
+#: daily ILC (beta, lead in periods, smoothing half-width) and PID gain, chosen
+#: on dry weather, week 1 only, by experiments/32_paper1_tuning.py
+_TUNING = ROOT / "results" / "paper1_tuning.json"
+_T = json.loads(_TUNING.read_text()) if _TUNING.exists() else {}
+ILC = _T.get("ilc", dict(beta=[0.5, 0.0], lead=[4, 0], smooth=15))
+GAIN = float(_T.get("gain", 3.0))
 
 
 def warm():
@@ -52,7 +55,7 @@ def main():
     ap.add_argument("--train-days", type=float, default=7.0)
     ap.add_argument("--noise-runs", type=int, default=20)
     ap.add_argument("--tag", default="sacil")
-    ap.add_argument("--demo-gain", type=float, default=3.0, help="gain of the demonstrator PID (1 = paper's PID)")
+    ap.add_argument("--demo-gain", type=float, default=GAIN, help="gain of the demonstrator PID (1 = paper's PID)")
     ap.add_argument("--ilc", action="store_true", help="daily iterative learning control in the loop")
     ap.add_argument("--balanced", action="store_true", help="weight both loops by the retuned prior's error")
     ap.add_argument("--oxygen-only", action="store_true",
@@ -103,7 +106,7 @@ def main():
     agent.actor.load_state_dict(best[1])
     print(f"[seed {a.seed}] kept policy of episode {best[2]}", flush=True)
     out_dir = ROOT / "results"
-    torch.save(agent.actor.state_dict(), ROOT / "artifacts" / f"sacil_actor_seed{a.seed}.pt")
+    torch.save(agent.actor.state_dict(), ROOT / "artifacts" / f"{a.tag}_actor_seed{a.seed}.pt")
 
     # 3. evaluation: 14 days, every weather, plus actuator noise (dry)
     rows, traces = [], {}
