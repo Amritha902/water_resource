@@ -76,7 +76,7 @@ experiments/            numbered scripts; 20, 23–27 produce the reimplementati
                         28 and 32–36 the new paper 1 controller and its study
 demo/                   live demo (run_demo.py runs it all) and its cached start states
 tools/                  report builders (build_report.py writes docs/REPORT.md)
-tests/                  82 tests
+tests/                  84 tests
 results/                every result file behind the report (JSON and CSV)
 docs/
   REPORT.md               the full report: every table, figure notes, appendices
@@ -101,7 +101,7 @@ Python 3.11.
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests -q        # 82 tests, about 1–2 minutes
+python -m pytest tests -q        # 84 tests, about 1–2 minutes
 ```
 
 The official influent files (dry, rain, storm) are downloaded on first use
