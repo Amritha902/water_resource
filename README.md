@@ -29,34 +29,43 @@ gain falls to −26 % (oxygen) and −42 % (nitrate).
 Paper 1's text gives set points [1, 2] for [S_O,5, S_NO,2]; its figures and the
 PID numbers we reproduce correspond to [2, 1], which we use.
 
-## New controller for paper 1: PID ×3 + daily ILC + SAC with imitation learning
+## Paper 1: our controller, stronger baselines and a held-out test
 
-Paper 1's MAACC replaced by a controller built from the same expert PID: the
-retuned prior (×3), a daily iterative learning control (ILC) of the load
-cycle on the oxygen loop (bumpless nightly update), and a soft actor-critic trained by imitation learning (SAC-IL) that
-corrects the aeration, behind a safety gate. Everything tuned and trained on
-dry weather, week 1 only; tested on week 2 of every weather (unseen); 5
-training runs. Energy and effluent quality are unchanged; the actuators move
-about twice as much.
+We built a controller from paper 1's own PID: a retuned prior (×3), a daily
+iterative learning control (ILC) of the load cycle (oxygen loop, bumpless
+nightly update), and a soft actor-critic trained by imitation learning
+(SAC-IL) behind a safety gate. Then we tested it against two stronger
+baselines, a PID tuned term by term and paper 1's MAACC with repaired
+training, and on a pre-registered held-out test. Everything was tuned and
+trained on dry weather, week 1 only (5 training runs per learner).
 
-| Oxygen IAE, test week vs paper's PID | Dry | Rain | Storm |
-|---|---|---|---|
-| MAACC as printed | 0 % | 0 % | 0 % |
-| PID ×3 | −66 % | −67 % | −60 % |
-| PID ×3 + daily ILC | −85 % | −82 % | −72 % |
-| PID ×3 + SAC-IL (no ILC) | −83 % | −69 % | −67 % |
-| **Ours: PID ×3 + ILC + SAC-IL + gate** | −87 % | −82 % | −74 % |
-| Paper's claim (14 days, not reproducible) | −95 % | −95 % | −92 % |
+| Oxygen IAE vs paper's PID | Test week: dry | rain | storm | Held-out: BSM2 influent | official sensors | sensor delay |
+|---|---|---|---|---|---|---|
+| MAACC as printed | 0 % | 0 % | 0 % | fails | fails | fails |
+| **Repaired MAACC** (paper's PID prior) | −85 % | −52 % | −67 % | −6 % | +2 % | **−86 %** |
+| PID ×3 + ILC | −85 % | −82 % | −72 % | +52 % | fails | −56 % |
+| Ours: PID ×3 + ILC + SAC-IL + gate | −87 % | −82 % | −74 % | +52 % | fails | −56 % |
+| PID ×3 + ILC + repaired MAACC + gate | −91 % | −87 % | −79 % | +52 % | fails | −56 % |
+| **Tuned PID + ILC** | −90 % | **−89 %** | **−80 %** | +76 % | +48 % | −73 % |
+| Tuned PID + ILC + SAC-IL + gate | −90 % | −88 % | −80 % | +75 % | +48 % | −73 % |
+| Paper's claim (14 days, not reproducible) | −95 % | −95 % | −92 % | | | |
 
-Nitrate, test week: −73 / −46 / −34 % (from the retuned PID). Round 2: the
-first full test showed that an ILC on the nitrate loop harmed nitrate in rain
-and that the ILC's nightly profile switch made the oxygen jump at midnight;
-both were fixed and everything re-tuned, retrained and re-tested (round 1
-kept in `results/*_round1.json`; since these fixes were chosen after seeing
-the test week, it is no longer fully unseen for them). The SAC-IL part adds
-−17 / −5 / −7 % on top of PID ×3 + ILC, and needs its safety gate outside
-dry weather.
-Step by step, with every figure, table and trade-off: `docs/PAPER1_STUDY.md`.
+In short:
+- **Test week:** a tuned PID with the daily ILC matches or beats our
+  controller, and SAC-IL adds nothing on top of it.
+- **The repaired paper learner:** paper 1's MAACC, with standard repaired
+  training, learns.
+- **Held-out test:**
+  - The BSM2 influent overloads the plant, and the ILC then makes things
+    worse; it needs anti-windup.
+  - Every high-gain controller, ours included, fails under the official
+    sensor noise.
+  - The safety gate switches the learned parts off on new conditions.
+
+Details:
+- Our controller, step by step: `docs/PAPER1_STUDY.md`.
+- Baselines and held-out test: `docs/PAPER1_BASELINES_HELDOUT.md`.
+- Protocol, pushed before any held-out run: `docs/PAPER1_HELDOUT_PROTOCOL.md`.
 
 ## What is in the repository
 
@@ -69,18 +78,21 @@ src/wwtp/               the library
   rl/                     paper 2: environment, DDPG, rewards, PID and fuzzy comparators,
                           constrained agent (panda_rl.py)
   ioql/ioql.py            paper 3, IOQL exactly as printed
-  sacil/                  new paper 1 controller: daily ILC (ilc.py), SAC with imitation learning (sacil.py)
+  sacil/                  new paper 1 controller: daily ILC (ilc.py), SAC with imitation learning (sacil.py),
+                          MAACC with repaired training (maacc_repaired.py)
   baselines/              incremental PID used as the prior
   bsm1/, forecast/, twin/, warning/, panda/   earlier work (see below)
 experiments/            numbered scripts; 20, 23–27 produce the reimplementation results,
-                        28 and 32–36 the new paper 1 controller and its study
+                        28 and 32–41 the new paper 1 controller, its study, the stronger baselines and the held-out test
 demo/                   live demo (run_demo.py runs it all) and its cached start states
 tools/                  report builders (build_report.py writes docs/REPORT.md)
-tests/                  84 tests
+tests/                  87 tests
 results/                every result file behind the report (JSON and CSV)
 docs/
   REPORT.md               the full report: every table, figure notes, appendices
   PAPER1_STUDY.md         paper 1 step by step: base paper, reimplementation, our controller, trade-offs
+  PAPER1_BASELINES_HELDOUT.md  tuned PID, repaired MAACC, and the pre-registered held-out test
+  PAPER1_HELDOUT_PROTOCOL.md   the held-out protocol, pushed before any held-out run
   DATASET.md, DATASET.pdf plant, influent data, the correction made to it,
                           simulation protocol and every setting
   figures/reproduced/     the 24 figures of the three papers, redrawn from our runs
@@ -101,7 +113,7 @@ Python 3.11.
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests -q        # 84 tests, about 1–2 minutes
+python -m pytest tests -q        # 87 tests, about 1–2 minutes
 ```
 
 The official influent files (dry, rain, storm) are downloaded on first use

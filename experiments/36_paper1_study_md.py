@@ -110,6 +110,14 @@ A step-by-step account, with figures, for discussion. Every number comes from
 the result files of the repository (`results/summary_paper1_study.json`), and
 every figure from the scripts named in each step.
 
+> **Update: read `docs/PAPER1_BASELINES_HELDOUT.md` with this study.** Two
+> stronger baselines and a pre-registered held-out test change the
+> conclusions: a PID tuned term by term, with the daily ILC, matches or beats
+> our controller on the test week; SAC-IL adds nothing on top of it; paper
+> 1's MAACC with repaired training does learn (−85 % in dry weather); and on
+> the held-out conditions (new influent, official sensors) our controller
+> does not generalise (it fails under the official sensor noise).
+
 **In one paragraph.** Paper 1 (MAACC) claims −92 to −95 % oxygen tracking
 error against its PID. Rebuilt exactly as printed, MAACC equals its PID. Our
 controller keeps the paper's expert PID and adds three things: a stronger
@@ -387,10 +395,8 @@ learn. The ILC needs no training, only a few days of operation.
 
 ## Next step
 
-1. Give the gate a smooth blend instead of an on/off switch.
-2. Let the ILC learn the weekly cycle too (weekends raise the error).
-3. A fresh test on data never looked at (e.g. BSM2 influent), since round 2's
-   two fixes were chosen after seeing week 2.
+Done: the stronger baselines and the held-out test, in
+`docs/PAPER1_BASELINES_HELDOUT.md`, with the next steps they point to.
 
 ## Step 12. Questions to brainstorm
 
