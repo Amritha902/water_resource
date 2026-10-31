@@ -39,6 +39,39 @@ E_SCALE = np.array([0.05, 0.1])          # error normalisation
 NOISE_STD = 0.03 * U_MAX                 # paper 1, Table III
 
 
+class OfficialSensors:
+    """The sensors of the official BSM1 closed-loop model (bsm2-python,
+    aerationcontrolinit_bsm1.py): S_O,5 class A, response time T90 = 1 min
+    (two first-order lags, T = T90 / 3.89); S_NO,2 class B0, T90 = 10 min
+    (eight lags, T = T90 / 11.7724); white noise of standard deviation 2.5 %
+    of the measuring range 0-10 g/m3 (0.25 g/m3) on both, output clipped to
+    the range.  The noise is drawn every control period from a seeded
+    generator; ``noise=False`` keeps only the sensor dynamics."""
+
+    T90 = (1.0, 10.0)                    # min
+    ORDER = (2, 8)
+    STD = 0.025 * 10.0
+    RANGE = (0.0, 10.0)
+
+    def __init__(self, s0, seed=0, noise=True):
+        self.rng = np.random.default_rng(5000 + seed)
+        self.std = self.STD if noise else 0.0
+        dt_min = DT_DAYS * 1440.0
+        div = {2: 3.89, 8: 11.7724}
+        self.k = [1.0 - np.exp(-dt_min / (t / div[n])) for t, n in zip(self.T90, self.ORDER)]
+        self.x = [np.full(n, float(v)) for n, v in zip(self.ORDER, s0)]
+
+    def __call__(self, s):
+        out = np.zeros(2)
+        for i in range(2):
+            v = float(s[i])
+            for j in range(self.ORDER[i]):
+                self.x[i][j] += self.k[i] * (v - self.x[i][j])
+                v = self.x[i][j]
+            out[i] = np.clip(v + self.std * self.rng.normal(), *self.RANGE)
+        return out
+
+
 class Paper1Env:
     """Paper 1 control task.  The paper's PID (its expert knowledge) stays in
     the loop; the action in [-1, 1]^2 is the learned extra increment of
@@ -52,10 +85,17 @@ class Paper1Env:
     W_BALANCED = (1 / 0.004, 1 / 0.002)
 
     def __init__(self, weather, warm_state, u0, days=None, noise=False, seed=0, ilc=None, weights=None,
-                 base_gain=(1.0, 1.0), act_mask=(1.0, 1.0), base_law=None):
+                 base_gain=(1.0, 1.0), act_mask=(1.0, 1.0), base_law=None, terms=None, sensors=None):
         self.w = np.array(self.W_DEFAULT if weights is None else weights, float)
         #: gain of the PID kept in the loop, per loop, and which loops the learner may correct
         self.base_gain, self.mask = np.asarray(base_gain, float), np.asarray(act_mask, float)
+        #: optional separate multipliers of the PID's P, I and D gains, shape (3, 2)
+        #: [[kp_O, kp_N], [ki_O, ki_N], [kd_O, kd_N]] (a PID tuned term by term)
+        self.terms = None if terms is None else np.asarray(terms, float)
+        #: None: the controller sees the true S_O,5 and S_NO,2 (paper 1); an int: the
+        #: official BSM1 sensors (OfficialSensors) with this noise seed; "lag": their
+        #: dynamics without noise.  Scores always use the true values.
+        self.sensor_seed = sensors
         self.fallback_gain = None             # set by a safety layer for one period
         self.weather, self.warm, self.u0 = weather, warm_state, np.asarray(u0, float)
         self.ilc_proto = ilc                  # DailyILC feedforward (copied at every reset)
@@ -77,6 +117,8 @@ class Paper1Env:
         self.k = 0
         self.u = self.u0.copy()
         s = self.p.measurement()
+        self.sensors = (None if self.sensor_seed is None else OfficialSensors(s, noise=False)
+                        if self.sensor_seed == "lag" else OfficialSensors(s, self.sensor_seed))
         e = s - R
         self.e1, self.e2 = np.zeros(2), np.zeros(2)          # as a freshly started PID
         self.e = e
@@ -104,7 +146,7 @@ class Paper1Env:
             du = expert_increment(self.e, self.e1, self.e2, g)
             self.fallback_gain = None
         else:
-            du = expert_increment(self.e, self.e1, self.e2, self.base_gain) + self.mask * a * RES_SCALE
+            du = expert_increment(self.e, self.e1, self.e2, self.base_gain, self.terms) + self.mask * a * RES_SCALE
         if du is not None:
             self.u = np.clip(self.u + du, U_MIN, U_MAX)
         u_apply = self.u if self.ilc is None else np.clip(self.u + self.ilc.ff(self.k), U_MIN, U_MAX)
@@ -121,17 +163,21 @@ class Paper1Env:
                 # PID's state so the total input does not jump at midnight
                 self.u = np.clip(self.u - (self.ilc.ff(self.k + 1) - ff_before), U_MIN, U_MAX)
         self.k += 1
-        self.e2, self.e1, self.e = self.e1, self.e, s - R
+        meas = s if self.sensors is None else self.sensors(s)
+        self.e2, self.e1, self.e = self.e1, self.e, meas - R
         r = -float(np.sum(np.abs(self.e) * self.w)) - 0.05 * float(np.sum(a ** 2))
         fail = not (0.3 < s[0] < 4.0) or not np.all(np.isfinite(s))
         done = fail or self.k >= self.n
         return self._obs(), max(r, -20.0) - (50.0 if fail else 0.0), done, {"s": s, "u": u_apply, "fail": fail}
 
 
-def expert_increment(e, e1, e2, gain=1.0):
-    """Paper 1's incremental PID increment, from errors s - r (the PID uses r - s)."""
+def expert_increment(e, e1, e2, gain=1.0, terms=None):
+    """Paper 1's incremental PID increment, from errors s - r (the PID uses r - s).
+    ``terms`` (3, 2) multiplies the P, I and D gains separately."""
     E, E1, E2 = -e, -e1, -e2
-    return gain * (PAPER_KP * (E - E1) + PAPER_KI * E + PAPER_KD * (E - 2 * E1 + E2))
+    kp, ki, kd = (PAPER_KP, PAPER_KI, PAPER_KD) if terms is None else (
+        PAPER_KP * terms[0], PAPER_KI * terms[1], PAPER_KD * terms[2])
+    return gain * (kp * (E - E1) + ki * E + kd * (E - 2 * E1 + E2))
 
 
 def expert_action(env, gain=1.0):

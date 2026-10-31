@@ -47,8 +47,30 @@ def _official_table(weather: str) -> np.ndarray:
     return arr
 
 
+#: held-out influent: the official BSM2 dynamic influent (609 days at 15 min,
+#: shipped with bsm2-python), cut into 14-day windows.  Its flow is scaled by
+#: one constant so that the whole file's mean flow equals the BSM1 dry
+#: weather mean; concentrations are unchanged; temperature set to 15 C (the
+#: BSM1 plant model has no temperature dependence).
+BSM2_FLOW_SCALE_TO = "dry"
+
+
+def bsm2_window(start_day: float, days: float = 14.0) -> np.ndarray:
+    d = np.loadtxt(os.path.join(DATA, "dyninfluent_bsm2.csv"), delimiter=",")
+    scale = _official_table(BSM2_FLOW_SCALE_TO)[:, 14].mean() / d[:, 15].mean()
+    m = (d[:, 0] >= start_day - 1e-9) & (d[:, 0] <= start_day + days + 1e-9)
+    w = d[m].copy()
+    w[:, 0] -= start_day
+    w[:, 15] *= scale
+    w[:, 16] = 15.0
+    return w
+
+
 def load_influent(weather: str) -> np.ndarray:
     """Official influent as a (1345, 22) array: 14 days at 15 min.
+
+    ``"bsm2:<start day>"`` gives a 14-day window of the BSM2 influent instead
+    (``bsm2_window``), used only for the held-out test.
 
     Columns as ``bsm2-python`` expects: t, 13 ASM1 components, TSS, Q, T and
     five dummy states.  One correction: the spreadsheets keep the inert
@@ -57,6 +79,8 @@ def load_influent(weather: str) -> np.ndarray:
     against the ``bsm2-python`` rain file to 0.005 g/m3).  The same rule is
     applied to rain and storm; dry is unchanged.
     """
+    if weather.startswith("bsm2:"):
+        return bsm2_window(float(weather.split(":")[1]))
     d = _official_table(weather)
     dry = _official_table("dry")
     out = np.zeros((len(d), 22))
