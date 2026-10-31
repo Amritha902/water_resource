@@ -85,3 +85,16 @@ concentrations, not the measured ones.
 * The tuned PID's tuning results on dry week 1 (that is its training data).
 
 Runner: `experiments/40_paper1_heldout.py` → `results/summary_paper1_heldout.json`.
+
+## Amendment 1 (before any held-out run)
+
+On the official test week (not the held-out data), the tuned PID + ILC
+(controller 6) turned out better than ours (controller 9) in every weather.
+So one controller is added, trained exactly as ours but on that base:
+
+| # | Controller | Settings |
+|---|---|---|
+| 10 | **Ours on the tuned PID**: tuned PID + ILC + SAC-IL + gate | `artifacts/sacil_tuned_actor_seed{0-4}.pt` (dry week 1, 5 episodes, as ours) |
+
+Added comparison: (e) controller 10 vs tuned PID + ILC. Everything else in
+this protocol is unchanged; no held-out run has been made.

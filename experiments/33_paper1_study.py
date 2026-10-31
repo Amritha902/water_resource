@@ -18,12 +18,20 @@ Controllers (the ablation):
   PIDx3+SAC-IL        retuned prior + SAC-IL correction (no ILC), with the safety gate
   Ours                retuned prior + daily ILC + SAC-IL correction, with the safety gate
   Ours (no gate)      the same without clipping and gate
+  PIDtuned            PID tuned term by term (experiments/38_tuned_pid.py)
+  PIDtuned+ILC        the same + daily ILC re-tuned for it
+  rMAACC              paper 1's MAACC with repaired training, on the paper's PID (experiments/39)
+  PIDx3+ILC+rMAACC    retuned prior + daily ILC + repaired MAACC correction, with the safety gate
+  OursT               tuned PID + its daily ILC + SAC-IL correction, with the safety gate
+
+    python experiments/33_paper1_study.py --only PIDtuned PIDtuned+ILC   # add controllers to the results
 
     python experiments/33_paper1_study.py
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import multiprocessing as mp
 import pickle
@@ -40,6 +48,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from wwtp.maacc.exact import ExactMAACC  # noqa: E402
 from wwtp.sacil.ilc import DailyILC  # noqa: E402
+from wwtp.sacil.maacc_repaired import RepairedMAACC  # noqa: E402
 from wwtp.sacil.sacil import RES_SCALE, Actor, Paper1Env, evaluate, expert_increment  # noqa: E402
 
 T = json.loads((ROOT / "results" / "paper1_tuning.json").read_text())
@@ -50,17 +59,30 @@ NOISE_RUNS, NOISE_RUNS_SAC = 10, 5
 #: without ILC does not depend on the ILC and is the same as in round 1
 OURS_TAG = "sacil_v3"
 SAC_SEEDS = {OURS_TAG: (0, 1, 2, 3, 4), "sacil_noilc": (0, 1, 2)}
+_TP = ROOT / "results" / "paper1_tuned_pid.json"
+TP = json.loads(_TP.read_text()) if _TP.exists() else None
+RMAACC_SEEDS = (0, 1, 2, 3, 4)
 
 
 def warm():
     return pickle.loads((ROOT / "demo" / "cache" / "warm_paper1.pkl").read_bytes())
 
 
-def make_env(weather, ctrl, seed=0, noise=False, noise_seed=0, days=None):
+def make_env(weather, ctrl, seed=0, noise=False, noise_seed=0, days=None, sensors=None):
     st, u0 = warm()
     use_ilc = "ILC" in ctrl or ctrl.startswith("Ours")
-    ilc = DailyILC(**ILC) if use_ilc else None
-    kw = dict(days=days, noise=noise, seed=noise_seed, ilc=ilc)
+    ilc = (DailyILC(**TP["ilc"]) if ctrl.startswith("PIDtuned") else DailyILC(**ILC)) if use_ilc else None
+    kw = dict(days=days, noise=noise, seed=noise_seed, ilc=ilc, sensors=sensors)
+    if ctrl == "OursT":
+        return Paper1Env(weather, st, u0, terms=TP["terms"], act_mask=(1.0, 0.0),
+                         weights=Paper1Env.W_BALANCED, **{**kw, "ilc": DailyILC(**TP["ilc"])})
+    if ctrl.startswith("PIDtuned"):
+        return Paper1Env(weather, st, u0, terms=TP["terms"], act_mask=(0.0, 0.0), **kw)
+    if ctrl == "rMAACC":
+        return Paper1Env(weather, st, u0, weights=Paper1Env.W_BALANCED, **kw)
+    if ctrl == "PIDx3+ILC+rMAACC":
+        return Paper1Env(weather, st, u0, base_gain=(GAIN, GAIN), act_mask=(1.0, 0.0),
+                         weights=Paper1Env.W_BALANCED, **kw)
     if ctrl.startswith("MAACC"):
         return Paper1Env(weather, st, u0, base_law=lambda: ExactMAACC(seed=seed, critic="paper", u0=u0.copy()),
                          act_mask=(0.0, 0.0), **kw)
@@ -74,6 +96,11 @@ def make_env(weather, ctrl, seed=0, noise=False, noise_seed=0, days=None):
 _RANGE = {}
 
 
+def demo_gap(e):
+    """Gain the demonstrator adds to the base PID (0 when the base is the demonstrator)."""
+    return 0.0 if e.terms is not None else GAIN - e.base_gain
+
+
 def training_range(ctrl):
     """Input range of the SAC-IL training data: the demonstrator on dry days 0-7."""
     if ctrl not in _RANGE:
@@ -81,15 +108,25 @@ def training_range(ctrl):
         o, done, obs = e.reset(), False, []
         while not done:
             obs.append(o)
-            o, _, done, _ = e.step(expert_increment(e.e, e.e1, e.e2, GAIN - e.base_gain) * e.mask / RES_SCALE)
+            o, _, done, _ = e.step(expert_increment(e.e, e.e1, e.e2, demo_gap(e)) * e.mask / RES_SCALE)
         obs = np.array(obs)
         _RANGE[ctrl] = (obs.min(0), obs.max(0))
     return _RANGE[ctrl]
 
 
 def sac_policy(tag, seed, ctrl, gated):
-    actor = Actor(Paper1Env.obs_dim, Paper1Env.act_dim)
-    actor.load_state_dict(torch.load(ROOT / "artifacts" / f"{tag}_actor_seed{seed}.pt"))
+    if "rMAACC" in ctrl:
+        agent = RepairedMAACC(Paper1Env.obs_dim, active=(True, ctrl == "rMAACC"))
+        agent.load_state_dict(torch.load(ROOT / "artifacts" / f"{tag}_actor_seed{seed}.pt"))
+        net = lambda o: agent.act(o)
+    else:
+        actor = Actor(Paper1Env.obs_dim, Paper1Env.act_dim)
+        actor.load_state_dict(torch.load(ROOT / "artifacts" / f"{tag}_actor_seed{seed}.pt"))
+
+        @torch.no_grad()
+        def net(o):
+            mu, _ = actor(torch.as_tensor(o, dtype=torch.float32).unsqueeze(0))
+            return torch.tanh(mu)[0].numpy()
     lo, hi = training_range(ctrl)
     width = np.maximum(hi - lo, 1e-6)
     stats = {"gated": 0, "n": 0}
@@ -98,25 +135,27 @@ def sac_policy(tag, seed, ctrl, gated):
         stats["n"] += 1
         if gated:
             ood = np.any((o < lo - MARGIN * width) | (o > hi + MARGIN * width))
-            need = abs(expert_increment(e.e, e.e1, e.e2, GAIN - e.base_gain)[0]) > RES_SCALE[0]
+            need = abs(expert_increment(e.e, e.e1, e.e2, demo_gap(e))[0]) > RES_SCALE[0]
             if ood or need:
                 stats["gated"] += 1
-                e.fallback_gain = GAIN
+                e.fallback_gain = GAIN if e.terms is None else 1.0
                 return np.zeros(2)
             o = np.clip(o, lo, hi)
-        with torch.no_grad():
-            mu, _ = actor(torch.as_tensor(o, dtype=torch.float32).unsqueeze(0))
-        return torch.tanh(mu)[0].numpy()
+        return net(np.asarray(o, np.float32))
     return act, stats
 
 
-def run(job):
+POLICY_TAG = {"PIDx3+SAC-IL": "sacil_noilc", "Ours": OURS_TAG, "Ours (no gate)": OURS_TAG,
+              "rMAACC": "maacc_rep_paper", "PIDx3+ILC+rMAACC": "maacc_rep_stack", "OursT": "sacil_tuned"}
+
+
+def run(job, sensors=None):
     ctrl, weather, seed, noise, noise_seed, keep_trace = job
-    env = make_env(weather, ctrl, seed=seed, noise=noise, noise_seed=noise_seed)
+    env = make_env(weather, ctrl, seed=seed, noise=noise, noise_seed=noise_seed, sensors=sensors)
     stats = {"gated": 0, "n": 1}
-    if "SAC" in ctrl or ctrl.startswith("Ours"):
-        tag = "sacil_noilc" if ctrl == "PIDx3+SAC-IL" else OURS_TAG
-        pol, stats = sac_policy(tag, seed, ctrl, gated=ctrl != "Ours (no gate)")
+    if ctrl in POLICY_TAG:
+        # the repaired MAACC on the paper's PID is run as paper 1's controller is: no gate
+        pol, stats = sac_policy(POLICY_TAG[ctrl], seed, ctrl, gated=ctrl not in ("Ours (no gate)", "rMAACC"))
     else:
         pol = lambda o, e: np.zeros(2)
     t0 = time.perf_counter()
@@ -135,6 +174,13 @@ def jobs():
     for c in ("MAACC", "MAACC+ILC"):
         J += [(c, w, s, False, 0, s == 0) for w in ("dry", "rain", "storm") for s in (0, 1, 2)]
         J += [(c, "dry", n, True, n, n == 0) for n in range(NOISE_RUNS)]
+    for c in ("PIDtuned", "PIDtuned+ILC"):
+        J += [(c, w, 0, False, 0, True) for w in ("dry", "rain", "storm")]
+        J += [(c, "dry", 0, True, n, n == 0) for n in range(NOISE_RUNS)]
+    for c in ("rMAACC", "PIDx3+ILC+rMAACC", "OursT"):
+        for s in RMAACC_SEEDS:
+            J += [(c, w, s, False, 0, s == 0) for w in ("dry", "rain", "storm")]
+            J += [(c, "dry", s, True, n, s == 0 and n == 0) for n in range(NOISE_RUNS_SAC)]
     for c, tag in (("PIDx3+SAC-IL", "sacil_noilc"), ("Ours", OURS_TAG), ("Ours (no gate)", OURS_TAG)):
         for s in SAC_SEEDS[tag]:
             J += [(c, w, s, False, 0, s == 0) for w in ("dry", "rain", "storm")]
@@ -177,9 +223,17 @@ def compute_costs():
 
 
 def main():
-    J = jobs()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--only", nargs="*", help="run only these controllers and merge them into the results")
+    a = ap.parse_args()
+    J = [j for j in jobs() if not a.only or j[0] in a.only]
     print(f"{len(J)} runs", flush=True)
-    rows, traces = [], {}
+    rows, traces, old = [], {}, None
+    if a.only:
+        old = json.loads((ROOT / "results" / "summary_paper1_study.json").read_text())
+        rows = [r for r in old["runs"] if r["controller"] not in a.only]
+        traces = {k: v for k, v in json.loads((ROOT / "results" / "traces_paper1_study.json").read_text()).items()
+                  if k.split("|")[0] not in a.only}
     with mp.get_context("spawn").Pool(4) as pool:
         for i, r in enumerate(pool.imap_unordered(run, J), 1):
             tr = r.pop("_trace")
@@ -189,7 +243,9 @@ def main():
             print(f"[{i}/{len(J)}] {r['controller']:15s} {r['weather']:5s} noise={r['noise']!s:5s} s{r['seed']} "
                   f"O {r['IAE_SO5']:.5f} (test {r['IAE_SO5_test']:.5f})  N {r['IAE_SNO2']:.5f}  "
                   f"gate {100 * r['gated_share']:.0f}%", flush=True)
-    out = {"tuning": {"gain": GAIN, "ilc": ILC}, "compute": compute_costs(), "runs": rows}
+    # computing times are measured on a full run only (the merge runs alongside other jobs)
+    compute = old["compute"] if a.only else compute_costs()
+    out = {"tuning": {"gain": GAIN, "ilc": ILC}, "compute": compute, "runs": rows}
     (ROOT / "results" / "summary_paper1_study.json").write_text(json.dumps(out, indent=1))
     (ROOT / "results" / "traces_paper1_study.json").write_text(json.dumps(traces))
     print("compute:", out["compute"])

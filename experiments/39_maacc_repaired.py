@@ -3,7 +3,7 @@
 Same data and budget as SAC-IL (experiments/28_sac_il_paper1.py): dry weather
 days 0-7, the expert's run first put in the replay buffer, then 5 episodes of
 7 days, the policy kept being the best on the training week (same score as
-SAC-IL).  Two set-ups:
+SAC-IL); the starting point (the prior alone) is a candidate too.  Two set-ups:
 
   --mode paper   as paper 1: both loops, on the paper's PID prior
   --mode stack   in our controller: oxygen loop only, on PID x3 + daily ILC
@@ -33,6 +33,7 @@ from wwtp.sacil.maacc_repaired import RepairedMAACC  # noqa: E402
 from wwtp.sacil.sacil import Paper1Env, evaluate  # noqa: E402
 
 T = json.loads((ROOT / "results" / "paper1_tuning.json").read_text())
+START_STEPS = 1920          # one day of exploration before the first update
 GAIN = float(T["gain"])
 
 
@@ -59,14 +60,15 @@ def main():
     train_env = E("dry", days=a.train_days, seed=a.seed)
     t0 = time.time()
 
-    # the expert's run (the prior alone: action 0) goes into the replay buffer
+    # the expert's run (the prior alone: action 0) goes into the replay buffer; as in
+    # TD3, learning starts only after a first day of exploring around the prior (an
+    # earlier version also learned offline from the expert run alone, where the action
+    # never varies: the critic then extrapolates and the actor drifted before acting)
     o, done = train_env.reset(), False
     while not done:
         o2, r, done, info = train_env.step(np.zeros(2))
         agent.buf.add(o, np.zeros(2), r, o2, float(info["fail"]))
         o = o2
-    for _ in range(3000):
-        agent.update()
     pol = lambda o, env: agent.act(o)
     cost = lambda ev: ev["IAE_SO5"] / 0.004 + ev["IAE_SNO2"] / 0.002 + (100 if ev["fail"] else 0)
     ev = evaluate(E("dry", days=a.train_days), pol)
@@ -80,7 +82,8 @@ def main():
             act = agent.act(o, deterministic=False)
             o2, r, done, info = train_env.step(act)
             agent.buf.add(o, act, r, o2, float(info["fail"]))
-            agent.update()
+            if ep > 1 or train_env.k >= START_STEPS:
+                agent.update()
             o, ret = o2, ret + r
         ev = evaluate(E("dry", days=a.train_days), pol)
         if cost(ev) < best[0]:

@@ -60,12 +60,20 @@ def main():
     ap.add_argument("--balanced", action="store_true", help="weight both loops by the retuned prior's error")
     ap.add_argument("--oxygen-only", action="store_true",
                     help="the learner corrects KLa,5 only; the nitrate loop keeps the demonstrator PID")
+    ap.add_argument("--tuned", action="store_true",
+                    help="on the PID tuned term by term (experiments/38) and its ILC: the learner corrects "
+                         "KLa,5 only, the demonstrator is that PID + ILC itself")
     a = ap.parse_args()
     torch.set_num_threads(1)
     st, u0 = warm()
     ilc = DailyILC(**ILC) if a.ilc else None
     wts = Paper1Env.W_BALANCED if a.balanced else None
     loops = dict(base_gain=(1.0, a.demo_gain), act_mask=(1.0, 0.0)) if a.oxygen_only else {}
+    if a.tuned:
+        tp = json.loads((ROOT / "results" / "paper1_tuned_pid.json").read_text())
+        ilc = DailyILC(**tp["ilc"]) if a.ilc else None
+        loops = dict(terms=tp["terms"], act_mask=(1.0, 0.0))
+        a.demo_gain = 1.0              # the demonstrator is the base itself: action 0
     E = lambda w, **kw: Paper1Env(w, st, u0, ilc=ilc, weights=wts, **loops, **kw)
     agent = SACIL(Paper1Env.obs_dim, Paper1Env.act_dim, SACILConfig(), seed=a.seed)
     train_env = E("dry", days=a.train_days, seed=a.seed)

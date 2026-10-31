@@ -143,7 +143,7 @@ class Paper1Env:
         elif self.fallback_gain is not None:
             # safety fallback for this period: the demonstrator PID alone, unbounded
             g = np.where(self.mask > 0, self.fallback_gain, self.base_gain)
-            du = expert_increment(self.e, self.e1, self.e2, g)
+            du = expert_increment(self.e, self.e1, self.e2, g, self.terms)
             self.fallback_gain = None
         else:
             du = expert_increment(self.e, self.e1, self.e2, self.base_gain, self.terms) + self.mask * a * RES_SCALE
