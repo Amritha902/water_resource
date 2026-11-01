@@ -258,6 +258,48 @@ PIPELINE = [
 ]
 
 
+# ───────────────────────────── code maps: the same steps, highlighted in the same colour, in every place
+# panel source: ("file", path, first-line text, last-line text) | ("func", path, qualname, first, last)
+#               | ("cells", notebook, [first characters of each cell])
+# marks: step index -> (first-line text, last-line text)
+CODEMAPS = {
+    "lesson1": {
+        "steps": ["the knobs", "1 · guess", "2 · how wrong", "3 · which way", "4 · turn the knobs"],
+        "panels": [
+            ("Hands-on script", ("file", "workshop/examples/lesson1_knobs.py", "w, b = 0.0, 0.0", "b = b - lr * grad_b"),
+             {0: ("w, b = 0.0, 0.0", "lr = 0.5"), 1: ("pred = w * x + b", "pred = w * x + b"), 2: ("loss = np.mean", "loss = np.mean"),
+              3: ("grad_w = np.mean", "grad_b = np.mean"), 4: ("w = w - lr * grad_w", "b = b - lr * grad_b")}),
+            ("Notebook 2 · fit()", ("cells", "02_choose_and_train_a_model", ["def loader(split"]),
+             {0: ("opt = torch.optim.AdamW(model.parameters()", "opt = torch.optim.AdamW"), 1: ("pred = model(xb)", "pred = model(xb)"),
+              2: ("loss = loss_fn(pred, yb)", "loss = loss_fn(pred, yb)"), 3: ("loss.backward()", "loss.backward()"),
+              4: ("opt.step(); sched.step()", "opt.step(); sched.step()")}),
+            ("Project · influent forecaster", ("func", "src/wwtp/forecast/train.py", "train_forecaster", "model = InfluentForecaster()", "sched.step()"),
+             {0: ("model = InfluentForecaster()", "opt = torch.optim.AdamW"), 1: ("q, logits, _ = model(xb)", "q, logits, _ = model(xb)"),
+              2: ("loss = (quantile_loss", "regime_weight *"), 3: ("loss.backward()", "loss.backward()"), 4: ("opt.step()", "opt.step()")}),
+            ("Project · RL critic (DDPG)", ("func", "src/wwtp/rl/ddpg.py", "DDPGAgent.update", "with torch.no_grad():", "self.opt_critic.step()"),
+             {1: ("q = self.critic(torch.cat([o, a]", "q = self.critic"), 2: ("loss_c = ((q - y) ** 2).mean()", "loss_c ="),
+              3: ("loss_c.backward()", "loss_c.backward()"), 4: ("self.opt_critic.step()", "self.opt_critic.step()")}),
+        ]},
+    "lesson2": {
+        "steps": ["1 · download", "2 · read", "3 · check", "4 · fix"],
+        "panels": [
+            ("Hands-on script", ("file", "workshop/examples/lesson2_load_and_clean.py", "# ── 1 DOWNLOAD", 'print("         S_I after the dilution fix'),
+             {0: ("path = DATA /", "urllib.request.urlretrieve(URL + dry_path.name"), 1: ("raw = pd.read_excel", "d = d.astype(float)"),
+              2: ("step_min = np.unique", "S_I values in the whole file"), 3: ("x = d.copy()", 'd["S_I"] = 30.0')}),
+            ("Notebook 1 · parts A and B", ("cells", "01_data_collect_clean_prepare",
+                                            ['REV = "5dadb', 'raw = pd.read_excel(paths["dry"], header=None)', "COLS = [", "for w, d in df.items():", "def clean(x: pd.DataFrame"]),
+             {0: ("def download(weather", "urllib.request.urlretrieve"), 1: ("raw = pd.read_excel", "return d.astype(float)"),
+              2: ("for w, d in df.items():", "negative values"), 3: ("def clean(x: pd.DataFrame", "return x, pd.concat(flags")}),
+            ("Project · download and read", ("func", "src/wwtp/official/plant.py", "_official_table", "cache = os.path.abspath", "return arr"),
+             {0: ("if not os.path.exists(xlsx):", "urllib.request.urlretrieve"), 1: ("import openpyxl", "arr = np.array(rows")}),
+            ("Project · checks (tests) and the physics fix", ("multi", [
+                ("func", "tests/test_official.py", "test_rain_file_is_repaired", None, None),
+                ("func", "src/wwtp/official/plant.py", "load_influent", "d = _official_table(weather)", "return out")]),
+             {2: ("def test_rain_file_is_repaired", "assert np.allclose(r[:672"), 3: ("out[:, 1] = 30.0", "out[:, 14] = 0.75")}),
+        ]},
+}
+
+
 def execute(name: str):
     nb = nbformat.read(NBDIR / f"{name}.ipynb", 4)
     print("running", name, flush=True)
@@ -314,6 +356,55 @@ def marks(lines, specs, where):
     return out
 
 
+def lines_between(lines, first, last):
+    a = 0 if first is None else next(i for i, l in enumerate(lines) if first in l)
+    b = len(lines) - 1 if last is None else next(i for i in range(a, len(lines)) if last in lines[i])
+    return lines[a:b + 1]
+
+
+def panel_lines(src, executed):
+    kind = src[0]
+    if kind == "file":
+        return lines_between((ROOT / src[1]).read_text(encoding="utf8").splitlines(), src[2], src[3]), src[1]
+    if kind == "func":
+        lines, first = function_source(ROOT / src[1], src[2])
+        return lines_between(lines, src[3], src[4]), f"{src[1]} · {src[2].split('.')[-1]}()"
+    if kind == "cells":
+        nb = executed.get(src[1]) or nbformat.read(NBDIR / f"{src[1]}.ipynb", 4)
+        cells = [c for c in nb.cells if c.cell_type == "code"]
+        out = []
+        for start in src[2]:
+            k, c = next((k, c) for k, c in enumerate(cells, 1) if c.source.lstrip().startswith(start))
+            out += [f"# ── cell {k}"] + c.source.splitlines() + [""]
+        return out[:-1], f"workshop/notebooks/{src[1]}.ipynb"
+    if kind == "multi":
+        out, names = [], []
+        for sub in src[1]:
+            lines, name = panel_lines(sub, executed)
+            out += [f"# ── {name}"] + lines + [""]
+            names.append(name.split(" · ")[0])
+        return out[:-1], " + ".join(names)
+    raise ValueError(kind)
+
+
+def build_codemaps(executed):
+    maps = {}
+    for key, spec in CODEMAPS.items():
+        panels = []
+        for title, src, marks_ in spec["panels"]:
+            lines, where = panel_lines(src, executed)
+            mk = {}
+            for step, (first, last) in marks_.items():
+                a = next((i for i, l in enumerate(lines) if first in l), None)
+                if a is None:
+                    raise ValueError(f"{key}/{title}: no line with {first!r}")
+                b = next(i for i in range(a, len(lines)) if last in lines[i])
+                mk[step] = [a, b]
+            panels.append({"title": title, "where": where, "code": lines, "marks": mk})
+        maps[key] = {"steps": spec["steps"], "panels": panels}
+    return maps
+
+
 def main() -> None:
     IMG.mkdir(parents=True, exist_ok=True)
     for f in IMG.glob("*.png"):
@@ -345,7 +436,8 @@ def main() -> None:
           "// repository source. Do not edit by hand: change the script and run it again.\n"
           f"const PLAYERS = {json.dumps(players, ensure_ascii=False, indent=0)};\n"
           f"const TOURS = {json.dumps(tours, ensure_ascii=False, indent=0)};\n"
-          f"const PIPELINE = {json.dumps(PIPELINE, ensure_ascii=False, indent=0)};\n")
+          f"const PIPELINE = {json.dumps(PIPELINE, ensure_ascii=False, indent=0)};\n"
+          f"const CODEMAPS = {json.dumps(build_codemaps(executed), ensure_ascii=False, indent=0)};\n")
     (SLIDES / "content.js").write_text(js, encoding="utf8")
     print("wrote", SLIDES / "content.js", f"({len(js) / 1024:.0f} kB),", len(list(IMG.glob('*.png'))), "figures")
 

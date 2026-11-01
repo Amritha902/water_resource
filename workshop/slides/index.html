@@ -122,6 +122,22 @@ pre.nb-text{background:#fff;color:#111827;font-size:12px;line-height:1.4;max-hei
 .pipe-node.seen{border-color:#fdba74}
 #cv-pipe{position:absolute;left:0;top:0;pointer-events:none;z-index:0}
 .pipe-panel{margin-top:14px;min-height:118px}
+
+/* code map */
+.cm-steps{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
+.cm-steps button{border-color:var(--c,#d1d5db);color:var(--c,var(--ink));font-weight:600;font-size:14px}
+.cm-steps button.on{background:var(--c,var(--blue));color:#fff}
+.cm-steps .cm-all{--c:#4b5563}
+.cm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;height:466px}
+.cm-panel{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden;min-width:0;transition:opacity .3s}
+.cm-panel.absent{opacity:.35}
+.cm-head b{white-space:nowrap}.cm-head{display:flex;gap:10px;align-items:baseline;padding:5px 10px;border-bottom:1px solid var(--line);background:#fafaf8;font-size:13.5px}
+.cm-head span{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cm-code{flex:1;overflow:auto;font-family:Consolas,Menlo,monospace;font-size:12px;padding:4px 0 30px}
+.cl{display:flex;white-space:pre;line-height:1.5;transition:background .3s,opacity .3s}
+.cl .ln{width:30px;flex:none;text-align:right;padding-right:8px;color:#b6bcc6}
+.cm-code .tk{color:#7c3aed;font-weight:600}.cm-code .ts{color:#b45309}.cm-code .tc{color:#8a919c;font-style:italic}.cm-code .tn{color:#0f766e}.cm-code .tb{color:#2563eb}.cm-code .tf{color:#1d4ed8}
+.cm-caption{margin-top:10px;font-size:17px;line-height:1.4;min-height:48px}
 </style>
 </head>
 <body>
@@ -243,6 +259,14 @@ jupyter lab workshop/notebooks</pre>
   </div>
 </section>
 
+<!-- ★ code map: lesson1 -->
+<section class="slide" data-anim="codemap" data-key="lesson1">
+  <div class="kicker">Where is the code? · training</div>
+  <h2>Four steps train every model, everywhere</h2>
+  <p class="small" style="margin:2px 0 0">Run it yourself: <code>python workshop/examples/lesson1_knobs.py</code></p>
+  <div class="cm-root"></div>
+</section>
+
 <!-- 5 ─────────────────────────────── COLLECT -->
 <section class="slide" data-anim="collect">
   <div class="kicker">Step 1 · collect</div>
@@ -355,6 +379,14 @@ flow = d[idx, 15]</pre>
   <div class="kicker">In code · notebook 1, parts A and B</div>
   <h2>Collect and clean, cell by cell</h2>
   <div class="player-root"></div>
+</section>
+
+<!-- ★ code map: lesson2 -->
+<section class="slide" data-anim="codemap" data-key="lesson2">
+  <div class="kicker">Where is the code? · collect and clean</div>
+  <h2>Download, read, check, fix: in the script, the notebook and the project</h2>
+  <p class="small" style="margin:2px 0 0">Run it yourself: <code>python workshop/examples/lesson2_load_and_clean.py</code></p>
+  <div class="cm-root"></div>
 </section>
 
 <!-- 9 ─────────────────────────────── HANDS ON 1 -->

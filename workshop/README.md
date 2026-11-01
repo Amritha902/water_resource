@@ -59,23 +59,24 @@ The deck has three kinds of interactive slides besides the animations:
 
 - **★ Notebook players:** real notebook cells with ▶ Run. Each run shows the output of a real run of the notebook, and a panel explains the idea. Press → to run the next cell; ← un-runs it.
 - **◆ Code tours:** the project's own functions, cut from the source files. Each block is highlighted with its explanation; press → for the next block, or click a block or a tab.
+- **Where is the code?** (slides 7 and 14): the same steps, the same colour, in the hands-on script (`workshop/examples/`), the notebook and the project code.
 - **The pipeline map** (slide 5): every experiment script of the project in the order it was built. Click a box, or press →.
 
 | Time | Slides | What happens | Notebook |
 |---|---|---|---|
 | 0:00 | 1–5 | The plant (move the air slider on slide 1), **glossary of every word in plain language** (slide 3), the four ML tasks, **pipeline map** of our code | |
-| 0:06 | 6 | **What is a model**: press ▶ train and let the line fit itself | |
-| 0:09 | 7–12 | Collect, cleaning, time grid; ◆ how our code loads and corrects the data; ★ collect and clean, cell by cell | |
-| 0:17 | 13 | **Hands-on** | NB1 parts A, B (10 min) |
-| 0:27 | 14–17 | Scaling, windows, split by time; ★ prepare, cell by cell | |
-| 0:31 | 18 | **Hands-on** | NB1 part C (8 min) |
-| 0:39 | 19–23 | Inputs and outputs decide the model; **inside a network, layer by layer** (press "next step" by hand); parameters; CNN; GRU; ★ shapes, baselines and models in code | |
-| 0:48 | 24–28 | Loss, gradient descent, the training loop; ★ training, overfitting and the test in code | |
-| 0:55 | 29–30 | Baselines; **hands-on** | NB2 (15 min) |
-| 1:10 | 31–34 | RL loop, actor-critic parts, ◆ reward, DDPG and SAC-IL updates in our code, ★ RL cell by cell | |
-| 1:16 | 35–37 | SAC-IL pipeline; ◆ papers 1 and 3 as printed; ◆ our controller (ILC, control step, safety gate, training script) | |
-| 1:20 | 38 | **Hands-on** | NB3 (7 min) |
-| 1:27 | 39 | Lessons, questions | |
+| 0:06 | 6–7 | **What is a model**: press ▶ train and let the line fit itself; then **where is the code?** (slide 7): the same four training steps, colour by colour, in the script, the notebook and the project | |
+| 0:09 | 8–14 | Collect, cleaning, time grid; **where is the code?** (slide 14): download, read, check, fix, in all three places; ◆ how our code loads and corrects the data; ★ collect and clean, cell by cell | |
+| 0:17 | 15 | **Hands-on** | NB1 parts A, B (10 min) |
+| 0:27 | 16–19 | Scaling, windows, split by time; ★ prepare, cell by cell | |
+| 0:31 | 20 | **Hands-on** | NB1 part C (8 min) |
+| 0:39 | 21–25 | Inputs and outputs decide the model; **inside a network, layer by layer** (press "next step" by hand); parameters; CNN; GRU; ★ shapes, baselines and models in code | |
+| 0:48 | 26–30 | Loss, gradient descent, the training loop; ★ training, overfitting and the test in code | |
+| 0:55 | 31–32 | Baselines; **hands-on** | NB2 (15 min) |
+| 1:10 | 33–36 | RL loop, actor-critic parts, ◆ reward, DDPG and SAC-IL updates in our code, ★ RL cell by cell | |
+| 1:16 | 37–39 | SAC-IL pipeline; ◆ papers 1 and 3 as printed; ◆ our controller (ILC, control step, safety gate, training script) | |
+| 1:20 | 40 | **Hands-on** | NB3 (7 min) |
+| 1:27 | 41 | Lessons, questions | |
 
 If time runs short: the ★ players can replace the matching hands-on time (run them on the projector instead), and the ◆ tours can be shortened to their first tab.
 

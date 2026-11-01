@@ -208,7 +208,7 @@ const PLAYERS = {
 {
 "code": "net = mlp()\nhist, be = fit(net)\nplot_curves(hist, be, \"MLP 288 → 64 → 64 → 8\")\nreport(\"MLP 288-64-64-8\", predict(net, \"val\"), count(net))",
 "out": {
-"text": "epoch   0  train 0.9952  val 0.9483\nepoch  10  train 0.0607  val 0.3880\nepoch  20  train 0.0520  val 0.3404\nepoch  30  train 0.0324  val 0.3239\nepoch  40  train 0.0260  val 0.3144\nepoch  50  train 0.0221  val 0.3158\nepoch  59  train 0.0213  val 0.3139\nbest epoch 41, val loss 0.3091  (1 s)\nMLP 288-64-64-8              params    23,176   val MAE: 15 min    2209   2 h    3120  m³/d",
+"text": "epoch   0  train 0.9952  val 0.9483\nepoch  10  train 0.0607  val 0.3880\nepoch  20  train 0.0520  val 0.3404\nepoch  30  train 0.0324  val 0.3239\nepoch  40  train 0.0260  val 0.3144\nepoch  50  train 0.0221  val 0.3158\nepoch  59  train 0.0213  val 0.3139\nbest epoch 41, val loss 0.3091  (2 s)\nMLP 288-64-64-8              params    23,176   val MAE: 15 min    2209   2 h    3120  m³/d",
 "img": [
 "img/train1_0.png"
 ]
@@ -1094,3 +1094,467 @@ const PIPELINE = [
 "what": "Every table is computed from results/; published values typed into results/published_paper*.json."
 }
 ];
+const CODEMAPS = {
+"lesson1": {
+"steps": [
+"the knobs",
+"1 · guess",
+"2 · how wrong",
+"3 · which way",
+"4 · turn the knobs"
+],
+"panels": [
+{
+"title": "Hands-on script",
+"where": "workshop/examples/lesson1_knobs.py",
+"code": [
+"w, b = 0.0, 0.0          # THE KNOBS (parameters). Training changes only these two numbers.",
+"lr = 0.5                 # LEARNING RATE: how far we turn the knobs each step",
+"",
+"print(\"Part A: by hand\")",
+"for step in range(201):",
+"    pred = w * x + b                          # 1 GUESS: run the model on the data (forward)",
+"    loss = np.mean((pred - y) ** 2)           # 2 HOW WRONG: one number, the mean squared error",
+"    if step in (0, 1, 2, 5, 10, 50, 200):",
+"        print(f\"  step {step:3d}   w = {w:6.3f}   b = {b:6.3f}   loss = {loss:.5f}\")",
+"    grad_w = np.mean(2 * (pred - y) * x)      # 3 WHICH WAY: the gradient, for each knob",
+"    grad_b = np.mean(2 * (pred - y))",
+"    w = w - lr * grad_w                       # 4 TURN THE KNOBS a little, downhill",
+"    b = b - lr * grad_b"
+],
+"marks": {
+"0": [
+0,
+1
+],
+"1": [
+5,
+5
+],
+"2": [
+6,
+6
+],
+"3": [
+9,
+10
+],
+"4": [
+11,
+12
+]
+}
+},
+{
+"title": "Notebook 2 · fit()",
+"where": "workshop/notebooks/02_choose_and_train_a_model.ipynb",
+"code": [
+"# ── cell 9",
+"def loader(split, batch=128, shuffle=False, n=None):",
+"    x, y = X[split], Y[split]",
+"    if n is not None:",
+"        x, y = x[:n], y[:n]",
+"    return DataLoader(TensorDataset(torch.from_numpy(x), torch.from_numpy(y)), batch_size=batch, shuffle=shuffle)",
+"",
+"",
+"def fit(model, epochs=60, lr=3e-3, weight_decay=1e-4, n_train=None, loss_fn=F.mse_loss, verbose=10):",
+"    torch.manual_seed(0)",
+"    tl, vl = loader(\"train\", shuffle=True, n=n_train), loader(\"val\")",
+"    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)",
+"    sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=lr, total_steps=epochs * len(tl))",
+"    hist, best, best_state = [], np.inf, None",
+"    t0 = time.time()",
+"    for epoch in range(epochs):",
+"        model.train()                                   # dropout on",
+"        tr = 0.0",
+"        for xb, yb in tl:                               # 1 a batch",
+"            pred = model(xb)                            # 2 forward",
+"            loss = loss_fn(pred, yb)                    # 3 loss",
+"            opt.zero_grad()",
+"            loss.backward()                             # 4 gradients by backpropagation",
+"            nn.utils.clip_grad_norm_(model.parameters(), 1.0)",
+"            opt.step(); sched.step()                    # 5 update the weights",
+"            tr += loss.item() * len(xb)",
+"        model.eval()                                    # dropout off",
+"        with torch.no_grad():                           # 6 validation, no gradients",
+"            va = sum(loss_fn(model(xb), yb).item() * len(xb) for xb, yb in vl) / len(vl.dataset)",
+"        hist.append((tr / len(tl.dataset), va))",
+"        if va < best:",
+"            best, best_state, best_epoch = va, copy.deepcopy(model.state_dict()), epoch",
+"        if verbose and (epoch % verbose == 0 or epoch == epochs - 1):",
+"            print(f\"epoch {epoch:3d}  train {hist[-1][0]:.4f}  val {va:.4f}\")",
+"    model.load_state_dict(best_state)                   # keep the best epoch",
+"    print(f\"best epoch {best_epoch}, val loss {best:.4f}  ({time.time() - t0:.0f} s)\")",
+"    return np.array(hist), best_epoch",
+"",
+"",
+"def predict(model, split):",
+"    model.eval()",
+"    with torch.no_grad():",
+"        return model(torch.from_numpy(X[split])).numpy()",
+"",
+"",
+"def plot_curves(hist, best_epoch, title):",
+"    plt.figure(figsize=(6, 3))",
+"    plt.plot(hist[:, 0], label=\"train\"); plt.plot(hist[:, 1], label=\"validation\")",
+"    plt.axvline(best_epoch, color=\"tab:green\", ls=\"--\", label=\"best epoch\")",
+"    plt.yscale(\"log\"); plt.xlabel(\"epoch\"); plt.ylabel(\"loss (MSE, scaled units)\"); plt.title(title); plt.legend()"
+],
+"marks": {
+"0": [
+11,
+11
+],
+"1": [
+19,
+19
+],
+"2": [
+20,
+20
+],
+"3": [
+22,
+22
+],
+"4": [
+24,
+24
+]
+}
+},
+{
+"title": "Project · influent forecaster",
+"where": "src/wwtp/forecast/train.py · train_forecaster()",
+"code": [
+"    model = InfluentForecaster().to(device)",
+"    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)",
+"    sched = torch.optim.lr_scheduler.OneCycleLR(",
+"        opt, max_lr=lr, total_steps=epochs * max(len(train_loader), 1))",
+"",
+"    history = []",
+"    for epoch in range(epochs):",
+"        model.train()",
+"        tr = 0.0",
+"        for xb, yb, rb in train_loader:",
+"            xb, yb, rb = xb.to(device), yb.to(device), rb.to(device)",
+"            q, logits, _ = model(xb)",
+"            loss = (quantile_loss(q, yb)",
+"                    + regime_weight * torch.nn.functional.cross_entropy(logits, rb))",
+"            opt.zero_grad(set_to_none=True)",
+"            loss.backward()",
+"            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)",
+"            opt.step()",
+"            sched.step()"
+],
+"marks": {
+"0": [
+0,
+1
+],
+"1": [
+11,
+11
+],
+"2": [
+12,
+13
+],
+"3": [
+15,
+15
+],
+"4": [
+17,
+17
+]
+}
+},
+{
+"title": "Project · RL critic (DDPG)",
+"where": "src/wwtp/rl/ddpg.py · update()",
+"code": [
+"            with torch.no_grad():",
+"                y = r + c.gamma * (1.0 - d) * self.critic_target(",
+"                    torch.cat([o2, self.actor_target(o2)], dim=-1))",
+"            q = self.critic(torch.cat([o, a], dim=-1))",
+"            loss_c = ((q - y) ** 2).mean()                      # eq. (8)",
+"            self.opt_critic.zero_grad(set_to_none=True)",
+"            loss_c.backward()",
+"            nn.utils.clip_grad_norm_(self.critic.parameters(), c.grad_clip)",
+"            self.opt_critic.step()"
+],
+"marks": {
+"1": [
+3,
+3
+],
+"2": [
+4,
+4
+],
+"3": [
+6,
+6
+],
+"4": [
+8,
+8
+]
+}
+}
+]
+},
+"lesson2": {
+"steps": [
+"1 · download",
+"2 · read",
+"3 · check",
+"4 · fix"
+],
+"panels": [
+{
+"title": "Hands-on script",
+"where": "workshop/examples/lesson2_load_and_clean.py",
+"code": [
+"# ── 1 DOWNLOAD: pinned to one commit, so it is the same file for everyone, forever",
+"path = DATA / \"Inf_rain_2006.xlsx\"",
+"if not path.exists():",
+"    urllib.request.urlretrieve(URL + path.name, path)",
+"dry_path = DATA / \"Inf_dry_2006.xlsx\"",
+"if not dry_path.exists():",
+"    urllib.request.urlretrieve(URL + dry_path.name, dry_path)",
+"",
+"# ── 2 READ: first, carelessly",
+"raw = pd.read_excel(path, header=None)",
+"print(\"2 READ   raw shape\", raw.shape, \"  first row:\", list(raw.iloc[0, :4]), \"...\")",
+"print(\"         column types:\", {str(k): v for k, v in raw.dtypes.value_counts().items()}, \" ← all text, because row 0 is names\")",
+"#    then properly: row 0 is the header; give the columns our names; make them numbers",
+"d = pd.read_excel(path, header=0)",
+"d.columns = COLS",
+"d = d.astype(float)",
+"print(\"         after reading properly:\", d.shape, \" types:\", {str(k): v for k, v in d.dtypes.value_counts().items()})",
+"",
+"# ── 3 CHECK: the standard questions, every dataset, every time",
+"step_min = np.unique(np.round(np.diff(d.t) * 1440, 3))",
+"print(\"3 CHECK  time step [min]:\", step_min,",
+"      \"  missing values:\", int(d.isna().sum().sum()),",
+"      \"  duplicate times:\", int(d.t.duplicated().sum()),",
+"      \"  negative values:\", int((d.drop(columns=\"t\") < 0).sum().sum()))",
+"print(\"         S_I values in the whole file:\", d.S_I.unique(), \" ← constant, even when rain doubles the flow?\")",
+"",
+"# ── 4 FIX (a) a broken sensor: damage a copy, then repair it",
+"x = d.copy()",
+"x.loc[100:102, \"S_NH\"] = np.nan                          # a 45-min gap",
+"x.loc[300, \"S_NH\"] *= 10                                 # a spike",
+"med = x.S_NH.rolling(9, center=True, min_periods=3).median()",
+"spike = (x.S_NH - med).abs() > 0.5 * med                 # far from its neighbours → wrong",
+"x.loc[spike, \"S_NH\"] = np.nan",
+"x[\"S_NH\"] = x.S_NH.interpolate(limit_area=\"inside\")      # fill short gaps with a straight line",
+"print(\"4 FIX    spikes found:\", int(spike.sum()), \"  largest error after repair:\",",
+"      round(float((x.S_NH - d.S_NH).abs().max()), 3), \"g/m3\")",
+"",
+"# ── 4 FIX (b) the physics fix of the project: rain dilutes the inert COD   (plant.py, line 89)",
+"dry = pd.read_excel(dry_path, header=0)",
+"dry.columns = COLS",
+"d[\"S_I\"] = 30.0 * dry.Q.astype(float).values / d.Q.values",
+"print(\"         S_I after the dilution fix: min\", round(d.S_I.min(), 1), \" max\", round(d.S_I.max(), 1), \"g/m3\")"
+],
+"marks": {
+"0": [
+1,
+6
+],
+"1": [
+9,
+15
+],
+"2": [
+19,
+24
+],
+"3": [
+27,
+40
+]
+}
+},
+{
+"title": "Notebook 1 · parts A and B",
+"where": "workshop/notebooks/01_data_collect_clean_prepare.ipynb",
+"code": [
+"# ── cell 2",
+"REV = \"5dadb209a5a34ecb0e2f83a2e79c060bf3470582\"      # pinned commit (same as plant.py)",
+"URL = \"https://raw.githubusercontent.com/davidfernand/BSM1_in_Python/{rev}/code/Influent%20files/{name}\"",
+"FILES = {\"dry\": \"Inf_dry_2006.xlsx\", \"rain\": \"Inf_rain_2006.xlsx\", \"storm\": \"Inf_strm_2006.xlsx\"}",
+"",
+"",
+"def download(weather: str) -> Path:",
+"    \"\"\"Download one file the first time; afterwards use the local copy.\"\"\"",
+"    path = DATA / FILES[weather]",
+"    if not path.exists():",
+"        print(\"downloading\", FILES[weather])",
+"        urllib.request.urlretrieve(URL.format(rev=REV, name=FILES[weather]), path)",
+"    return path",
+"",
+"",
+"paths = {w: download(w) for w in FILES}",
+"for w, p in paths.items():",
+"    print(f\"{w:6s} {p}  {p.stat().st_size / 1024:.0f} kB\")",
+"",
+"# ── cell 3",
+"raw = pd.read_excel(paths[\"dry\"], header=None)",
+"print(\"shape:\", raw.shape)",
+"raw.head(4)",
+"",
+"# ── cell 5",
+"COLS = [\"t\", \"S_I\", \"S_S\", \"X_I\", \"X_S\", \"X_BH\", \"X_BA\", \"X_P\", \"S_O\", \"S_NO\", \"S_NH\", \"S_ND\", \"X_ND\", \"S_ALK\", \"Q\"]",
+"UNITS = {\"t\": \"d\", \"Q\": \"m3/d\", \"S_ALK\": \"mol/m3\", **{c: \"g/m3\" for c in COLS[1:13]}}",
+"MEANING = {\"t\": \"time\", \"S_I\": \"inert soluble COD\", \"S_S\": \"readily biodegradable substrate (COD)\",",
+"           \"X_I\": \"inert particulate COD\", \"X_S\": \"slowly biodegradable substrate\", \"X_BH\": \"heterotrophic biomass\",",
+"           \"X_BA\": \"autotrophic (nitrifying) biomass\", \"X_P\": \"particulate products of decay\", \"S_O\": \"oxygen\",",
+"           \"S_NO\": \"nitrate\", \"S_NH\": \"ammonium\", \"S_ND\": \"soluble organic nitrogen\",",
+"           \"X_ND\": \"particulate organic nitrogen\", \"S_ALK\": \"alkalinity\", \"Q\": \"flow rate\"}",
+"",
+"",
+"def load(weather: str) -> pd.DataFrame:",
+"    d = pd.read_excel(paths[weather], header=0)",
+"    d.columns = COLS",
+"    return d.astype(float)",
+"",
+"",
+"df = {w: load(w) for w in FILES}",
+"pd.DataFrame({\"meaning\": MEANING, \"unit\": UNITS})",
+"",
+"# ── cell 7",
+"for w, d in df.items():",
+"    step_min = np.round(np.diff(d.t) * 1440, 3)",
+"    print(f\"{w:6s} rows {len(d)}  days {d.t.min():.0f}-{d.t.max():.0f}  \"",
+"          f\"step(s) in minutes {np.unique(step_min)}  NaN {d.isna().sum().sum()}  \"",
+"          f\"duplicate times {d.t.duplicated().sum()}  negative values {(d.drop(columns='t') < 0).sum().sum()}\")",
+"",
+"# ── cell 13",
+"def clean(x: pd.DataFrame, cols=(\"Q\", \"S_NH\"), max_gap=4) -> tuple[pd.DataFrame, pd.DataFrame]:",
+"    flags = {}",
+"    x = x.sort_values(\"t\").drop_duplicates(\"t\").reset_index(drop=True)              # 1",
+"    grid = np.round(np.arange(0, 14 + 1e-9, 15 / 1440), 6)                          # 2",
+"    x = x.set_index(np.round(x.t, 6)).reindex(grid).rename_axis(\"t_grid\").reset_index()",
+"    x[\"t\"] = x[\"t_grid\"]",
+"    x = x.drop(columns=\"t_grid\")",
+"    for c in cols:",
+"        bad_neg = x[c] < 0                                                          # 3",
+"        med = x[c].rolling(9, center=True, min_periods=3).median()                 # 4",
+"        mad = (x[c] - med).abs().rolling(9, center=True, min_periods=3).median()",
+"        bad_spike = (x[c] - med).abs() > 6 * (mad + 1e-6) + 0.5 * med.abs()",
+"        stuck = x[c].diff().abs().rolling(8).max() == 0                             # 5",
+"        bad_stuck = stuck.copy()",
+"        for k in range(1, 8):",
+"            bad_stuck |= stuck.shift(-k, fill_value=False)",
+"        flags[c] = pd.DataFrame({\"missing\": x[c].isna(), \"negative\": bad_neg, \"spike\": bad_spike, \"stuck\": bad_stuck})",
+"        x.loc[bad_neg | bad_spike | bad_stuck, c] = np.nan",
+"        x[c] = fill_short_gaps(x[c], max_gap)                                       # 6",
+"    return x, pd.concat(flags, axis=1)",
+"",
+"",
+"def fill_short_gaps(s: pd.Series, max_gap: int) -> pd.Series:",
+"    \"\"\"Interpolate gaps of at most ``max_gap`` samples; leave longer gaps empty.",
+"",
+"    Careful: ``s.interpolate(limit=4)`` would also fill the first 4 samples of a",
+"    long gap, inventing data. Here each gap's full length is measured first.\"\"\"",
+"    isna = s.isna()",
+"    gap_len = isna.groupby((~isna).cumsum()).transform(\"sum\")",
+"    return s.where(~isna | (gap_len > max_gap), s.interpolate(limit_area=\"inside\"))",
+"",
+"",
+"fixed, flags = clean(dirty)",
+"print(flags.sum().unstack())",
+"print(\"\\nNaN left after repair:\", fixed[[\"Q\", \"S_NH\"]].isna().sum().to_dict())"
+],
+"marks": {
+"0": [
+6,
+11
+],
+"1": [
+20,
+37
+],
+"2": [
+44,
+48
+],
+"3": [
+51,
+70
+]
+}
+},
+{
+"title": "Project · download and read",
+"where": "src/wwtp/official/plant.py · _official_table()",
+"code": [
+"    cache = os.path.abspath(_CACHE)",
+"    npy = os.path.join(cache, weather + \".npy\")",
+"    if os.path.exists(npy):",
+"        return np.load(npy)",
+"    os.makedirs(cache, exist_ok=True)",
+"    xlsx = os.path.join(cache, _NAMES[weather])",
+"    if not os.path.exists(xlsx):",
+"        import urllib.request",
+"        urllib.request.urlretrieve(_SRC.format(rev=_REV, name=_NAMES[weather]), xlsx)",
+"    import openpyxl",
+"    ws = openpyxl.load_workbook(xlsx, read_only=True, data_only=True).worksheets[0]",
+"    rows = [r[:15] for r in ws.iter_rows(values_only=True)",
+"            if r and isinstance(r[0], (int, float))]",
+"    arr = np.array(rows, dtype=float)",
+"    np.save(npy, arr)",
+"    return arr"
+],
+"marks": {
+"0": [
+6,
+8
+],
+"1": [
+9,
+13
+]
+}
+},
+{
+"title": "Project · checks (tests) and the physics fix",
+"where": "tests/test_official.py + src/wwtp/official/plant.py",
+"code": [
+"# ── tests/test_official.py · test_rain_file_is_repaired()",
+"def test_rain_file_is_repaired():",
+"    d, r = load_influent(\"dry\"), load_influent(\"rain\")",
+"    assert r[:, 15].min() > 1000.0                    # flows in m3/d, not thousands",
+"    assert np.allclose(np.diff(r[:, 0]), 15.0 / 1440.0)",
+"    assert np.allclose(r[:672, 15], d[:672, 15])      # rain week 1 = dry week 1",
+"",
+"# ── src/wwtp/official/plant.py · load_influent()",
+"    d = _official_table(weather)",
+"    dry = _official_table(\"dry\")",
+"    out = np.zeros((len(d), 22))",
+"    out[:, 0] = d[:, 0]",
+"    out[:, 1:14] = d[:, 1:14]",
+"    out[:, 1] = 30.0 * dry[:, 14] / d[:, 14]",
+"    out[:, 14] = 0.75 * d[:, [3, 4, 5, 6, 7]].sum(axis=1)",
+"    out[:, 15] = d[:, 14]",
+"    out[:, 16] = 15.0",
+"    return out"
+],
+"marks": {
+"2": [
+1,
+5
+],
+"3": [
+13,
+14
+]
+}
+}
+]
+}
+};

@@ -1104,17 +1104,17 @@ A.pipeline = {
 const GLOSSARY = [
   ["data", "Numbers we have recorded.", "A diary of the plant: every 15 minutes, how much water came in and how dirty it was.", "notebook 1"],
   ["dataset", "A table of numbers a model learns from.", "A spreadsheet: one row per moment, one column per measurement.", "1 345 rows × 15 columns per weather file"],
-  ["cleaning", "Finding and fixing wrong or missing values.", "Washing the vegetables before cooking.", "slides 9–12, notebook 1 part B"],
+  ["cleaning", "Finding and fixing wrong or missing values.", "Washing the vegetables before cooking.", "slides 10–13, notebook 1 part B"],
   ["input (x)", "What the model gets to see.", "The front of a flash card.", "the last 24 hours of flow, ammonium and COD"],
   ["target (y)", "What the model must guess.", "The back of a flash card.", "the flow over the next 2 hours"],
   ["model", "A function with adjustable numbers inside.", "A recipe whose amounts you can change.", "linear model, MLP, CNN, GRU, actor, critic"],
   ["parameter / weight", "One adjustable number inside a model.", "One knob on the mixing desk.", "23 176 in our MLP; 67 073 in paper 2's actor"],
-  ["training", "Turning the knobs until the guesses get good.", "Taste, adjust, taste again.", "slides 25–28, notebook 2"],
+  ["training", "Turning the knobs until the guesses get good.", "Taste, adjust, taste again.", "slides 27–30, notebook 2"],
   ["loss", "One number for how wrong the model is.", "Points lost in a game; training wants as few as possible.", "MSE, MAE, pinball, cross-entropy"],
   ["gradient", "Which way to turn every knob to lower the loss.", "Feeling which way is downhill with your feet, in the fog.", "computed by loss.backward()"],
-  ["learning rate", "How big a step we take each time.", "Baby steps or giant leaps: too big and you overshoot.", "slide 26: try 0.02, 0.15, 0.5"],
+  ["learning rate", "How big a step we take each time.", "Baby steps or giant leaps: too big and you overshoot.", "slide 28: try 0.02, 0.15, 0.5"],
   ["batch / epoch", "A handful of examples / one pass through all of them.", "A few flash cards at a time / the whole pack once.", "batch 128, up to 150 epochs"],
-  ["neural network", "Layers of simple units, one after the other.", "An assembly line: each station does a small job.", "slide 20: watch numbers flow layer by layer"],
+  ["neural network", "Layers of simple units, one after the other.", "An assembly line: each station does a small job.", "slide 22: watch numbers flow layer by layer"],
   ["ReLU", "Keep positive numbers, turn negatives into 0.", "A one-way valve.", "after every hidden layer"],
   ["train / validation / test", "Learn on / check while learning on / final exam, used once.", "Homework / practice test / the real exam.", "dry + rain week 2 / storm 1 / storm 2"],
   ["overfitting", "Memorising examples instead of learning the pattern.", "Learning the answers of last year's exam by heart.", "notebook 2 section 7"],
@@ -1143,6 +1143,60 @@ A.glossary = {
   },
   next() { if (this.i < GLOSSARY.length - 1) { this.pick(this.i + 1); return true; } return false; },
   prev() { if (this.i > 0) { this.pick(this.i - 1); return true; } return false; },
+  stop() {}
+};
+
+
+// ═════════════════════════════ code map: the same steps, the same colour, in every file
+const CM_COLORS = ["#7c3aed", "#2563eb", "#ea580c", "#dc2626", "#15803d"];
+const CM_TEXT = {
+  lesson1: ["The knobs: the numbers training may change. In the script two (w, b); in notebook 2, 23 176; in the forecaster, 171 211. The optimiser is handed exactly these.",
+            "Guess: run the model on a batch of inputs. The inputs never change.",
+            "How wrong: one number, the loss. MSE in the script and the notebook, the quantile (pinball) loss in the forecaster, MSE against the Bellman target in the RL critic.",
+            "Which way: the gradient. By hand in the script; loss.backward() everywhere else.",
+            "Turn the knobs a little: w = w − lr · gradient; opt.step() does it for every knob at once."],
+  lesson2: ["Download: from a pinned commit, only if the file is not already there.",
+            "Read: the first row is names, not numbers. Read it as the header, name the columns, make them numbers.",
+            "Check: time step, missing values, duplicates, impossible values. In the project these checks are tests (tests/test_official.py).",
+            "Fix: repair broken readings (notebook), and the physics fix of the project: rain dilutes S_I (plant.py)."],
+};
+const CMSTATE = {};
+A.codemap = {
+  start(el) {
+    const key = el.dataset.key, M = CODEMAPS[key];
+    const st = CMSTATE[key] || (CMSTATE[key] = {s: -1});
+    Object.assign(this, {M, st, key, root: $(".cm-root", el)});
+    this.root.innerHTML = `<div class="cm-steps">${M.steps.map((t, i) => `<button data-s="${i}" style="--c:${CM_COLORS[i]}">${t}</button>`).join("")}<button data-s="-1" class="cm-all">all at once</button></div>
+      <div class="cm-grid">${M.panels.map((p, j) => `<div class="cm-panel"><div class="cm-head"><b>${p.title}</b><span class="mono">${p.where}</span></div>
+        <div class="cm-code">${highlight(p.code.join("\n")).map((h, i) => `<div class="cl" data-i="${i}"><span class="ln">${i + 1}</span><span>${h || " "}</span></div>`).join("")}</div></div>`).join("")}</div>
+      <div class="cm-caption"></div>`;
+    $$(".cm-steps button", this.root).forEach(b => b.onclick = () => { st.s = +b.dataset.s; this.paint(); });
+    this.paint(true);
+  },
+  paint(instant) {
+    const {M, st, root, key} = this;
+    $$(".cm-steps button", root).forEach(b => b.classList.toggle("on", +b.dataset.s === st.s));
+    $$(".cm-panel", root).forEach((panel, j) => {
+      const mk = M.panels[j].marks;
+      const owner = i => { for (const [s, [a, b]] of Object.entries(mk)) if (i >= a && i <= b) return +s; return -1; };
+      $$(".cl", panel).forEach(row => {
+        const o = owner(+row.dataset.i);
+        const show = o >= 0 && (st.s === -1 || o === st.s);
+        row.style.background = show ? CM_COLORS[o] + (st.s === -1 ? "22" : "33") : "";
+        row.style.boxShadow = show ? `inset 4px 0 0 ${CM_COLORS[o]}` : "";
+        row.style.opacity = st.s === -1 || o === st.s ? 1 : 0.35;
+      });
+      panel.classList.toggle("absent", st.s >= 0 && !(st.s in mk));
+      const box = $(".cm-code", panel), target = st.s >= 0 && mk[st.s] ? mk[st.s][0] : Math.min(...Object.values(mk).map(v => v[0]));
+      const row = $(`.cl[data-i="${target}"]`, panel);
+      if (row) box.scrollTo({top: Math.max(0, row.offsetTop - box.offsetTop - 40), behavior: instant ? "auto" : "smooth"});
+    });
+    const cap = $(".cm-caption", root);
+    cap.innerHTML = st.s === -1 ? `<b>Same colour = same step.</b> Press → to go through the steps one by one, or click a step. Every panel is real code from the repository.`
+      : `<b style="color:${CM_COLORS[st.s]}">${M.steps[st.s]}.</b> ${CM_TEXT[key][st.s]}` + ($$(".cm-panel.absent", root).length ? ` <span class="tiny">(Dimmed panels don't have this step.)</span>` : "");
+  },
+  next() { if (this.st.s < this.M.steps.length - 1) { this.st.s++; this.paint(); return true; } return false; },
+  prev() { if (this.st.s >= 0) { this.st.s--; this.paint(); return true; } return false; },
   stop() {}
 };
 
