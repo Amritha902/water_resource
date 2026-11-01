@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>From plant data to a trained model: a hands-on ML and RL workshop</title>
+<style>
+:root{
+  --bg:#fbfaf7; --ink:#1d2433; --ink2:#4b5563; --muted:#8a919c; --line:#e3e1db;
+  --blue:#2563eb; --orange:#ea580c; --green:#15803d; --purple:#7c3aed; --red:#dc2626; --teal:#0d9488;
+  --card:#ffffff; --soft:#f1efe9; --code:#0f172a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#2a2d33;overflow:hidden;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;color:var(--ink)}
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center center}
+.slide{position:absolute;inset:0;background:var(--bg);padding:44px 60px 40px;display:none;overflow:hidden}
+.slide.active{display:block;animation:fadein .35s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h1{font-size:46px;margin:0 0 10px;letter-spacing:-.5px}
+h2{font-size:34px;margin:0 0 6px;letter-spacing:-.3px}
+h3{font-size:21px;margin:0 0 8px}
+.kicker{font-size:15px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.sub{font-size:19px;color:var(--ink2);margin:0 0 18px;max-width:1080px;line-height:1.4}
+p,li{font-size:19px;line-height:1.45}
+ul{margin:6px 0;padding-left:24px}
+li{margin:4px 0}
+.small{font-size:15px;color:var(--ink2)}
+.tiny{font-size:13px;color:var(--muted)}
+code,.mono{font-family:"Cascadia Code",Consolas,"JetBrains Mono",Menlo,monospace}
+p code,li code,td code,.small code{background:var(--soft);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);color:#e2e8f0;border-radius:10px;padding:14px 16px;margin:0;font-size:14.5px;line-height:1.5;overflow:hidden;white-space:pre}
+pre .c{color:#7d8ba1}pre .k{color:#93c5fd}pre .s{color:#fcd34d}pre .h{background:rgba(250,204,21,.18);display:inline-block;width:100%}
+.file{font-size:12.5px;color:var(--muted);margin:4px 0 0;font-family:Consolas,monospace}
+.cols{display:flex;gap:28px}
+.col{flex:1;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+canvas{display:block}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+button{font:inherit;font-size:15px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--ink)}
+button:hover{border-color:var(--blue);color:var(--blue)}
+button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.frag{opacity:0;transform:translateY(8px);transition:opacity .35s,transform .35s}
+.frag.on{opacity:1;transform:none}
+.pill{display:inline-block;font-size:13px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--soft);color:var(--ink2);margin-right:6px}
+.pill.b{background:#dbeafe;color:#1e40af}.pill.o{background:#ffedd5;color:#9a3412}.pill.g{background:#dcfce7;color:#166534}.pill.p{background:#ede9fe;color:#5b21b6}.pill.r{background:#fee2e2;color:#991b1b}
+table{border-collapse:collapse;width:100%}
+td,th{font-size:16px;padding:6px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:14px;color:var(--ink2);font-weight:600}
+.hl{background:#fef9c3}
+.bad{background:#fee2e2}
+.fixed{background:#dcfce7}
+.big{font-size:24px}
+.handson{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff}
+.handson h1,.handson h2{color:#fff}.handson .kicker{color:#bfdbfe}.handson p,.handson li{color:#e0e7ff}
+.handson .card{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:#fff}
+.handson code{background:rgba(255,255,255,.18)!important;color:#fff}
+.agenda td{font-size:17px;padding:7px 10px}
+.agenda td:first-child{font-family:Consolas,monospace;color:var(--blue);white-space:nowrap}
+.note{border-left:4px solid var(--orange);background:#fff7ed;padding:10px 14px;border-radius:0 8px 8px 0;font-size:17px;line-height:1.4}
+.note.blue{border-color:var(--blue);background:#eff6ff}
+.note.green{border-color:var(--green);background:#f0fdf4}
+.note.red{border-color:var(--red);background:#fef2f2}
+.taskbtn{display:block;width:100%;text-align:left;margin-bottom:7px;padding:9px 12px}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 12px;font-size:17px}
+.kv div:nth-child(odd){color:var(--ink2);font-weight:600}
+#bar{position:fixed;left:0;bottom:0;height:4px;background:var(--blue);transition:width .3s;z-index:5}
+#count{position:fixed;right:14px;bottom:10px;color:#cbd5e1;font-size:13px;z-index:5;font-family:Consolas,monospace}
+#help{position:fixed;left:14px;bottom:10px;color:#9ca3af;font-size:12px;z-index:5}
+.foot{position:absolute;left:60px;bottom:16px;font-size:12.5px;color:var(--muted)}
+input[type=range]{width:220px;vertical-align:middle}
+input[type=text]{font:inherit;font-size:16px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;width:260px;font-family:Consolas,monospace}
+.flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.box{border:2px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;font-size:17px;text-align:center;width:238px}
+.arrow{font-size:26px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- 1 ─────────────────────────────── TITLE -->
+<section class="slide" data-anim="plant" style="background:linear-gradient(180deg,#fbfaf7 0,#eef3fb 100%)">
+  <div class="kicker">Hands-on workshop · about 90 minutes</div>
+  <h1>From plant data to a trained model</h1>
+  <p class="sub">Machine learning and reinforcement learning, explained with one real research project: learning to control a wastewater treatment plant (the IWA BSM1 benchmark).</p>
+  <canvas id="cv-plant" width="1160" height="330"></canvas>
+  <div class="flow" style="margin-top:6px">
+    <span class="small">Air to tank 5 (KLa<sub>5</sub>):</span>
+    <input type="range" id="kla-slider" min="20" max="240" value="120">
+    <span class="mono small" id="kla-read"></span>
+    <span class="small" style="margin-left:18px">Move it: more air → more oxygen, more energy. Controlling this trade-off is what the project learns to do.</span>
+  </div>
+</section>
+
+<!-- 2 ─────────────────────────────── AGENDA -->
+<section class="slide">
+  <div class="kicker">Plan</div>
+  <h2>What we will do in 90 minutes</h2>
+  <p class="sub">Short slides, then you run the same step yourself. Every step points to the file in the repository that does it for real.</p>
+  <div class="cols">
+    <div class="col">
+      <table class="agenda">
+        <tr><td>0:00</td><td>The plant and the problem. What a <b>model</b> is.</td></tr>
+        <tr><td>0:10</td><td><b>Collect</b> and <b>clean</b> the data <span class="pill b">notebook 1</span></td></tr>
+        <tr><td>0:27</td><td><b>Prepare</b> it: transform, scale, windows, split <span class="pill b">notebook 1</span></td></tr>
+        <tr><td>0:40</td><td><b>Choose a model</b>: inputs and outputs decide. Inside a network, layer by layer. Counting parameters.</td></tr>
+        <tr><td>0:52</td><td><b>Train</b> it: loss, gradient descent, the training loop, overfitting <span class="pill b">notebook 2</span></td></tr>
+        <tr><td>1:12</td><td><b>Reinforcement learning</b> in brief: when there are no labels <span class="pill b">notebook 3</span></td></tr>
+        <tr><td>1:25</td><td>Lessons from the project, questions</td></tr>
+      </table>
+    </div>
+    <div class="col" style="flex:.8">
+      <div class="card">
+        <h3>Before we start</h3>
+        <p class="small" style="margin:0 0 8px">Open a terminal in the repository folder:</p>
+        <pre>pip install -r workshop/requirements.txt
+jupyter lab workshop/notebooks</pre>
+        <p class="small" style="margin:10px 0 0">Notebook 1 downloads three small files (≈150 kB each) the first time. No GPU needed; everything runs on a laptop CPU in seconds to a few minutes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 ─────────────────────────────── THE PROBLEM -->
+<section class="slide">
+  <div class="kicker">The problem</div>
+  <h2>What the project is about</h2>
+  <div class="cols" style="margin-top:14px">
+    <div class="col">
+      <ul>
+        <li><b>The plant:</b> BSM1, the standard test plant in this field. Five tanks and a settler. The bacteria remove pollution; they need oxygen.</li>
+        <li class="frag"><b>What we measure:</b> oxygen in tank 5 (S<sub>O,5</sub>), nitrate in tank 2 (S<sub>NO,2</sub>), what flows in (flow Q, ammonium, COD), every 15 min to 45 s.</li>
+        <li class="frag"><b>What we can change:</b> the air blown into tank 5 (KLa<sub>5</sub>, 0–240 per day) and the recycle pump (Q<sub>a</sub>).</li>
+        <li class="frag"><b>The goal:</b> hold oxygen at 2 mg/L and nitrate at 1 mg/L whatever arrives, without wasting energy.</li>
+        <li class="frag"><b>What we did:</b> rebuilt three published learning controllers, checked their claims, and trained forecasters, a digital twin, a warning model and RL agents.</li>
+      </ul>
+    </div>
+    <div class="col" style="flex:.85">
+      <div class="card frag">
+        <h3>Each part of the project is one ML task</h3>
+        <table>
+          <tr><th>Task</th><th>Kind</th><th>Folder</th></tr>
+          <tr><td>Forecast the inflow 2 h ahead</td><td><span class="pill b">supervised · regression</span></td><td><code>forecast/</code></td></tr>
+          <tr><td>Will ammonium break the limit?</td><td><span class="pill o">supervised · classification</span></td><td><code>warning/</code></td></tr>
+          <tr><td>Predict how the plant responds</td><td><span class="pill p">supervised · sequence model</span></td><td><code>twin/</code></td></tr>
+          <tr><td>Decide how much air to blow</td><td><span class="pill g">reinforcement learning</span></td><td><code>rl/</code>, <code>sacil/</code></td></tr>
+        </table>
+        <p class="small" style="margin:10px 0 0">Today we follow the first one end to end, then see how the others differ.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 ─────────────────────────────── WHAT IS A MODEL -->
+<section class="slide" data-anim="fit">
+  <div class="kicker">The core idea</div>
+  <h2>What is a model?</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.25">
+      <canvas id="cv-fit" width="660" height="440"></canvas>
+      <div class="btns"><button id="fit-play">▶ train</button><button id="fit-step">one step</button><button id="fit-reset">↺ reset</button></div>
+    </div>
+    <div class="col">
+      <div class="card" style="margin-bottom:12px">
+        <p style="margin:0" class="big">A model is a <b>function with knobs</b>:</p>
+        <p class="mono" style="font-size:26px;margin:8px 0;color:var(--blue)">ŷ = w · x + b</p>
+        <p class="small" style="margin:0">x: input (here inflow) · ŷ: prediction (ammonium load) · <b>w, b: parameters</b>, the knobs.</p>
+      </div>
+      <div class="kv card" id="fit-panel" style="margin-bottom:12px"></div>
+      <ul class="small" style="font-size:17px">
+        <li class="frag"><b>Loss</b>: one number for "how wrong": the mean squared length of the red lines.</li>
+        <li class="frag"><b>Training</b>: turn the knobs a little in the direction that lowers the loss (the gradient). Repeat.</li>
+        <li class="frag">A neural network is the same thing with <b>thousands</b> of knobs and a more flexible function.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 5 ─────────────────────────────── COLLECT -->
+<section class="slide" data-anim="collect">
+  <div class="kicker">Step 1 · collect</div>
+  <h2>Where the data comes from</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.45">
+      <canvas id="cv-collect" width="760" height="420"></canvas>
+    </div>
+    <div class="col">
+      <div class="card" style="padding:10px 12px">
+        <div class="small" style="font-weight:600;margin-bottom:4px">Rows arriving (one every 15 min)</div>
+        <table id="collect-table" class="mono" style="font-size:13px"><tr><th>day</th><th>Q [m³/d]</th><th>S<sub>NH</sub> [g/m³]</th></tr></table>
+      </div>
+      <ul class="small" style="font-size:15px;margin-top:8px">
+        <li>The IWA files: 14 days × 96 samples/day = <b>1345 rows</b>, 15 columns (time, 13 concentrations, flow).</li>
+        <li>Three weathers: dry, rain, storm. <b>Week 1 is the same dry week</b> in all three: a trap for splitting, as we'll see.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot">Animation: flow from the repository's influent generator (<code>bsm1/influent.py</code>). Notebook 1 loads the official files.</div>
+</section>
+
+<!-- 6 ─────────────────────────────── LOAD CODE -->
+<section class="slide">
+  <div class="kicker">Step 1 · collect · the code</div>
+  <h2>Load it once, record where it came from, cache it</h2>
+  <div class="cols" style="margin-top:12px">
+    <div class="col" style="flex:1.3">
+<pre><span class="c"># src/wwtp/official/plant.py</span>
+_SRC = <span class="s">"https://raw.githubusercontent.com/davidfernand/"</span>
+       <span class="s">"BSM1_in_Python/{rev}/code/Influent%20files/{name}"</span>
+<span class="h">_REV = <span class="s">"5dadb209a5a34ecb0e2f83a2e79c060bf3470582"</span>  <span class="c"># pinned commit</span></span>
+
+<span class="k">def</span> _official_table(weather):
+    npy = os.path.join(cache, weather + <span class="s">".npy"</span>)
+<span class="h">    <span class="k">if</span> os.path.exists(npy):  <span class="k">return</span> np.load(npy)   <span class="c"># cached</span></span>
+    urllib.request.urlretrieve(_SRC.format(...), xlsx)
+    ws = openpyxl.load_workbook(xlsx, read_only=<span class="k">True</span>).worksheets[0]
+<span class="h">    rows = [r[:15] <span class="k">for</span> r <span class="k">in</span> ws.iter_rows(values_only=<span class="k">True</span>)</span>
+<span class="h">            <span class="k">if</span> r <span class="k">and</span> isinstance(r[0], (int, float))]  <span class="c"># numbers only</span></span>
+    arr = np.array(rows, dtype=float)
+    np.save(npy, arr)
+    <span class="k">return</span> arr</pre>
+      <div class="file">src/wwtp/official/plant.py:30</div>
+    </div>
+    <div class="col">
+      <ul>
+        <li class="frag"><b>Pin the version.</b> A URL with a commit hash always returns the same bytes. "The data on the website" changes.</li>
+        <li class="frag"><b>Keep only real data rows.</b> Spreadsheets carry titles, units and notes. The filter keeps rows whose first cell is a number.</li>
+        <li class="frag"><b>Cache in a fast format.</b> Parsing xlsx is slow; <code>.npy</code> loads in milliseconds.</li>
+        <li class="frag"><b>Don't copy data you may not redistribute.</b> These files are GPL; the repository downloads them at run time.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 7 ─────────────────────────────── CLEAN -->
+<section class="slide" data-anim="clean">
+  <div class="kicker">Step 2 · clean</div>
+  <h2>Cleaning: look before you learn</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.1">
+      <table class="mono" id="clean-table" style="font-size:14px">
+        <tr data-r="hdr"><td>Time</td><td>S_I</td><td>S_S</td><td>…</td><td>S_NH</td><td>Q</td></tr>
+        <tr data-r="unit"><td>[d]</td><td>[g/m3]</td><td>[g/m3]</td><td>…</td><td>[g/m3]</td><td>[m3/d]</td></tr>
+        <tr><td>8.4271</td><td>30</td><td>51.2</td><td>…</td><td>28.9</td><td>24 515</td></tr>
+        <tr data-r="nan"><td>8.4375</td><td>30</td><td>#N/A</td><td>…</td><td>28.4</td><td>26 870</td></tr>
+        <tr data-r="dup"><td>8.4375</td><td>30</td><td>50.3</td><td>…</td><td>28.4</td><td>26 870</td></tr>
+        <tr data-r="spike"><td>8.4479</td><td>30</td><td>49.8</td><td>…</td><td>284.0</td><td>29 102</td></tr>
+        <tr data-r="si"><td>8.4583</td><td>30</td><td>48.1</td><td>…</td><td>27.1</td><td>41 335</td></tr>
+        <tr><td>8.4688</td><td>30</td><td>46.9</td><td>…</td><td>26.0</td><td>48 012</td></tr>
+      </table>
+      <p class="tiny" style="margin-top:6px">A made-up excerpt showing typical problems. The official files are tidy except for the S_I column; the dirty cases come up in notebook 1 on a deliberately damaged copy.</p>
+    </div>
+    <div class="col">
+      <ol style="padding-left:22px;margin:0">
+        <li class="frag" data-hl="hdr,unit"><b>Text rows</b> (titles, units): drop them, but write the units down.</li>
+        <li class="frag" data-hl="nan"><b>Missing values</b>: count them first. Short gaps → interpolate in time; long gaps → drop the window.</li>
+        <li class="frag" data-hl="dup"><b>Duplicate timestamps</b>: keep one. Then check the step is a constant 15 min.</li>
+        <li class="frag" data-hl="spike"><b>Spikes</b> (×10 here: a unit or typing error): flag against a rolling median, then fix or drop.</li>
+        <li class="frag" data-hl="si"><b>Physics check.</b> S_I stays at 30 while rain doubles the flow, so the rain should have diluted it. The official rain file has <code>S_I = 30·Q<sub>dry</sub>/Q</code>, and the project applies the same rule (<code>plant.py:89</code>).</li>
+        <li class="frag"><b>Missing columns</b> the model needs: TSS = 0.75·(X<sub>I</sub>+X<sub>S</sub>+X<sub>BH</sub>+X<sub>BA</sub>+X<sub>P</sub>) (<code>plant.py:90</code>).</li>
+      </ol>
+      <div class="note blue frag" style="margin-top:10px">Write every correction down (<code>docs/DATASET.md §3.3</code>). Someone must be able to rebuild your dataset from your notes.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 ─────────────────────────────── RESAMPLE -->
+<section class="slide" data-anim="zoh">
+  <div class="kicker">Step 2 · clean · time grid</div>
+  <h2>Put everything on one time grid</h2>
+  <p class="sub">Sensors sample every 15 min, but the controller acts every 45 s. Between samples the influent is held constant (a zero-order hold): 20 control steps per sample.</p>
+  <canvas id="cv-zoh" width="1160" height="360"></canvas>
+<pre style="margin-top:8px;font-size:14px"><span class="c"># src/wwtp/official/plant.py:144  official_series(): one row of the file for every 45-s step</span>
+t   = np.arange(n) * dt_seconds / 86400.0
+idx = np.minimum(np.searchsorted(d[:, 0], t, side=<span class="s">"right"</span>) - 1, len(d) - 1)   <span class="c"># last sample at or before t</span>
+flow = d[idx, 15]</pre>
+</section>
+
+<!-- 9 ─────────────────────────────── HANDS ON 1 -->
+<section class="slide handson">
+  <div class="kicker">Your turn · 12 minutes</div>
+  <h1>Notebook 1, parts A and B</h1>
+  <div class="cols" style="margin-top:20px">
+    <div class="col card">
+      <h3>A · Collect</h3>
+      <ul><li>Download the three official files (cached after the first time)</li><li>Open one raw with pandas: what is in the first rows?</li><li>Name the columns, check the shape, the types and the time step</li><li>Plot the three weathers. Is week 1 really the same in all three?</li></ul>
+    </div>
+    <div class="col card">
+      <h3>B · Clean</h3>
+      <ul><li>Run the checks: NaN, duplicates, negative values, ranges</li><li>Find and fix the problems in a damaged copy</li><li>Apply the S_I dilution fix and add TSS</li><li>Resample to 45 s with a zero-order hold</li></ul>
+    </div>
+  </div>
+  <p style="margin-top:22px"><code>workshop/notebooks/01_data_collect_clean_prepare.ipynb</code></p>
+</section>
+
+<!-- 10 ─────────────────────────────── TRANSFORM & SCALE -->
+<section class="slide" data-anim="scale">
+  <div class="kicker">Step 3 · prepare</div>
+  <h2>Transform and scale the inputs</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.35">
+      <canvas id="cv-scale" width="720" height="330"></canvas>
+      <div class="btns"><button data-s="0" class="on">raw flow</button><button data-s="1">log(flow)</button><button data-s="2">standardised</button></div>
+      <p class="small">Networks learn best when every input is on a similar scale near 0. Flow is ~20 000; ammonium ~30. Without scaling, flow dominates every weighted sum.</p>
+    </div>
+    <div class="col">
+      <ul style="font-size:17px">
+        <li><b>log</b> for quantities that only grow by factors (flows, loads): storms stop dominating.</li>
+        <li><b>standardise</b>: z = (x − mean) / std, per channel.</li>
+        <li class="frag"><b>Compute mean and std on the training data only</b>, then reuse those numbers for validation, test and deployment. Otherwise the test set leaks into training.</li>
+      </ul>
+<pre class="frag" style="font-size:13px"><span class="c"># src/wwtp/warning/dataset.py:224</span>
+<span class="k">class</span> Normaliser:
+    LOG = (0, 1, 2, 6)       <span class="c"># these get log</span>
+    <span class="k">def</span> fit(self, xs):       <span class="c"># TRAIN only</span>
+        z = self._pre(np.concatenate(xs))
+<span class="h">        self.mean = z.mean(0)</span>
+<span class="h">        self.std = z.std(0) + 1e-3</span>
+    <span class="k">def</span> __call__(self, x):   <span class="c"># everywhere</span>
+        <span class="k">return</span> (self._pre(x) - self.mean) / self.std</pre>
+      <p class="tiny frag">The mean and std are saved inside the model file (<code>forecast/train.py:85</code>): a model without its scaler is useless.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 11 ─────────────────────────────── WINDOWS -->
+<section class="slide" data-anim="window">
+  <div class="kicker">Step 3 · prepare</div>
+  <h2>Turn one long series into many (input, target) examples</h2>
+  <canvas id="cv-window" width="1160" height="380"></canvas>
+  <div class="cols" style="margin-top:6px">
+    <div class="col" style="flex:1.7">
+<pre style="font-size:13.5px"><span class="c"># src/wwtp/forecast/dataset.py:67   LOOKBACK = 96 (24 h), HORIZON = 8 (2 h)</span>
+<span class="k">def</span> _windows(obs, stride):
+    n = obs.shape[0] - LOOKBACK - HORIZON
+    starts = np.arange(0, n, stride)
+<span class="h">    xs = np.stack([obs[s:s+LOOKBACK]                  <span class="k">for</span> s <span class="k">in</span> starts])  <span class="c"># past</span></span>
+<span class="h">    ys = np.stack([obs[s+LOOKBACK:s+LOOKBACK+HORIZON] <span class="k">for</span> s <span class="k">in</span> starts])  <span class="c"># future</span></span>
+    <span class="k">return</span> xs, ys</pre>
+    </div>
+    <div class="col">
+      <p class="small" style="margin:0">The input window ends exactly where the target begins. The model only ever sees the past, as it will on the plant. One 14-day file gives ≈1 240 examples.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 12 ─────────────────────────────── SPLIT -->
+<section class="slide" data-anim="split">
+  <div class="kicker">Step 3 · prepare</div>
+  <h2>Split by time, not at random</h2>
+  <canvas id="cv-split" width="1160" height="300"></canvas>
+  <div class="btns"><button id="split-random">random split</button><button id="split-time" class="on">split by time</button></div>
+  <div class="cols">
+    <div class="col">
+      <ul style="font-size:17px">
+        <li>Neighbouring windows share 95 % of their samples. Split them at random and the test set holds near-copies of training examples, so the score looks far better than reality.</li>
+        <li>Train on the past, validate on later data, test on data that nothing was tuned on.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <ul style="font-size:17px">
+        <li>In this project:
+          <ul><li>paper 2: learn on week 1, test on week 2 (<code>rl/train.py</code>)</li>
+          <li>warning model: separate simulated plants for train, val and test (seeds 0, 1000, 2000 in <code>experiments/04</code>)</li>
+          <li>paper 1: a held-out test whose protocol was committed <b>before</b> it was run (<code>docs/PAPER1_HELDOUT_PROTOCOL.md</code>)</li></ul></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 13 ─────────────────────────────── HANDS ON 2 -->
+<section class="slide handson">
+  <div class="kicker">Your turn · 10 minutes</div>
+  <h1>Notebook 1, part C: prepare</h1>
+  <div class="cols" style="margin-top:20px">
+    <div class="col card">
+      <ul>
+        <li>Pick the inputs a real plant can measure at the inlet: flow, ammonium, COD (as <code>forecast/dataset.py</code>)</li>
+        <li>Split: train = dry (14 d) + rain week 2; validation = storm days 7–10.25 (storm 1); test = storm days 10.25–14 (storm 2)</li>
+        <li>log, then standardise with <b>training</b> statistics</li>
+        <li>Cut windows: 96 past steps → 8 future steps of flow</li>
+        <li>Check the shapes and that no window crosses a split</li>
+        <li>Save everything to <code>prepared.npz</code></li>
+      </ul>
+    </div>
+    <div class="col card">
+      <h3>Question to think about</h3>
+      <p>The training data has only one rain event and no storm. The test is a storm. What do you expect from the model, and from the baselines?</p>
+    </div>
+  </div>
+</section>
+
+<!-- 14 ─────────────────────────────── SHAPES DECIDE -->
+<section class="slide" data-anim="shapes">
+  <div class="kicker">Step 4 · choose a model</div>
+  <h2>The input and output decide the model</h2>
+  <div class="cols" style="margin-top:8px">
+    <div class="col" style="flex:.9">
+      <table style="font-size:15px">
+        <tr><th>If your input is…</th><th>start with…</th></tr>
+        <tr><td>a table, N × features</td><td>linear model, gradient-boosted trees, MLP</td></tr>
+        <tr><td>a sequence, N × time × channels</td><td>1-D CNN / TCN, GRU / LSTM, Transformer</td></tr>
+        <tr><td>an image, N × H × W × C</td><td>CNN</td></tr>
+        <tr><td>a decision with no correct answer, only a reward</td><td>reinforcement learning</td></tr>
+      </table>
+      <table style="font-size:15px;margin-top:12px">
+        <tr><th>If your output is…</th><th>last layer · loss</th></tr>
+        <tr><td>a number (or several)</td><td>linear · MSE / MAE</td></tr>
+        <tr><td>a class</td><td>softmax · cross-entropy</td></tr>
+        <tr><td>a yes/no probability</td><td>sigmoid · binary cross-entropy</td></tr>
+        <tr><td>a range (uncertainty)</td><td>quantiles · pinball loss</td></tr>
+        <tr><td>a bounded action</td><td>tanh · from a critic or a reward</td></tr>
+      </table>
+    </div>
+    <div class="col" style="flex:1.1">
+      <div class="small" style="margin-bottom:6px">Click a model from this repository:</div>
+      <div class="cols" style="gap:12px">
+        <div style="width:210px" id="shape-btns"></div>
+        <div class="col card" id="shape-card" style="padding:14px"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 ─────────────────────────────── INSIDE A NETWORK -->
+<section class="slide" data-anim="forward">
+  <div class="kicker">Step 4 · inside the model</div>
+  <h2>What happens inside a neural network, layer by layer</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.45">
+      <canvas id="cv-forward" width="660" height="470"></canvas>
+      <div class="btns"><button id="fw-play">▶ play</button><button id="fw-step">next step</button><button id="fw-reset">↺ reset</button><button id="fw-new">new input</button></div>
+    </div>
+    <div class="col">
+      <div class="card" style="min-height:220px">
+        <div class="small" style="font-weight:600">What the neuron is computing</div>
+        <div id="fw-panel" class="mono" style="font-size:15px;line-height:1.6;margin-top:6px"></div>
+      </div>
+      <ul style="font-size:16px;margin-top:10px">
+        <li>Each neuron: <b>weighted sum + bias</b>, then an <b>activation</b> (here ReLU: negatives become 0).</li>
+        <li>A whole layer at once: <span class="mono">h = ReLU(W·x + b)</span>. That's one matrix multiplication.</li>
+        <li>Line colour is the weight's sign (blue +, red −); thickness is its size. <b>Training only changes these numbers.</b></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 16 ─────────────────────────────── PARAMETERS -->
+<section class="slide" data-anim="params">
+  <div class="kicker">Step 4 · size of the model</div>
+  <h2>Counting parameters</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.3">
+      <div class="flow" style="margin-bottom:6px"><span class="small">Layer sizes:</span><input type="text" id="par-input" value="3,256,256,1"></div>
+      <div class="btns" id="par-presets"></div>
+      <canvas id="cv-params" width="700" height="290"></canvas>
+    </div>
+    <div class="col">
+      <table id="par-table" style="font-size:15px"></table>
+      <div class="flow" style="margin-top:12px"><span class="small">Training examples you have:</span><input type="text" id="par-n" value="1906" style="width:110px"></div>
+      <div id="par-verdict" class="note" style="margin-top:10px;font-size:16px"></div>
+      <p class="tiny">A dense layer from n inputs to m outputs has n·m weights + m biases. The ratio to examples is a rough guide, not a law: weight decay, early stopping and simple architectures let you go further.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 17 ─────────────────────────────── CONV -->
+<section class="slide" data-anim="conv">
+  <div class="kicker">Step 4 · models for sequences (1)</div>
+  <h2>A causal convolution: the same small filter slides along time</h2>
+  <canvas id="cv-conv" width="1160" height="370"></canvas>
+  <div class="cols">
+    <div class="col">
+      <ul style="font-size:17px">
+        <li>Each output looks at 3 inputs (kernel 3), only from the past: padding is added on the left (<code>F.pad(x, (pad, 0))</code>, <code>forecast/models.py:38</code>).</li>
+        <li>Dilation 1, 2, 4… makes each layer look twice as far back, so a few layers cover a whole day.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="note blue" style="font-size:16px">The repository's forecaster: kernel 3, dilations 1…32, two convolutions per block, so the receptive field is 1 + 2·2·(1+2+…+32) = <b>253 steps</b>, more than the 96-step input. Same weights at every time step: few parameters for a long input.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 18 ─────────────────────────────── GRU -->
+<section class="slide" data-anim="gru">
+  <div class="kicker">Step 4 · models for sequences (2)</div>
+  <h2>A recurrent network carries a memory through time</h2>
+  <canvas id="cv-gru" width="1160" height="360"></canvas>
+  <div class="cols">
+    <div class="col">
+      <ul style="font-size:17px">
+        <li>At every step the same cell reads the new input and the previous memory h, and writes a new h.</li>
+        <li>The digital twin (<code>twin/models.py</code>): input [oxygen, nitrate, air, recycle, inflow…], output the next oxygen and nitrate.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="note blue" style="font-size:16px">Why a GRU there: the plant has hidden state no sensor measures (how many bacteria, the sludge in the settler). The memory h can stand in for it. Training trick: <b>scheduled sampling</b>, where the model sometimes gets its own prediction as the next input, so it learns to roll out alone (<code>twin/train.py</code>).</div>
+    </div>
+  </div>
+</section>
+
+<!-- 19 ─────────────────────────────── LOSS -->
+<section class="slide" data-anim="loss">
+  <div class="kicker">Step 5 · train</div>
+  <h2>The loss says what "wrong" means</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.2">
+      <canvas id="cv-loss" width="640" height="400"></canvas>
+      <div class="btns" id="loss-btns"></div>
+    </div>
+    <div class="col">
+      <ul style="font-size:17px">
+        <li><b>MSE</b> (e²): punishes big errors hard; gives the mean.</li>
+        <li><b>MAE</b> (|e|): robust to outliers; gives the median.</li>
+        <li><b>Pinball</b> at τ: under-predicting costs τ, over-predicting 1−τ. At τ = 0.9 the best answer is the value exceeded only 10 % of the time. Three τ values give a band: the forecaster's 10/50/90 % range.</li>
+        <li><b>Cross-entropy</b> for classes; <b>binary cross-entropy</b> for "violation: yes or no".</li>
+      </ul>
+<pre style="font-size:13.5px"><span class="c"># src/wwtp/forecast/models.py:85</span>
+<span class="k">def</span> quantile_loss(pred, target, quantiles=(0.1, 0.5, 0.9)):
+    err = target.unsqueeze(-1) - pred
+<span class="h">    <span class="k">return</span> torch.maximum(taus*err, (taus-1)*err).mean()</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 20 ─────────────────────────────── GRADIENT DESCENT -->
+<section class="slide" data-anim="descent">
+  <div class="kicker">Step 5 · train</div>
+  <h2>Gradient descent: walk downhill on the loss</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.2">
+      <canvas id="cv-descent" width="660" height="420"></canvas>
+      <div class="btns"><button data-lr="0.02">learning rate 0.02</button><button data-lr="0.15" class="on">0.15</button><button data-lr="0.5">0.5</button><button id="gd-run">▶ run</button></div>
+    </div>
+    <div class="col">
+      <p class="mono" style="font-size:22px;color:var(--blue);margin:4px 0 10px">w ← w − lr · ∂loss/∂w</p>
+      <ul style="font-size:17px">
+        <li>Contours are the loss over two weights; the ball is the model.</li>
+        <li><b>Too small</b>: it barely moves. <b>Too large</b>: it overshoots and blows up. Try all three.</li>
+        <li><b>Backpropagation</b> computes ∂loss/∂w for every weight in one backward pass: <code>loss.backward()</code>.</li>
+        <li>In practice: <b>Adam/AdamW</b> (adaptive steps), a <b>learning-rate schedule</b> (OneCycle, cosine) and <b>gradient clipping</b>, as in every training file of the repo.</li>
+      </ul>
+      <div id="gd-panel" class="mono small"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 21 ─────────────────────────────── TRAINING LOOP -->
+<section class="slide" data-anim="loop">
+  <div class="kicker">Step 5 · train</div>
+  <h2>The training loop</h2>
+  <div class="cols">
+    <div class="col" style="flex:1">
+      <canvas id="cv-loop" width="520" height="430"></canvas>
+    </div>
+    <div class="col" style="flex:1.15">
+<pre style="font-size:13.5px"><span class="c"># src/wwtp/forecast/train.py:51 (shortened)</span>
+<span class="k">for</span> epoch <span class="k">in</span> range(epochs):
+    model.train()
+    <span class="k">for</span> xb, yb, rb <span class="k">in</span> train_loader:          <span class="c"># 1 a batch</span>
+<span class="h">        q, logits, _ = model(xb)                <span class="c"># 2 forward</span></span>
+<span class="h">        loss = quantile_loss(q, yb) + 0.2*CE(logits, rb)  <span class="c"># 3</span></span>
+        opt.zero_grad()
+<span class="h">        loss.backward()                         <span class="c"># 4 gradients</span></span>
+        clip_grad_norm_(model.parameters(), 1.0)
+<span class="h">        opt.step(); sched.step()                <span class="c"># 5 update</span></span>
+    model.eval()
+    <span class="k">with</span> torch.no_grad():                       <span class="c"># 6 validation</span>
+        ...
+<span class="c"># warning/train.py:80 keeps the best epoch on validation</span>
+<span class="k">if</span> v &lt; best: best_state = model.state_dict()</pre>
+      <canvas id="cv-curves" width="560" height="190" style="margin-top:8px"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- 22 ─────────────────────────────── EVALUATION -->
+<section class="slide" data-anim="baselines">
+  <div class="kicker">Step 6 · evaluate</div>
+  <h2>A model is only good compared with something simple</h2>
+  <div class="cols">
+    <div class="col">
+      <ul style="font-size:17px">
+        <li><b>Persistence</b>: "the next 2 h equal now". Free, and hard to beat at short horizons.</li>
+        <li><b>Seasonal naive</b>: "the same time yesterday". Strong when there is a daily cycle.</li>
+        <li><b>Linear model, gradient-boosted trees.</b> If a network can't beat these, it isn't earning its keep (<code>warning/baselines.py</code>).</li>
+        <li>Report errors in <b>physical units</b> (m³/d, mg/L), per horizon, on the test set, over several seeds.</li>
+      </ul>
+      <div class="note red frag" style="margin-top:10px;font-size:16px"><b>What happened in this project:</b> the published learning controller, rebuilt exactly, did nothing beyond its PID. And our own learned controller was matched by a carefully tuned PID with the daily ILC.</div>
+    </div>
+    <div class="col">
+      <canvas id="cv-base" width="560" height="380"></canvas>
+      <p class="tiny">Oxygen tracking error on the test week, change against paper 1's PID (README, mean of runs). Lower is better.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 23 ─────────────────────────────── HANDS ON 3 -->
+<section class="slide handson">
+  <div class="kicker">Your turn · 20 minutes</div>
+  <h1>Notebook 2: choose and train</h1>
+  <div class="cols" style="margin-top:18px">
+    <div class="col card">
+      <ul>
+        <li>Baselines first: persistence and same time yesterday</li>
+        <li>A linear model (scikit-learn): count its parameters</li>
+        <li>An MLP in PyTorch: print every layer's output shape for one batch</li>
+        <li>The training loop: train vs validation curves, keep the best epoch</li>
+        <li>A small causal CNN (the forecaster's building block)</li>
+        <li>Overfit on purpose, then fix it</li>
+        <li>Test once, save the model with its scaler, reload and predict</li>
+      </ul>
+    </div>
+    <div class="col card">
+      <h3>Fill in this table</h3>
+      <table style="color:#fff"><tr><th style="color:#bfdbfe">model</th><th style="color:#bfdbfe">params</th><th style="color:#bfdbfe">test MAE, 2 h</th></tr>
+      <tr><td>persistence</td><td>0</td><td>…</td></tr><tr><td>yesterday</td><td>0</td><td>…</td></tr><tr><td>linear</td><td>…</td><td>…</td></tr><tr><td>MLP</td><td>…</td><td>…</td></tr><tr><td>causal CNN</td><td>…</td><td>…</td></tr></table>
+    </div>
+  </div>
+  <p style="margin-top:14px"><code>workshop/notebooks/02_choose_and_train_a_model.ipynb</code></p>
+</section>
+
+<!-- 24 ─────────────────────────────── RL LOOP -->
+<section class="slide" data-anim="rl">
+  <div class="kicker">Reinforcement learning</div>
+  <h2>When there is no correct answer to copy</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.3">
+      <canvas id="cv-rl" width="640" height="440"></canvas>
+    </div>
+    <div class="col">
+      <table style="font-size:15.5px">
+        <tr><th></th><th>Supervised</th><th>Reinforcement</th></tr>
+        <tr><td>data</td><td>a fixed dataset</td><td>collected by acting</td></tr>
+        <tr><td>signal</td><td>the right answer y</td><td>a reward, often late</td></tr>
+        <tr><td>learns</td><td>x → y</td><td>state → action (policy)</td></tr>
+        <tr><td>risk</td><td>wrong predictions</td><td>wrong actions on a plant</td></tr>
+      </table>
+<pre style="font-size:13px;margin-top:10px"><span class="c"># src/wwtp/rl/rewards.py:39  paper 2, energy + ammonium</span>
+<span class="k">def</span> reward_ae_eq(info, b1=1.0, b2=0.42):
+<span class="h">    <span class="k">return</span> -(b1 * info[<span class="s">"aeration_fraction"</span>]</span>
+<span class="h">             + b2 * max(info[<span class="s">"S_NH"</span>] - 4.0, 0))</span></pre>
+      <p class="small">The reward is where you write down what you want. Paper 2's agent saved 9 % energy, but it also broke the ammonium limit far more often: it followed the reward exactly as written.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 25 ─────────────────────────────── RL PIECES -->
+<section class="slide">
+  <div class="kicker">Reinforcement learning</div>
+  <h2>The parts of an actor-critic agent (DDPG, SAC)</h2>
+  <div class="cols" style="margin-top:10px">
+    <div class="col">
+      <div class="kv card">
+        <div>Environment</div><div><code>reset()</code>, <code>step(action)</code> → next state, reward, done (<code>rl/env.py</code>)</div>
+        <div>Actor (policy)</div><div>network: state → action. DDPG: 3 → 256 → 256 → 1, tanh</div>
+        <div>Critic</div><div>network: (state, action) → expected future reward Q</div>
+        <div>Replay buffer</div><div>stores past (s, a, r, s′) and re-uses them in random batches</div>
+        <div>Target networks</div><div>slow copies that keep the learning target stable</div>
+        <div>Exploration</div><div>noise on the action, so it tries new things</div>
+      </div>
+    </div>
+    <div class="col">
+<pre style="font-size:13.5px"><span class="c"># src/wwtp/rl/ddpg.py:214  one update</span>
+o, a, r, o2, d = buffer.sample(256)
+<span class="k">with</span> torch.no_grad():                         <span class="c"># Bellman target</span>
+<span class="h">    y = r + gamma*(1-d)*critic_target(o2, actor_target(o2))</span>
+loss_c = ((critic(o, a) - y)**2).mean()       <span class="c"># critic: regression!</span>
+loss_c.backward(); opt_critic.step()
+
+<span class="h">loss_a = -critic(o, actor(o)).mean()          <span class="c"># actor: climb Q</span></span>
+loss_a.backward(); opt_actor.step()
+soft_update(actor, actor_target, tau=0.001)</pre>
+      <p class="small">The critic is trained exactly like a supervised regression, against a target it makes for itself. Same loop, same optimiser, same loss.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 26 ─────────────────────────────── SAC-IL -->
+<section class="slide">
+  <div class="kicker">Reinforcement learning · the project's controller</div>
+  <h2>Start from the expert, then improve, behind a safety gate</h2>
+  <div class="flow" style="margin:20px 0 22px;justify-content:center;flex-wrap:nowrap;gap:6px">
+    <div class="box frag" style="border-color:var(--orange)"><b>1 · Expert</b><br><span class="small">run the PID on dry week 1, record (state, action)</span></div><span class="arrow frag">→</span>
+    <div class="box frag" style="border-color:var(--blue)"><b>2 · Imitation</b><br><span class="small">behaviour cloning = <b>supervised</b>: copy the PID</span></div><span class="arrow frag">→</span>
+    <div class="box frag" style="border-color:var(--green)"><b>3 · SAC</b><br><span class="small">improve from reward, imitation term kept above a floor</span></div><span class="arrow frag">→</span>
+    <div class="box frag" style="border-color:var(--red)"><b>4 · Safety gate</b><br><span class="small">input outside training range → fall back to the PID</span></div>
+  </div>
+  <div class="cols">
+    <div class="col">
+<pre style="font-size:14px"><span class="c"># src/wwtp/sacil/sacil.py:279</span>
+<span class="k">def</span> pretrain_bc(self, steps=4000):
+    <span class="k">for</span> _ <span class="k">in</span> range(steps):
+        o, a, *_ = self.demo.sample(self.cfg.batch, self.rng)
+        mu, _ = self.actor(o)
+<span class="h">        loss = F.mse_loss(torch.tanh(mu), a)   <span class="c"># plain regression</span></span>
+        self.opt_a.zero_grad(); loss.backward(); self.opt_a.step()</pre>
+    </div>
+    <div class="col">
+      <ul style="font-size:17px">
+        <li>Learning from scratch on a plant means weeks of bad actions. Starting from the expert removes that.</li>
+        <li class="frag">Result: −74 to −87 % oxygen error against the paper's PID. But a PID tuned term by term with the ILC did as well, and on new sensors with noise every high-gain controller failed. That honest result is in the README.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 27 ─────────────────────────────── HANDS ON 4 -->
+<section class="slide handson">
+  <div class="kicker">Your turn · 12 minutes</div>
+  <h1>Notebook 3: reinforcement learning in brief</h1>
+  <div class="cols" style="margin-top:20px">
+    <div class="col card">
+      <ul>
+        <li>A one-tank aeration environment with <code>reset()</code> and <code>step()</code>, driven by the real daily load</li>
+        <li>The PID baseline</li>
+        <li>Imitation: copy the PID with a small network (supervised learning)</li>
+        <li>Q-learning from reward alone: watch the learning curve</li>
+        <li>Compare all three on a day never used for training</li>
+      </ul>
+    </div>
+    <div class="col card">
+      <h3>Question</h3>
+      <p>Change the energy weight in the reward. What does the agent do with the oxygen? Is it still doing what you wanted?</p>
+    </div>
+  </div>
+  <p style="margin-top:20px"><code>workshop/notebooks/03_reinforcement_learning_in_brief.ipynb</code></p>
+</section>
+
+<!-- 28 ─────────────────────────────── LESSONS -->
+<section class="slide">
+  <div class="kicker">Take home</div>
+  <h2>What this project teaches about doing ML research</h2>
+  <div class="cols" style="margin-top:14px">
+    <div class="col">
+      <ol style="padding-left:24px">
+        <li><b>Look at the data first.</b> Units, gaps, physics. The S_I column needed a fix nobody had written down.</li>
+        <li><b>The input and output shapes choose the model family</b>; the amount of data limits its size.</li>
+        <li><b>Split by time or by plant</b>, fit the scaler on training data only, never tune on the test.</li>
+        <li><b>Baselines first</b>: persistence, a linear model, a well-tuned PID.</li>
+      </ol>
+    </div>
+    <div class="col">
+      <ol start="5" style="padding-left:24px">
+        <li><b>Reproduce before you improve.</b> Two of three published methods did not work as printed.</li>
+        <li><b>Several seeds.</b> DDPG's energy saving ranged from 5.6 to 15.7 % between seeds.</li>
+        <li><b>Write the test down before you run it</b> (pre-registration), and report it whichever way it goes.</li>
+        <li><b>Save the model with everything it needs</b>: weights, scaler, settings, the commit.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="note green" style="margin-top:18px">Everything shown today is in the repository: <code>src/wwtp/</code> (library), <code>experiments/</code> (numbered scripts), <code>docs/REPORT.md</code> (every result), <code>workshop/</code> (these slides and the notebooks).</div>
+  <h2 style="margin-top:22px;text-align:center">Questions?</h2>
+</section>
+
+</div>
+<div id="bar"></div><div id="count"></div><div id="help">← → or space · R replays the animation · F full screen</div>
+<script src="data.js"></script>
+<script src="deck.js"></script>
+</body>
+</html>

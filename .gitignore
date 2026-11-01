@@ -18,3 +18,6 @@ results/*
 # training logs
 logs_*/
 !results/paper1_*.json
+
+# workshop: downloaded and generated data
+/workshop/data/
