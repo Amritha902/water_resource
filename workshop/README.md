@@ -7,6 +7,7 @@ workshop/
   slides/index.html      animated, interactive slide deck (open in a browser; no internet needed)
   slides/content.js      notebook cells with real outputs and code tours (generated)
   tools/build_slide_content.py  regenerates content.js and slides/img/ from the notebooks and src/
+  tools/make_bundle.py   builds dist/water_resource_workshop_bundle_<commit>.zip: everything, offline
   notebooks/
     01_data_collect_clean_prepare.ipynb   collect, clean, prepare (≈ 5 s to run)
     02_choose_and_train_a_model.ipynb     baselines, linear, MLP, causal CNN, overfitting, save/reload (≈ 30 s)

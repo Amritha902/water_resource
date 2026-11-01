@@ -21,3 +21,4 @@ logs_*/
 
 # workshop: downloaded and generated data
 /workshop/data/
+/dist/
