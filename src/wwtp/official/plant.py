@@ -55,7 +55,13 @@ def _official_table(weather: str) -> np.ndarray:
 BSM2_FLOW_SCALE_TO = "dry"
 
 
-def bsm2_window(start_day: float, days: float = 14.0) -> np.ndarray:
+#: particulate columns (X_I, X_S, X_B,H, X_B,A, X_P, X_ND, TSS) and the share a
+#: primary clarifier is taken to remove from them (a fixed simplification)
+_PARTICULATE = [3, 4, 5, 6, 7, 12, 14]
+PRIMARY_REMOVAL = 0.5
+
+
+def bsm2_window(start_day: float, days: float = 14.0, clarified: bool = False) -> np.ndarray:
     d = np.loadtxt(os.path.join(DATA, "dyninfluent_bsm2.csv"), delimiter=",")
     scale = _official_table(BSM2_FLOW_SCALE_TO)[:, 14].mean() / d[:, 15].mean()
     m = (d[:, 0] >= start_day - 1e-9) & (d[:, 0] <= start_day + days + 1e-9)
@@ -63,6 +69,10 @@ def bsm2_window(start_day: float, days: float = 14.0) -> np.ndarray:
     w[:, 0] -= start_day
     w[:, 15] *= scale
     w[:, 16] = 15.0
+    if clarified:
+        # the BSM2 influent is raw sewage that passes a primary clarifier before the
+        # activated sludge; without it, it overloads BSM1's aeration
+        w[:, _PARTICULATE] *= 1.0 - PRIMARY_REMOVAL
     return w
 
 
@@ -70,7 +80,8 @@ def load_influent(weather: str) -> np.ndarray:
     """Official influent as a (1345, 22) array: 14 days at 15 min.
 
     ``"bsm2:<start day>"`` gives a 14-day window of the BSM2 influent instead
-    (``bsm2_window``), used only for the held-out test.
+    (``bsm2_window``), used only for the held-out tests; ``"bsm2c:<start day>"``
+    the same after a simple primary clarifier.
 
     Columns as ``bsm2-python`` expects: t, 13 ASM1 components, TSS, Q, T and
     five dummy states.  One correction: the spreadsheets keep the inert
@@ -81,6 +92,8 @@ def load_influent(weather: str) -> np.ndarray:
     """
     if weather.startswith("bsm2:"):
         return bsm2_window(float(weather.split(":")[1]))
+    if weather.startswith("bsm2c:"):
+        return bsm2_window(float(weather.split(":")[1]), clarified=True)
     d = _official_table(weather)
     dry = _official_table("dry")
     out = np.zeros((len(d), 22))

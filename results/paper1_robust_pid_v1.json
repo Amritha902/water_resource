@@ -1,0 +1,265 @@
+{
+ "train": "dry weather, days 0-7, official sensors (noise seeds 100, 101) and ideal sensors",
+ "rule": "no failure; ideal-sensor oxygen IAE <= 2x tuned PID + ILC; lowest mean score with sensors",
+ "reference_ideal": {
+  "tau": 0.0,
+  "g": 1.0,
+  "sensors": null,
+  "IAE_SO5": 0.0011503826641924937,
+  "IAE_SNO2": 0.0017126666163904463,
+  "DEVmax_SO5": 0.013299594555699512,
+  "KLa_move_per_day": 849.3468178863376,
+  "fail": false
+ },
+ "grid": [
+  {
+   "tau": 0.0,
+   "g": 0.25,
+   "admissible": false,
+   "score_sensors": 178.17081151254112,
+   "IAE_SO5_sensors": 0.2506495737291642,
+   "IAE_SNO2_sensors": 0.23101683616050014,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0035258808510126335,
+   "IAE_SNO2_ideal": 0.011505492958574172
+  },
+  {
+   "tau": 0.0,
+   "g": 0.5,
+   "admissible": true,
+   "score_sensors": 172.4059244096567,
+   "IAE_SO5_sensors": 0.3071836852057894,
+   "IAE_SNO2_sensors": 0.19122000621641871,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0018228856794515653,
+   "IAE_SNO2_ideal": 0.004040287139745391
+  },
+  {
+   "tau": 0.0,
+   "g": 0.75,
+   "admissible": true,
+   "score_sensors": 186.85311051855308,
+   "IAE_SO5_sensors": 0.3492435912236198,
+   "IAE_SNO2_sensors": 0.19908442542529625,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0013660579516669347,
+   "IAE_SNO2_ideal": 0.0025682340667488547
+  },
+  {
+   "tau": 0.0,
+   "g": 1.0,
+   "admissible": false,
+   "score_sensors": null,
+   "IAE_SO5_sensors": 0.41185171191998504,
+   "IAE_SNO2_sensors": 0.22691546879004043,
+   "failures": 1,
+   "IAE_SO5_ideal": 0.0011503826641924937,
+   "IAE_SNO2_ideal": 0.0017126666163904463
+  },
+  {
+   "tau": 1.5,
+   "g": 0.25,
+   "admissible": false,
+   "score_sensors": 278.0145393518353,
+   "IAE_SO5_sensors": 0.171570800737756,
+   "IAE_SNO2_sensors": 0.4702436783347925,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.017576773379494197,
+   "IAE_SNO2_ideal": 0.11895817170284172
+  },
+  {
+   "tau": 1.5,
+   "g": 0.5,
+   "admissible": false,
+   "score_sensors": 248.94563869897394,
+   "IAE_SO5_sensors": 0.2581147017018417,
+   "IAE_SNO2_sensors": 0.36883392654702707,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.010186546354428866,
+   "IAE_SNO2_ideal": 0.0771029457804061
+  },
+  {
+   "tau": 1.5,
+   "g": 0.75,
+   "admissible": false,
+   "score_sensors": 224.79793761519068,
+   "IAE_SO5_sensors": 0.3112731285388185,
+   "IAE_SNO2_sensors": 0.29395931096097216,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.008681245671725492,
+   "IAE_SNO2_ideal": 0.062284884848402895
+  },
+  {
+   "tau": 1.5,
+   "g": 1.0,
+   "admissible": false,
+   "score_sensors": 207.22078202266158,
+   "IAE_SO5_sensors": 0.32475151730939533,
+   "IAE_SNO2_sensors": 0.2520658053906255,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.007076185904892524,
+   "IAE_SNO2_ideal": 0.054727870496768624
+  },
+  {
+   "tau": 3.0,
+   "g": 0.25,
+   "admissible": false,
+   "score_sensors": 409.87102162450714,
+   "IAE_SO5_sensors": 0.36173536059543854,
+   "IAE_SNO2_sensors": 0.6388743629512951,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.2846997361332145,
+   "IAE_SNO2_ideal": 0.228120087773446
+  },
+  {
+   "tau": 3.0,
+   "g": 0.5,
+   "admissible": false,
+   "score_sensors": 372.4528320573704,
+   "IAE_SO5_sensors": 0.35872698662535907,
+   "IAE_SNO2_sensors": 0.5655421708020614,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.34096202755711136,
+   "IAE_SNO2_ideal": 0.1673195712966275
+  },
+  {
+   "tau": 3.0,
+   "g": 0.75,
+   "admissible": false,
+   "score_sensors": 343.3257024028756,
+   "IAE_SO5_sensors": 0.34768557873371253,
+   "IAE_SNO2_sensors": 0.5128086154388949,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.3193646172569785,
+   "IAE_SNO2_ideal": 0.13964356128563427
+  },
+  {
+   "tau": 3.0,
+   "g": 1.0,
+   "admissible": false,
+   "score_sensors": 318.38182029870717,
+   "IAE_SO5_sensors": 0.35383199794923925,
+   "IAE_SNO2_sensors": 0.45984764162279473,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.29042744044440744,
+   "IAE_SNO2_ideal": 0.12398071420288963
+  },
+  {
+   "tau": 6.0,
+   "g": 0.25,
+   "admissible": false,
+   "score_sensors": null,
+   "IAE_SO5_sensors": 0.5796550475270402,
+   "IAE_SNO2_sensors": 0.8546434377110698,
+   "failures": 2,
+   "IAE_SO5_ideal": 0.5247567630055321,
+   "IAE_SNO2_ideal": 0.38664692897518926
+  },
+  {
+   "tau": 6.0,
+   "g": 0.5,
+   "admissible": false,
+   "score_sensors": null,
+   "IAE_SO5_sensors": 0.4907638343258715,
+   "IAE_SNO2_sensors": 0.7785837786440024,
+   "failures": 2,
+   "IAE_SO5_ideal": 0.5524450786565809,
+   "IAE_SNO2_ideal": 0.32830690997348894
+  },
+  {
+   "tau": 6.0,
+   "g": 0.75,
+   "admissible": false,
+   "score_sensors": 498.81218000634374,
+   "IAE_SO5_sensors": 0.5185379558069725,
+   "IAE_SNO2_sensors": 0.7383553821092013,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.5089535101598912,
+   "IAE_SNO2_ideal": 0.2802556460161459
+  },
+  {
+   "tau": 6.0,
+   "g": 1.0,
+   "admissible": false,
+   "score_sensors": 482.179853401237,
+   "IAE_SO5_sensors": 0.48330682125241087,
+   "IAE_SNO2_sensors": 0.7227062961762686,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.47465594243061465,
+   "IAE_SNO2_ideal": 0.2505984625258406
+  },
+  {
+   "tau": 12.0,
+   "g": 0.25,
+   "admissible": false,
+   "score_sensors": null,
+   "IAE_SO5_sensors": 0.5346713084498632,
+   "IAE_SNO2_sensors": 0.8403604829871254,
+   "failures": 2,
+   "IAE_SO5_ideal": 0.28379154795050293,
+   "IAE_SNO2_ideal": 0.5701517084374964
+  },
+  {
+   "tau": 12.0,
+   "g": 0.5,
+   "admissible": false,
+   "score_sensors": null,
+   "IAE_SO5_sensors": 0.5597160654767441,
+   "IAE_SNO2_sensors": 0.6233823080003567,
+   "failures": 2,
+   "IAE_SO5_ideal": 0.3362160231644375,
+   "IAE_SNO2_ideal": 0.35251776656830697
+  },
+  {
+   "tau": 12.0,
+   "g": 0.75,
+   "admissible": false,
+   "score_sensors": null,
+   "IAE_SO5_sensors": 0.6387831309201092,
+   "IAE_SNO2_sensors": 0.6508736923407761,
+   "failures": 2,
+   "IAE_SO5_ideal": 0.5139992883257657,
+   "IAE_SNO2_ideal": 0.451271773660296
+  },
+  {
+   "tau": 12.0,
+   "g": 1.0,
+   "admissible": false,
+   "score_sensors": null,
+   "IAE_SO5_sensors": 0.605890131414415,
+   "IAE_SNO2_sensors": 0.8036364132604223,
+   "failures": 2,
+   "IAE_SO5_ideal": 0.44328901497407946,
+   "IAE_SNO2_ideal": 0.34044187995612313
+  }
+ ],
+ "tau": 0.0,
+ "g": 0.5,
+ "terms": [
+  [
+   1.0,
+   1.5
+  ],
+  [
+   4.0,
+   1.5
+  ],
+  [
+   1.0,
+   1.5
+  ]
+ ],
+ "ilc": {
+  "beta": [
+   1.0,
+   0.0
+  ],
+  "lead": [
+   4,
+   0
+  ],
+  "smooth": 30,
+  "bumpless": true,
+  "antiwindup": true
+ }
+}

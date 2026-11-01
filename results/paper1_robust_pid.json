@@ -1,0 +1,723 @@
+{
+ "train": "dry weather, days 0-7, official sensors (noise seeds 100, 101) and ideal sensors",
+ "rule": "no failure; ideal-sensor oxygen IAE <= 2x tuned PID + ILC; lowest mean score with sensors",
+ "reference_ideal": {
+  "tau": 0.0,
+  "g": [
+   1.0,
+   1.0
+  ],
+  "sensors": null,
+  "IAE_SO5": 0.0011503826641924937,
+  "IAE_SNO2": 0.0017126666163904463,
+  "DEVmax_SO5": 0.013299594555699512,
+  "KLa_move_per_day": 849.3468178863376,
+  "fail": false
+ },
+ "grid": [
+  {
+   "tau": 0.0,
+   "g": [
+    0.125,
+    0.25
+   ],
+   "admissible": false,
+   "score_sensors": 175.6434159350254,
+   "IAE_SO5_sensors": 0.24127695164857796,
+   "IAE_SNO2_sensors": 0.2306483560457618,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.006888320358361543,
+   "IAE_SNO2_ideal": 0.011471898990950646
+  },
+  {
+   "tau": 0.0,
+   "g": [
+    0.125,
+    0.5
+   ],
+   "admissible": false,
+   "score_sensors": 159.35955903050035,
+   "IAE_SO5_sensors": 0.25420192176564427,
+   "IAE_SNO2_sensors": 0.19161815717817854,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.006128902543853284,
+   "IAE_SNO2_ideal": 0.004039814526809316
+  },
+  {
+   "tau": 0.0,
+   "g": [
+    0.125,
+    1.0
+   ],
+   "admissible": false,
+   "score_sensors": 171.07189707976445,
+   "IAE_SO5_sensors": 0.2664176061420856,
+   "IAE_SNO2_sensors": 0.20893499108848612,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.005836828003215794,
+   "IAE_SNO2_ideal": 0.001712897883854387
+  },
+  {
+   "tau": 0.0,
+   "g": [
+    0.25,
+    0.25
+   ],
+   "admissible": false,
+   "score_sensors": 178.17081151254112,
+   "IAE_SO5_sensors": 0.2506495737291642,
+   "IAE_SNO2_sensors": 0.23101683616050014,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0035258808510126335,
+   "IAE_SNO2_ideal": 0.011505492958574172
+  },
+  {
+   "tau": 0.0,
+   "g": [
+    0.25,
+    0.5
+   ],
+   "admissible": false,
+   "score_sensors": 163.49498183199188,
+   "IAE_SO5_sensors": 0.27093783630528645,
+   "IAE_SNO2_sensors": 0.19152104551134053,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0033522535840579326,
+   "IAE_SNO2_ideal": 0.00403988710796587
+  },
+  {
+   "tau": 0.0,
+   "g": [
+    0.25,
+    1.0
+   ],
+   "admissible": false,
+   "score_sensors": 175.8964067474766,
+   "IAE_SO5_sensors": 0.2849867638336256,
+   "IAE_SNO2_sensors": 0.20929943157814035,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0032165101193678803,
+   "IAE_SNO2_ideal": 0.0017124341651466727
+  },
+  {
+   "tau": 0.0,
+   "g": [
+    0.5,
+    0.25
+   ],
+   "admissible": true,
+   "score_sensors": 186.74410812750267,
+   "IAE_SO5_sensors": 0.2857472219639381,
+   "IAE_SNO2_sensors": 0.2306146052730363,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0018838751854710404,
+   "IAE_SNO2_ideal": 0.01152402178246827
+  },
+  {
+   "tau": 0.0,
+   "g": [
+    0.5,
+    0.5
+   ],
+   "admissible": true,
+   "score_sensors": 172.4059244096567,
+   "IAE_SO5_sensors": 0.3071836852057894,
+   "IAE_SNO2_sensors": 0.19122000621641871,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0018228856794515653,
+   "IAE_SNO2_ideal": 0.004040287139745391
+  },
+  {
+   "tau": 0.0,
+   "g": [
+    0.5,
+    1.0
+   ],
+   "admissible": true,
+   "score_sensors": 185.37226685771657,
+   "IAE_SO5_sensors": 0.3211823837144741,
+   "IAE_SNO2_sensors": 0.21015334185819606,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0018020386872524624,
+   "IAE_SNO2_ideal": 0.001712600775469109
+  },
+  {
+   "tau": 0.0,
+   "g": [
+    1.0,
+    0.25
+   ],
+   "admissible": true,
+   "score_sensors": 202.36606009219472,
+   "IAE_SO5_sensors": 0.3503036537545994,
+   "IAE_SNO2_sensors": 0.22958029330708973,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0011729976543377804,
+   "IAE_SNO2_ideal": 0.011531250244363201
+  },
+  {
+   "tau": 0.0,
+   "g": [
+    1.0,
+    0.5
+   ],
+   "admissible": false,
+   "score_sensors": null,
+   "IAE_SO5_sensors": 0.39598662285108066,
+   "IAE_SNO2_sensors": 0.20264002553544197,
+   "failures": 1,
+   "IAE_SO5_ideal": 0.0011539370328897671,
+   "IAE_SNO2_ideal": 0.004040869770231177
+  },
+  {
+   "tau": 0.0,
+   "g": [
+    1.0,
+    1.0
+   ],
+   "admissible": false,
+   "score_sensors": null,
+   "IAE_SO5_sensors": 0.41185171191998504,
+   "IAE_SNO2_sensors": 0.22691546879004043,
+   "failures": 1,
+   "IAE_SO5_ideal": 0.0011503826641924937,
+   "IAE_SNO2_ideal": 0.0017126666163904463
+  },
+  {
+   "tau": 0.75,
+   "g": [
+    0.125,
+    0.25
+   ],
+   "admissible": false,
+   "score_sensors": 176.72611630124732,
+   "IAE_SO5_sensors": 0.24561343118776724,
+   "IAE_SNO2_sensors": 0.23064551700861105,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.007323262927236478,
+   "IAE_SNO2_ideal": 0.011458906403306603
+  },
+  {
+   "tau": 0.75,
+   "g": [
+    0.125,
+    0.5
+   ],
+   "admissible": false,
+   "score_sensors": 160.238280099685,
+   "IAE_SO5_sensors": 0.257610085347853,
+   "IAE_SNO2_sensors": 0.19167151752544348,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0063768882556498015,
+   "IAE_SNO2_ideal": 0.004039398408780517
+  },
+  {
+   "tau": 0.75,
+   "g": [
+    0.125,
+    1.0
+   ],
+   "admissible": false,
+   "score_sensors": 171.68009961124645,
+   "IAE_SO5_sensors": 0.26925230377474946,
+   "IAE_SNO2_sensors": 0.2087340473351182,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.006021972376401587,
+   "IAE_SNO2_ideal": 0.0017129687423206319
+  },
+  {
+   "tau": 0.75,
+   "g": [
+    0.25,
+    0.25
+   ],
+   "admissible": false,
+   "score_sensors": 178.55130514927356,
+   "IAE_SO5_sensors": 0.25185318280085245,
+   "IAE_SNO2_sensors": 0.23117601889812095,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0037429532435987486,
+   "IAE_SNO2_ideal": 0.011503574141040477
+  },
+  {
+   "tau": 0.75,
+   "g": [
+    0.25,
+    0.5
+   ],
+   "admissible": false,
+   "score_sensors": 163.82601257130037,
+   "IAE_SO5_sensors": 0.272000899408863,
+   "IAE_SNO2_sensors": 0.19165157543816924,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.003665764239403784,
+   "IAE_SNO2_ideal": 0.004039470997559806
+  },
+  {
+   "tau": 0.75,
+   "g": [
+    0.25,
+    1.0
+   ],
+   "admissible": false,
+   "score_sensors": 175.93776656056934,
+   "IAE_SO5_sensors": 0.2860467875584906,
+   "IAE_SNO2_sensors": 0.20885213934189342,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.003483843463463595,
+   "IAE_SNO2_ideal": 0.0017122189144524757
+  },
+  {
+   "tau": 0.75,
+   "g": [
+    0.5,
+    0.25
+   ],
+   "admissible": true,
+   "score_sensors": 185.55467012554038,
+   "IAE_SO5_sensors": 0.27946069247632793,
+   "IAE_SNO2_sensors": 0.23137899401291684,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0020502335664450296,
+   "IAE_SNO2_ideal": 0.011523772499696144
+  },
+  {
+   "tau": 0.75,
+   "g": [
+    0.5,
+    0.5
+   ],
+   "admissible": true,
+   "score_sensors": 170.8292402391773,
+   "IAE_SO5_sensors": 0.3002192775286223,
+   "IAE_SNO2_sensors": 0.19154884171404346,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0020007872331964036,
+   "IAE_SNO2_ideal": 0.004040135468739595
+  },
+  {
+   "tau": 0.75,
+   "g": [
+    0.5,
+    1.0
+   ],
+   "admissible": true,
+   "score_sensors": 183.22563023235682,
+   "IAE_SO5_sensors": 0.3146227701460245,
+   "IAE_SNO2_sensors": 0.2091398753917014,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0020413850885965625,
+   "IAE_SNO2_ideal": 0.0017125569159038333
+  },
+  {
+   "tau": 0.75,
+   "g": [
+    1.0,
+    0.25
+   ],
+   "admissible": true,
+   "score_sensors": 192.25121640483252,
+   "IAE_SO5_sensors": 0.30654970554354993,
+   "IAE_SNO2_sensors": 0.23122758003789004,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0013226742876711302,
+   "IAE_SNO2_ideal": 0.011531411553280599
+  },
+  {
+   "tau": 0.75,
+   "g": [
+    1.0,
+    0.5
+   ],
+   "admissible": true,
+   "score_sensors": 177.48029776272944,
+   "IAE_SO5_sensors": 0.32735779849550195,
+   "IAE_SNO2_sensors": 0.19128169627770789,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0013053192995509312,
+   "IAE_SNO2_ideal": 0.00404078592461582
+  },
+  {
+   "tau": 0.75,
+   "g": [
+    1.0,
+    1.0
+   ],
+   "admissible": true,
+   "score_sensors": 190.18011046878746,
+   "IAE_SO5_sensors": 0.34129899470323954,
+   "IAE_SNO2_sensors": 0.2097107235859552,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0013293534087093302,
+   "IAE_SNO2_ideal": 0.0017126055874841341
+  },
+  {
+   "tau": 1.5,
+   "g": [
+    0.125,
+    0.25
+   ],
+   "admissible": false,
+   "score_sensors": 181.9532620588078,
+   "IAE_SO5_sensors": 0.26629941499194265,
+   "IAE_SNO2_sensors": 0.2307568166216443,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.008709030472558799,
+   "IAE_SNO2_ideal": 0.01143118738564515
+  },
+  {
+   "tau": 1.5,
+   "g": [
+    0.125,
+    0.5
+   ],
+   "admissible": false,
+   "score_sensors": 164.70794454912826,
+   "IAE_SO5_sensors": 0.2755169069629698,
+   "IAE_SNO2_sensors": 0.19165743561677157,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.007010190061678889,
+   "IAE_SNO2_ideal": 0.004038609433801013
+  },
+  {
+   "tau": 1.5,
+   "g": [
+    0.125,
+    1.0
+   ],
+   "admissible": false,
+   "score_sensors": 175.7002053947736,
+   "IAE_SO5_sensors": 0.2854476166386046,
+   "IAE_SNO2_sensors": 0.20867660247024494,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0062662418928910585,
+   "IAE_SNO2_ideal": 0.0017131496468437003
+  },
+  {
+   "tau": 1.5,
+   "g": [
+    0.25,
+    0.25
+   ],
+   "admissible": false,
+   "score_sensors": 188.12441904847964,
+   "IAE_SO5_sensors": 0.29046278711782514,
+   "IAE_SNO2_sensors": 0.2310174445380467,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.004759798255652791,
+   "IAE_SNO2_ideal": 0.011499664556677272
+  },
+  {
+   "tau": 1.5,
+   "g": [
+    0.25,
+    0.5
+   ],
+   "admissible": false,
+   "score_sensors": 172.8846842292425,
+   "IAE_SO5_sensors": 0.30835633349110825,
+   "IAE_SNO2_sensors": 0.19159120171293093,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.00531036324157728,
+   "IAE_SNO2_ideal": 0.004040123067330331
+  },
+  {
+   "tau": 1.5,
+   "g": [
+    0.25,
+    1.0
+   ],
+   "admissible": false,
+   "score_sensors": 184.39765197163706,
+   "IAE_SO5_sensors": 0.32011750880074663,
+   "IAE_SNO2_sensors": 0.20873654954290086,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.004599508721387361,
+   "IAE_SNO2_ideal": 0.0017110049337660106
+  },
+  {
+   "tau": 1.5,
+   "g": [
+    0.5,
+    0.25
+   ],
+   "admissible": false,
+   "score_sensors": 197.8526337091584,
+   "IAE_SO5_sensors": 0.3284087220310846,
+   "IAE_SNO2_sensors": 0.23150090640277454,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0027144611792222673,
+   "IAE_SNO2_ideal": 0.011524082788429655
+  },
+  {
+   "tau": 1.5,
+   "g": [
+    0.5,
+    0.5
+   ],
+   "admissible": false,
+   "score_sensors": 182.85669164812555,
+   "IAE_SO5_sensors": 0.34833794999698864,
+   "IAE_SNO2_sensors": 0.19154440829775682,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.003023727016163378,
+   "IAE_SNO2_ideal": 0.004039622289859048
+  },
+  {
+   "tau": 1.5,
+   "g": [
+    0.5,
+    1.0
+   ],
+   "admissible": false,
+   "score_sensors": 195.12218744733906,
+   "IAE_SO5_sensors": 0.36260928344956533,
+   "IAE_SNO2_sensors": 0.20893973316989548,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0028950735823632607,
+   "IAE_SNO2_ideal": 0.0017126553020042358
+  },
+  {
+   "tau": 1.5,
+   "g": [
+    1.0,
+    0.25
+   ],
+   "admissible": false,
+   "score_sensors": 199.17856913038062,
+   "IAE_SO5_sensors": 0.33385003490445525,
+   "IAE_SNO2_sensors": 0.2314321208085336,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0033222663227926515,
+   "IAE_SNO2_ideal": 0.011531719340640458
+  },
+  {
+   "tau": 1.5,
+   "g": [
+    1.0,
+    0.5
+   ],
+   "admissible": false,
+   "score_sensors": 184.20182682241722,
+   "IAE_SO5_sensors": 0.3538749380381684,
+   "IAE_SNO2_sensors": 0.19146618462575027,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.002881741639124374,
+   "IAE_SNO2_ideal": 0.004040785222486105
+  },
+  {
+   "tau": 1.5,
+   "g": [
+    1.0,
+    1.0
+   ],
+   "admissible": false,
+   "score_sensors": 196.5810133226624,
+   "IAE_SO5_sensors": 0.3679566939977471,
+   "IAE_SNO2_sensors": 0.20918367964645124,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.0026784466167412346,
+   "IAE_SNO2_ideal": 0.00171251161219823
+  },
+  {
+   "tau": 3.0,
+   "g": [
+    0.125,
+    0.25
+   ],
+   "admissible": false,
+   "score_sensors": 217.36545426489945,
+   "IAE_SO5_sensors": 0.4085184211107441,
+   "IAE_SNO2_sensors": 0.2304716979744269,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.09477417763422037,
+   "IAE_SNO2_ideal": 0.011518911270485653
+  },
+  {
+   "tau": 3.0,
+   "g": [
+    0.125,
+    0.5
+   ],
+   "admissible": false,
+   "score_sensors": 195.53140950577097,
+   "IAE_SO5_sensors": 0.39964185973749755,
+   "IAE_SNO2_sensors": 0.19124188914279316,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.08130361927201821,
+   "IAE_SNO2_ideal": 0.004070078128030261
+  },
+  {
+   "tau": 3.0,
+   "g": [
+    0.125,
+    1.0
+   ],
+   "admissible": false,
+   "score_sensors": 205.26267308540815,
+   "IAE_SO5_sensors": 0.40366856363663195,
+   "IAE_SNO2_sensors": 0.2086910643525003,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.07224767488209383,
+   "IAE_SNO2_ideal": 0.0017166613314774542
+  },
+  {
+   "tau": 3.0,
+   "g": [
+    0.25,
+    0.25
+   ],
+   "admissible": false,
+   "score_sensors": 248.4099872486385,
+   "IAE_SO5_sensors": 0.5326614065358131,
+   "IAE_SNO2_sensors": 0.23048927122937046,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.20253166305582948,
+   "IAE_SNO2_ideal": 0.011476518484103285
+  },
+  {
+   "tau": 3.0,
+   "g": [
+    0.25,
+    0.5
+   ],
+   "admissible": false,
+   "score_sensors": 233.04291913315686,
+   "IAE_SO5_sensors": 0.5507201176909784,
+   "IAE_SNO2_sensors": 0.19072577942082453,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.20381965832735535,
+   "IAE_SNO2_ideal": 0.004168146614374558
+  },
+  {
+   "tau": 3.0,
+   "g": [
+    0.25,
+    1.0
+   ],
+   "admissible": false,
+   "score_sensors": 245.34523369507698,
+   "IAE_SO5_sensors": 0.563360972107787,
+   "IAE_SNO2_sensors": 0.20900998133626048,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.18616253594480614,
+   "IAE_SNO2_ideal": 0.0017413153527863106
+  },
+  {
+   "tau": 3.0,
+   "g": [
+    0.5,
+    0.25
+   ],
+   "admissible": false,
+   "score_sensors": 240.39851775345662,
+   "IAE_SO5_sensors": 0.49951952985592074,
+   "IAE_SNO2_sensors": 0.23103727057895285,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.2900148219036027,
+   "IAE_SNO2_ideal": 0.011421655298341757
+  },
+  {
+   "tau": 3.0,
+   "g": [
+    0.5,
+    0.5
+   ],
+   "admissible": false,
+   "score_sensors": 226.45676542992834,
+   "IAE_SO5_sensors": 0.5242034280835941,
+   "IAE_SNO2_sensors": 0.19081181681805964,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.3091117255218952,
+   "IAE_SNO2_ideal": 0.004068693398438001
+  },
+  {
+   "tau": 3.0,
+   "g": [
+    0.5,
+    1.0
+   ],
+   "admissible": false,
+   "score_sensors": 238.65578591947062,
+   "IAE_SO5_sensors": 0.5366895309310546,
+   "IAE_SNO2_sensors": 0.20896680637341386,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.30421497190222213,
+   "IAE_SNO2_ideal": 0.0017748913112438723
+  },
+  {
+   "tau": 3.0,
+   "g": [
+    1.0,
+    0.25
+   ],
+   "admissible": false,
+   "score_sensors": 226.74290606375195,
+   "IAE_SO5_sensors": 0.44402835694650145,
+   "IAE_SNO2_sensors": 0.23147163365425322,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.28584618241240406,
+   "IAE_SNO2_ideal": 0.011531253329796168
+  },
+  {
+   "tau": 3.0,
+   "g": [
+    1.0,
+    0.5
+   ],
+   "admissible": false,
+   "score_sensors": 210.9301736682928,
+   "IAE_SO5_sensors": 0.4615946025605625,
+   "IAE_SNO2_sensors": 0.19106304605630442,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.2849036539986852,
+   "IAE_SNO2_ideal": 0.004046450544449621
+  },
+  {
+   "tau": 3.0,
+   "g": [
+    1.0,
+    1.0
+   ],
+   "admissible": false,
+   "score_sensors": 223.2639383821924,
+   "IAE_SO5_sensors": 0.475051455626592,
+   "IAE_SNO2_sensors": 0.20900214895108876,
+   "failures": 0,
+   "IAE_SO5_ideal": 0.2861299663167245,
+   "IAE_SNO2_ideal": 0.0017649047633301947
+  }
+ ],
+ "tau": 0.75,
+ "g": [
+  0.5,
+  0.5
+ ],
+ "terms": [
+  [
+   1.0,
+   1.5
+  ],
+  [
+   4.0,
+   1.5
+  ],
+  [
+   1.0,
+   1.5
+  ]
+ ],
+ "ilc": {
+  "beta": [
+   1.0,
+   0.0
+  ],
+  "lead": [
+   4,
+   0
+  ],
+  "smooth": 30,
+  "bumpless": true,
+  "antiwindup": true
+ }
+}
