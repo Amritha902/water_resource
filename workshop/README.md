@@ -4,7 +4,9 @@ About 90 minutes, for research scholars. It teaches machine learning and reinfor
 
 ```
 workshop/
-  slides/index.html      animated slide deck (open in a browser; no internet needed)
+  slides/index.html      animated, interactive slide deck (open in a browser; no internet needed)
+  slides/content.js      notebook cells with real outputs and code tours (generated)
+  tools/build_slide_content.py  regenerates content.js and slides/img/ from the notebooks and src/
   notebooks/
     01_data_collect_clean_prepare.ipynb   collect, clean, prepare (≈ 5 s to run)
     02_choose_and_train_a_model.ipynb     baselines, linear, MLP, causal CNN, overfitting, save/reload (≈ 30 s)
@@ -43,24 +45,35 @@ The buttons and sliders on the slides are live: press them during the talk.
 
 ## Timetable
 
+The deck has three kinds of interactive slides besides the animations:
+
+- **★ Notebook players:** real notebook cells with ▶ Run. Each run shows the output of a real run of the notebook, and a panel explains the idea. Press → to run the next cell; ← un-runs it.
+- **◆ Code tours:** the project's own functions, cut from the source files. Each block is highlighted with its explanation; press → for the next block, or click a block or a tab.
+- **The pipeline map** (slide 4): every experiment script of the project in the order it was built. Click a box, or press →.
+
 | Time | Slides | What happens | Notebook |
 |---|---|---|---|
-| 0:00 | 1–3 | The plant (move the air slider on slide 1), the four ML tasks of the project | |
-| 0:05 | 4 | **What is a model**: press ▶ train and let the line fit itself; point at the knobs and the loss curve | |
-| 0:10 | 5–8 | Collect: where the data comes from, the loading code. Clean: step through the problem rows (→ highlights each). Time grid. | |
-| 0:15 | 9 | **Hands-on** | NB1 parts A, B (12 min) |
-| 0:27 | 10–12 | Prepare: log and scaling (click the three buttons), sliding windows, split by time (click "random split" to show the leak) | |
-| 0:30 | 13 | **Hands-on** | NB1 part C (10 min) |
-| 0:40 | 14 | **Inputs and outputs decide the model.** Click through the six repository models. | |
-| 0:43 | 15 | **Inside a network, layer by layer.** Press "next step" a few times by hand and explain each sum and ReLU, then "play". | |
-| 0:47 | 16–18 | Counting parameters (click the presets; type your own sizes), causal convolution, recurrent memory | |
-| 0:52 | 19–22 | Loss functions, gradient descent (try the three learning rates), the training loop, baselines | |
-| 0:57 | 23 | **Hands-on** | NB2 (15–20 min) |
-| 1:15 | 24–26 | RL: agent–environment loop, actor-critic parts, the project's SAC-IL pipeline | |
-| 1:18 | 27 | **Hands-on** | NB3 (8–10 min; train, then discuss sections 5 and 6) |
-| 1:27 | 28 | Lessons, questions | |
+| 0:00 | 1–4 | The plant (move the air slider on slide 1), the four ML tasks, **pipeline map** of our code | |
+| 0:06 | 5 | **What is a model**: press ▶ train and let the line fit itself | |
+| 0:09 | 6–11 | Collect, cleaning, time grid; ◆ how our code loads and corrects the data; ★ collect and clean, cell by cell | |
+| 0:17 | 12 | **Hands-on** | NB1 parts A, B (10 min) |
+| 0:27 | 13–16 | Scaling, windows, split by time; ★ prepare, cell by cell | |
+| 0:31 | 17 | **Hands-on** | NB1 part C (8 min) |
+| 0:39 | 18–22 | Inputs and outputs decide the model; **inside a network, layer by layer** (press "next step" by hand); parameters; CNN; GRU; ★ shapes, baselines and models in code | |
+| 0:48 | 23–27 | Loss, gradient descent, the training loop; ★ training, overfitting and the test in code | |
+| 0:55 | 28–29 | Baselines; **hands-on** | NB2 (15 min) |
+| 1:10 | 30–33 | RL loop, actor-critic parts, ◆ reward, DDPG and SAC-IL updates in our code, ★ RL cell by cell | |
+| 1:16 | 34–36 | SAC-IL pipeline; ◆ papers 1 and 3 as printed; ◆ our controller (ILC, control step, safety gate, training script) | |
+| 1:20 | 37 | **Hands-on** | NB3 (7 min) |
+| 1:27 | 38 | Lessons, questions | |
 
-If time runs short, skip slides 17–18 (CNN and GRU details) and notebook 2 section 9 (quantiles). Notebook 3 can also be shown by the presenter instead of run by everyone.
+If time runs short: the ★ players can replace the matching hands-on time (run them on the projector instead), and the ◆ tours can be shortened to their first tab.
+
+**After changing a notebook or the project code**, rebuild the players and tours (runs the notebooks, about 1 minute):
+
+```bash
+python workshop/tools/build_slide_content.py
+```
 
 ## What each notebook shows (results from our run; small differences between machines are normal)
 

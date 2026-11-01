@@ -889,8 +889,219 @@ A.rl = {
   stop() { this.r && this.r.stop(); }
 };
 
+// ═════════════════════════════ shared: Python syntax highlighting (no library)
+const PY_KW = new Set("def class return for in if elif else while with as import from not and or lambda None True False try except finally yield is break continue pass assert raise global nonlocal del async await".split(" "));
+const PY_BUILTIN = new Set("print len range zip enumerate float int str list dict tuple set min max sum abs isinstance super np torch nn F pd plt self".split(" "));
+function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+// returns one HTML string per source line; tokens that span lines (docstrings) are split per line
+function highlight(code) {
+  const re = /(#[^\n]*)|("""[\s\S]*?"""|'''[\s\S]*?'''|[rbuf]?"(?:\\.|[^"\\\n])*"|[rbuf]?'(?:\\.|[^'\\\n])*')|(\b\d+(?:\.\d*)?(?:e-?\d+)?\b)|([A-Za-z_]\w*)|(@\w+)/g;
+  const lines = [""]; let last = 0, m;
+  const push = (txt, cls) => txt.split("\n").forEach((piece, i) => {
+    if (i) lines.push("");
+    if (piece) lines[lines.length - 1] += cls ? `<span class="${cls}">${esc(piece)}</span>` : esc(piece);
+  });
+  while ((m = re.exec(code))) {
+    push(code.slice(last, m.index), null);
+    if (m[1]) push(m[1], "tc"); else if (m[2]) push(m[2], "ts"); else if (m[3]) push(m[3], "tn");
+    else if (m[4]) push(m[4], PY_KW.has(m[4]) ? "tk" : PY_BUILTIN.has(m[4]) ? "tb" : (code[re.lastIndex] === "(" ? "tf" : null));
+    else push(m[5], "tk");
+    last = re.lastIndex;
+  }
+  push(code.slice(last), null);
+  return lines;
+}
+
+// engine hooks: an animation may consume → and ← (players and tours step through their parts)
+const _next = next, _prev = prev;
+next = function () { if (live && live.next && live.next()) return; _next(); };
+prev = function () { if (live && live.prev && live.prev()) return; _prev(); };
+
+// ═════════════════════════════ notebook player: real cells, real outputs, a concept panel
+const PSTATE = {};
+A.player = {
+  start(el) {
+    const key = el.dataset.key, P = PLAYERS[key];
+    const st = PSTATE[key] || (PSTATE[key] = {ran: 0});
+    this.st = st; this.P = P;
+    const root = $(".player-root", el);
+    root.innerHTML = `
+      <div class="nb">
+        <div class="nb-bar"><span class="mono tiny">${P.notebook}</span><span style="flex:1"></span>
+          <button class="nb-all">▶▶ run all</button><button class="nb-reset">↺ restart kernel</button></div>
+        <div class="nb-cells"></div>
+      </div>
+      <div class="nb-side card">
+        <div class="tiny nb-step"></div>
+        <h3 class="nb-title"></h3>
+        <p class="nb-note"></p>
+        <ol class="nb-list"></ol>
+        <p class="tiny" style="margin-top:auto">Outputs are from a real run of the notebook. Press → to run the next cell.</p>
+      </div>`;
+    const cells = $(".nb-cells", root);
+    P.cells.forEach((c, i) => {
+      const div = document.createElement("div");
+      div.className = "nb-cell";
+      div.innerHTML = `
+        <div class="nb-in"><button class="nb-run" title="run this cell">▶</button><span class="nb-count mono">In [&nbsp;]:</span></div>
+        <pre class="nb-code">${highlight(c.code).join("\n")}</pre>
+        <div class="nb-out" style="display:none">
+          ${c.out.text ? `<pre class="nb-text">${esc(c.out.text)}</pre>` : ""}
+          ${c.out.img.map(s => `<img src="${s}" alt="figure">`).join("")}
+          ${!c.out.text && !c.out.img.length ? `<div class="tiny">(no output: this cell only defines things)</div>` : ""}
+        </div>`;
+      $(".nb-run", div).onclick = () => this.runTo(i + 1);
+      cells.appendChild(div);
+      const li = document.createElement("li");
+      li.textContent = c.title; li.onclick = () => this.runTo(i + 1);
+      $(".nb-list", root).appendChild(li);
+    });
+    $(".nb-all", root).onclick = () => this.runTo(P.cells.length);
+    $(".nb-reset", root).onclick = () => { st.ran = 0; this.paint(true); };
+    this.root = root;
+    this.paint(true);
+  },
+  runTo(n) {
+    const from = this.st.ran;
+    if (n <= from) { this.st.ran = n; this.paint(); return; }
+    // cells run one after the other, with a short busy state, like a kernel
+    const step = k => {
+      if (k > n) return;
+      const cell = $$(".nb-cell", this.root)[k - 1];
+      $(".nb-count", cell).textContent = "In [*]:"; cell.classList.add("busy");
+      setTimeout(() => { this.st.ran = k; cell.classList.remove("busy"); this.paint(); step(k + 1); }, 450);
+    };
+    step(from + 1);
+  },
+  paint(instant) {
+    const {P, st, root} = this;
+    $$(".nb-cell", root).forEach((cell, i) => {
+      const done = i < st.ran;
+      $(".nb-count", cell).innerHTML = done ? `In [${P.cells[i].n}]:` : "In [&nbsp;]:";
+      const out = $(".nb-out", cell);
+      if (done && out.style.display === "none") { out.style.display = ""; out.classList.remove("fresh"); void out.offsetWidth; out.classList.add("fresh"); }
+      if (!done) out.style.display = "none";
+      cell.classList.toggle("current", i === st.ran - 1);
+    });
+    $$(".nb-list li", root).forEach((li, i) => { li.classList.toggle("done", i < st.ran); li.classList.toggle("current", i === st.ran - 1); });
+    const k = Math.max(0, st.ran - 1), c = P.cells[k];
+    $(".nb-step", root).textContent = st.ran ? `cell ${st.ran} of ${P.cells.length}` : `${P.cells.length} cells · nothing run yet`;
+    $(".nb-title", root).textContent = st.ran ? c.title : "Press ▶ or →";
+    $(".nb-note", root).textContent = st.ran ? c.note : "Each cell runs the real notebook code. The panel explains the idea behind it.";
+    const box = $(".nb-cells", root), cur = $$(".nb-cell", root)[k];
+    if (st.ran && cur) box.scrollTo({top: cur.offsetTop - box.offsetTop - 8, behavior: instant ? "auto" : "smooth"});
+    else box.scrollTop = 0;
+  },
+  next() { if (this.st.ran < this.P.cells.length) { this.runTo(this.st.ran + 1); return true; } return false; },
+  prev() { if (this.st.ran > 0) { this.st.ran--; this.paint(); return true; } return false; },
+  stop() {}
+};
+
+// ═════════════════════════════ code tour: the project's own code, block by block
+const TSTATE = {};
+A.tour = {
+  start(el) {
+    const key = el.dataset.key, T = TOURS[key];
+    const st = TSTATE[key] || (TSTATE[key] = {tab: 0, mark: 0});
+    Object.assign(this, {T, st, root: $(".tour-root", el)});
+    this.root.innerHTML = `
+      <div class="tour-tabs">${T.map((t, i) => `<button data-t="${i}">${t.title}</button>`).join("")}</div>
+      <div class="tour-body">
+        <div class="tour-code"><div class="tour-file mono tiny"></div><div class="tour-lines"></div></div>
+        <div class="tour-side card">
+          <div class="tiny tour-step"></div><h3 class="tour-title"></h3><p class="tour-text"></p>
+          <ol class="tour-list"></ol>
+          <div class="btns" style="margin-top:auto"><button class="tour-prev">← back</button><button class="tour-next">next →</button></div>
+        </div>
+      </div>`;
+    $$(".tour-tabs button", this.root).forEach(b => b.onclick = () => { st.tab = +b.dataset.t; st.mark = 0; this.paint(true); });
+    $(".tour-prev", this.root).onclick = () => this.prev();
+    $(".tour-next", this.root).onclick = () => this.next();
+    if (T.length === 1) $(".tour-tabs", this.root).style.display = "none";
+    this.paint(true);
+  },
+  paint(rebuild) {
+    const {T, st, root} = this, t = T[st.tab], mk = t.marks[st.mark];
+    $$(".tour-tabs button", root).forEach((b, i) => b.classList.toggle("on", i === st.tab));
+    if (rebuild || this._tab !== st.tab) {
+      this._tab = st.tab;
+      $(".tour-file", root).textContent = `${t.file} · ${t.func} · line ${t.line}`;
+      const hl = highlight(t.code.join("\n"));
+      $(".tour-lines", root).innerHTML = hl.map((h, i) => `<div class="tl" data-i="${i}"><span class="ln">${t.line + i}</span><span class="lc">${h || " "}</span></div>`).join("");
+      $(".tour-list", root).innerHTML = t.marks.map((m, i) => `<li data-m="${i}">${m.title}</li>`).join("");
+      $$(".tour-list li", root).forEach(li => li.onclick = () => { st.mark = +li.dataset.m; this.paint(); });
+      $$(".tl", root).forEach(row => row.onclick = () => {
+        const i = +row.dataset.i, m = t.marks.findIndex(m => i >= m.from && i <= m.to);
+        if (m >= 0) { st.mark = m; this.paint(); }
+      });
+    }
+    $$(".tl", root).forEach(row => { const i = +row.dataset.i; row.classList.toggle("on", i >= mk.from && i <= mk.to);
+      row.classList.toggle("dim", !(i >= mk.from && i <= mk.to)); row.classList.toggle("marked", t.marks.some(m => i >= m.from && i <= m.to)); });
+    $$(".tour-list li", root).forEach((li, i) => li.classList.toggle("current", i === st.mark));
+    $(".tour-step", root).textContent = `${st.mark + 1} / ${t.marks.length}` + (T.length > 1 ? ` · file ${st.tab + 1} of ${T.length}` : "");
+    $(".tour-title", root).textContent = mk.title;
+    $(".tour-text", root).textContent = mk.text;
+    const box = $(".tour-lines", root), row = $(`.tl[data-i="${mk.from}"]`, root);
+    if (row) box.scrollTo({top: Math.max(0, row.offsetTop - box.offsetTop - 60), behavior: rebuild ? "auto" : "smooth"});
+  },
+  next() {
+    const {T, st} = this;
+    if (st.mark < T[st.tab].marks.length - 1) st.mark++;
+    else if (st.tab < T.length - 1) { st.tab++; st.mark = 0; }
+    else return false;
+    this.paint(); return true;
+  },
+  prev() {
+    const {T, st} = this;
+    if (st.mark > 0) st.mark--;
+    else if (st.tab > 0) { st.tab--; st.mark = T[st.tab].marks.length - 1; }
+    else return false;
+    this.paint(); return true;
+  },
+  stop() {}
+};
+
+// ═════════════════════════════ pipeline map: every experiment of the project
+A.pipeline = {
+  start(el) {
+    const root = $(".pipe-root", el);
+    const cols = ["Plant + data", "Reproduce the 3 papers", "Build ours + baselines", "Test", "Report"];
+    root.innerHTML = `<div class="pipe-grid">${cols.map((c, j) => `<div class="pipe-col"><div class="tiny pipe-head">${c}</div>${
+      PIPELINE.filter(p => p.col === j).map(p => `<button class="pipe-node" data-id="${p.id}">${p.title}<br><span class="mono">${p.file.split("/").pop()}</span></button>`).join("")}</div>`).join("")}</div>
+      <canvas id="cv-pipe" width="1160" height="300"></canvas>
+      <div class="card pipe-panel"></div>`;
+    this.root = root; this.i = this.i ?? -1;
+    $$(".pipe-node", root).forEach(b => b.onclick = () => { this.i = PIPELINE.findIndex(p => p.id === b.dataset.id); this.paint(); });
+    this.paint();
+  },
+  paint() {
+    const root = this.root, p = PIPELINE[this.i];
+    $$(".pipe-node", root).forEach(b => { const k = PIPELINE.findIndex(q => q.id === b.dataset.id);
+      b.classList.toggle("on", k === this.i); b.classList.toggle("seen", k < this.i); });
+    $(".pipe-panel", root).innerHTML = p ? `<div class="cols" style="gap:20px"><div class="col"><h3>${p.title}</h3><p class="small" style="margin:0">${p.what}</p></div>
+      <div class="col" style="flex:1.4"><div class="kv" style="grid-template-columns:70px 1fr;font-size:14px"><div>file</div><div class="mono">${p.file}</div><div>run</div><div class="mono">${esc(p.cmd)}</div><div>writes</div><div class="mono">${p.out}</div></div></div></div>`
+      : `<p class="small" style="margin:0">Click a box, or press →, to walk through the project in the order it was built. Every box is one script in <code>experiments/</code>.</p>`;
+    // arrows between columns
+    const ctx = canvas("cv-pipe"); ctx.clearRect(0, 0, ctx.w, ctx.h);
+    const box = $(".pipe-grid", root).getBoundingClientRect(), s = box.width / 1160;
+    const rect = id => { const r = $(`.pipe-node[data-id="${id}"]`, root).getBoundingClientRect(); return {x0: (r.left - box.left) / s, x1: (r.right - box.left) / s, y: (r.top + r.bottom) / 2 / s - box.top / s}; };
+    const links = [["data", "e20"], ["data", "e06"], ["data", "e23"], ["e20", "e32"], ["e20", "e39"], ["e32", "e28"], ["e20", "e38"], ["e28", "e33"], ["e38", "e33"], ["e39", "e33"], ["e33", "e40"], ["e33", "docs"], ["e40", "docs"], ["e06", "docs"], ["e23", "docs"]];
+    links.forEach(([a, b]) => { const A_ = rect(a), B_ = rect(b);
+      const on = p && (p.id === a || p.id === b);
+      const x1 = A_.x1 + 2, x2 = B_.x0 - 4, y1 = A_.y, y2 = B_.y;
+      if (x2 <= x1) { line(ctx, [[A_.x0 + 30, y1 + 16], [B_.x0 + 30, y2 - 16]], on ? C.orange : "#cbd5e1", on ? 2.5 : 1.5); return; }
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.bezierCurveTo((x1 + x2) / 2, y1, (x1 + x2) / 2, y2, x2, y2);
+      ctx.strokeStyle = on ? C.orange : "#cbd5e1"; ctx.lineWidth = on ? 2.5 : 1.5; ctx.stroke();
+      arrow(ctx, x2 - 1, y2, x2, y2, on ? C.orange : "#cbd5e1", 1, 7); });
+  },
+  next() { if (this.i < PIPELINE.length - 1) { this.i++; this.paint(); return true; } return false; },
+  prev() { if (this.i >= 0) { this.i--; this.paint(); return this.i >= -1; } return false; },
+  stop() {}
+};
+
 // ───────────────────────────── go
 fitStage();
 setTimeout(() => { $("#help").style.transition = "opacity 1s"; $("#help").style.opacity = 0; }, 8000);
 const h = parseInt((location.hash || "#1").slice(1), 10);
 show(isNaN(h) ? 0 : h - 1);
+
