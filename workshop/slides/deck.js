@@ -119,7 +119,7 @@ document.addEventListener("keydown", e => {
   else if (e.key === "Home") show(0);
   else if (e.key === "End") show(slides.length - 1, "all");
   else if (e.key === "r" || e.key === "R") show(cur, frag);
-  else if (e.key === "f" || e.key === "F") { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+  else if (e.key === "f" || e.key === "F") { try { const p = !document.fullscreenElement ? document.documentElement.requestFullscreen() : document.exitFullscreen(); if (p && p.catch) p.catch(() => {}); } catch (_) {} }
 });
 window.addEventListener("resize", fitStage);
 
