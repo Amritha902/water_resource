@@ -1099,6 +1099,53 @@ A.pipeline = {
   stop() {}
 };
 
+
+// ═════════════════════════════ glossary: every word of the workshop, in plain words
+const GLOSSARY = [
+  ["data", "Numbers we have recorded.", "A diary of the plant: every 15 minutes, how much water came in and how dirty it was.", "notebook 1"],
+  ["dataset", "A table of numbers a model learns from.", "A spreadsheet: one row per moment, one column per measurement.", "1 345 rows × 15 columns per weather file"],
+  ["cleaning", "Finding and fixing wrong or missing values.", "Washing the vegetables before cooking.", "slides 9–12, notebook 1 part B"],
+  ["input (x)", "What the model gets to see.", "The front of a flash card.", "the last 24 hours of flow, ammonium and COD"],
+  ["target (y)", "What the model must guess.", "The back of a flash card.", "the flow over the next 2 hours"],
+  ["model", "A function with adjustable numbers inside.", "A recipe whose amounts you can change.", "linear model, MLP, CNN, GRU, actor, critic"],
+  ["parameter / weight", "One adjustable number inside a model.", "One knob on the mixing desk.", "23 176 in our MLP; 67 073 in paper 2's actor"],
+  ["training", "Turning the knobs until the guesses get good.", "Taste, adjust, taste again.", "slides 25–28, notebook 2"],
+  ["loss", "One number for how wrong the model is.", "Points lost in a game; training wants as few as possible.", "MSE, MAE, pinball, cross-entropy"],
+  ["gradient", "Which way to turn every knob to lower the loss.", "Feeling which way is downhill with your feet, in the fog.", "computed by loss.backward()"],
+  ["learning rate", "How big a step we take each time.", "Baby steps or giant leaps: too big and you overshoot.", "slide 26: try 0.02, 0.15, 0.5"],
+  ["batch / epoch", "A handful of examples / one pass through all of them.", "A few flash cards at a time / the whole pack once.", "batch 128, up to 150 epochs"],
+  ["neural network", "Layers of simple units, one after the other.", "An assembly line: each station does a small job.", "slide 20: watch numbers flow layer by layer"],
+  ["ReLU", "Keep positive numbers, turn negatives into 0.", "A one-way valve.", "after every hidden layer"],
+  ["train / validation / test", "Learn on / check while learning on / final exam, used once.", "Homework / practice test / the real exam.", "dry + rain week 2 / storm 1 / storm 2"],
+  ["overfitting", "Memorising examples instead of learning the pattern.", "Learning the answers of last year's exam by heart.", "notebook 2 section 7"],
+  ["baseline", "A simple rule with no learning.", "\"Tomorrow will be like today.\"", "persistence, yesterday, linear model, PID"],
+  ["reinforcement learning", "Learning from rewards instead of right answers.", "Training a dog with treats.", "paper 2's DDPG, our SAC-IL, notebook 3"],
+  ["agent / environment", "The one who decides / the world it acts in.", "The player / the game.", "the controller / the plant"],
+  ["reward", "A score after each action.", "The treat. The agent does whatever earns treats.", "−|oxygen − 2| − air cost"],
+  ["policy", "The agent's rule: in this situation, do this.", "A cook's habits.", "the actor network"],
+  ["PID", "A classic controller: too low → more, too high → less.", "A thermostat.", "the expert of all three papers"],
+];
+A.glossary = {
+  start(el) {
+    const grid = $(".gl-grid", el), card = $(".gl-card", el);
+    grid.innerHTML = GLOSSARY.map((g, i) => `<button data-i="${i}">${g[0]}</button>`).join("");
+    this.pick = i => {
+      this.i = i;
+      $$("button", grid).forEach((b, j) => b.classList.toggle("on", j === i));
+      const g = GLOSSARY[i];
+      card.innerHTML = `<div class="tiny">${i + 1} of ${GLOSSARY.length}</div><h3 style="font-size:30px;color:${C.blue};margin:4px 0 10px">${g[0]}</h3>
+        <p class="big" style="margin:0 0 14px">${g[1]}</p>
+        <div class="note" style="font-size:18px">🧒 <b>Like:</b> ${g[2]}</div>
+        <p class="small" style="margin-top:14px"><b>In this project:</b> ${g[3]}</p>`;
+    };
+    $$("button", grid).forEach(b => b.onclick = () => this.pick(+b.dataset.i));
+    this.pick(this.i ?? 0);
+  },
+  next() { if (this.i < GLOSSARY.length - 1) { this.pick(this.i + 1); return true; } return false; },
+  prev() { if (this.i > 0) { this.pick(this.i - 1); return true; } return false; },
+  stop() {}
+};
+
 // ───────────────────────────── go
 fitStage();
 setTimeout(() => { $("#help").style.transition = "opacity 1s"; $("#help").style.opacity = 0; }, 8000);

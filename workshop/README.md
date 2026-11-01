@@ -18,6 +18,15 @@ workshop/
   data/                  created by notebook 1 (downloads, prepared.npz, saved model); not in git
 ```
 
+## Published pages
+
+- Slide deck: https://claude.ai/artifact/66EGWBVkQQRAKsHadr5ob5
+- Part 1, collect, clean and prepare: https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq
+- Part 2, choose a model and train it: https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm
+- Part 3, reinforcement learning in brief: https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5
+
+The notebook pages are made by `python workshop/tools/notebooks_to_html.py --links workshop/notebooks/html/links.json` (they show a real run; "Explanations only" hides the code). Each notebook has a "New to notebooks?" box, a glossary and an "In plain words" box for every step.
+
 ## Setup (do this the day before)
 
 Python 3.10 or newer. From the repository root:
@@ -50,23 +59,23 @@ The deck has three kinds of interactive slides besides the animations:
 
 - **★ Notebook players:** real notebook cells with ▶ Run. Each run shows the output of a real run of the notebook, and a panel explains the idea. Press → to run the next cell; ← un-runs it.
 - **◆ Code tours:** the project's own functions, cut from the source files. Each block is highlighted with its explanation; press → for the next block, or click a block or a tab.
-- **The pipeline map** (slide 4): every experiment script of the project in the order it was built. Click a box, or press →.
+- **The pipeline map** (slide 5): every experiment script of the project in the order it was built. Click a box, or press →.
 
 | Time | Slides | What happens | Notebook |
 |---|---|---|---|
-| 0:00 | 1–4 | The plant (move the air slider on slide 1), the four ML tasks, **pipeline map** of our code | |
-| 0:06 | 5 | **What is a model**: press ▶ train and let the line fit itself | |
-| 0:09 | 6–11 | Collect, cleaning, time grid; ◆ how our code loads and corrects the data; ★ collect and clean, cell by cell | |
-| 0:17 | 12 | **Hands-on** | NB1 parts A, B (10 min) |
-| 0:27 | 13–16 | Scaling, windows, split by time; ★ prepare, cell by cell | |
-| 0:31 | 17 | **Hands-on** | NB1 part C (8 min) |
-| 0:39 | 18–22 | Inputs and outputs decide the model; **inside a network, layer by layer** (press "next step" by hand); parameters; CNN; GRU; ★ shapes, baselines and models in code | |
-| 0:48 | 23–27 | Loss, gradient descent, the training loop; ★ training, overfitting and the test in code | |
-| 0:55 | 28–29 | Baselines; **hands-on** | NB2 (15 min) |
-| 1:10 | 30–33 | RL loop, actor-critic parts, ◆ reward, DDPG and SAC-IL updates in our code, ★ RL cell by cell | |
-| 1:16 | 34–36 | SAC-IL pipeline; ◆ papers 1 and 3 as printed; ◆ our controller (ILC, control step, safety gate, training script) | |
-| 1:20 | 37 | **Hands-on** | NB3 (7 min) |
-| 1:27 | 38 | Lessons, questions | |
+| 0:00 | 1–5 | The plant (move the air slider on slide 1), **glossary of every word in plain language** (slide 3), the four ML tasks, **pipeline map** of our code | |
+| 0:06 | 6 | **What is a model**: press ▶ train and let the line fit itself | |
+| 0:09 | 7–12 | Collect, cleaning, time grid; ◆ how our code loads and corrects the data; ★ collect and clean, cell by cell | |
+| 0:17 | 13 | **Hands-on** | NB1 parts A, B (10 min) |
+| 0:27 | 14–17 | Scaling, windows, split by time; ★ prepare, cell by cell | |
+| 0:31 | 18 | **Hands-on** | NB1 part C (8 min) |
+| 0:39 | 19–23 | Inputs and outputs decide the model; **inside a network, layer by layer** (press "next step" by hand); parameters; CNN; GRU; ★ shapes, baselines and models in code | |
+| 0:48 | 24–28 | Loss, gradient descent, the training loop; ★ training, overfitting and the test in code | |
+| 0:55 | 29–30 | Baselines; **hands-on** | NB2 (15 min) |
+| 1:10 | 31–34 | RL loop, actor-critic parts, ◆ reward, DDPG and SAC-IL updates in our code, ★ RL cell by cell | |
+| 1:16 | 35–37 | SAC-IL pipeline; ◆ papers 1 and 3 as printed; ◆ our controller (ILC, control step, safety gate, training script) | |
+| 1:20 | 38 | **Hands-on** | NB3 (7 min) |
+| 1:27 | 39 | Lessons, questions | |
 
 If time runs short: the ★ players can replace the matching hands-on time (run them on the projector instead), and the ◆ tours can be shortened to their first tab.
 
