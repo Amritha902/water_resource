@@ -9,6 +9,8 @@ workshop/
     01_data_collect_clean_prepare.ipynb   collect, clean, prepare (≈ 5 s to run)
     02_choose_and_train_a_model.ipynb     baselines, linear, MLP, causal CNN, overfitting, save/reload (≈ 30 s)
     03_reinforcement_learning_in_brief.ipynb  environment, PID, imitation, Q-learning, reward design (≈ 30 s)
+  slides/stills/         a picture of every slide (JPEG, 1920 × 1080), for other presentation tools
+  SPEECHIFY_OUTLINE.md   slide-by-slide text and narration, paste-ready for an AI presentation builder
   requirements.txt
   data/                  created by notebook 1 (downloads, prepared.npz, saved model); not in git
 ```
