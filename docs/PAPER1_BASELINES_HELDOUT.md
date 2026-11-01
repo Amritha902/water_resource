@@ -199,6 +199,10 @@ paper's nominal test hides.
 
 ## Next steps this points to
 
+(Steps 1 and 2 are done, with a second pre-registered held-out test:
+`docs/PAPER1_HELDOUT2.md`.)
+
+
 1. ILC with anti-windup: freeze learning while the actuator is at a limit
    (H1).
 2. Robustness to sensor noise: filter the measurements, limit the gain at
