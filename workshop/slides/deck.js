@@ -1104,17 +1104,17 @@ A.pipeline = {
 const GLOSSARY = [
   ["data", "Numbers we have recorded.", "A diary of the plant: every 15 minutes, how much water came in and how dirty it was.", "notebook 1"],
   ["dataset", "A table of numbers a model learns from.", "A spreadsheet: one row per moment, one column per measurement.", "1 345 rows × 15 columns per weather file"],
-  ["cleaning", "Finding and fixing wrong or missing values.", "Washing the vegetables before cooking.", "slides 10–13, notebook 1 part B"],
+  ["cleaning", "Finding and fixing wrong or missing values.", "Washing the vegetables before cooking.", "lesson 2, notebook 1 part B"],
   ["input (x)", "What the model gets to see.", "The front of a flash card.", "the last 24 hours of flow, ammonium and COD"],
   ["target (y)", "What the model must guess.", "The back of a flash card.", "the flow over the next 2 hours"],
   ["model", "A function with adjustable numbers inside.", "A recipe whose amounts you can change.", "linear model, MLP, CNN, GRU, actor, critic"],
   ["parameter / weight", "One adjustable number inside a model.", "One knob on the mixing desk.", "23 176 in our MLP; 67 073 in paper 2's actor"],
-  ["training", "Turning the knobs until the guesses get good.", "Taste, adjust, taste again.", "slides 27–30, notebook 2"],
+  ["training", "Turning the knobs until the guesses get good.", "Taste, adjust, taste again.", "lesson 5, notebook 2"],
   ["loss", "One number for how wrong the model is.", "Points lost in a game; training wants as few as possible.", "MSE, MAE, pinball, cross-entropy"],
   ["gradient", "Which way to turn every knob to lower the loss.", "Feeling which way is downhill with your feet, in the fog.", "computed by loss.backward()"],
-  ["learning rate", "How big a step we take each time.", "Baby steps or giant leaps: too big and you overshoot.", "slide 28: try 0.02, 0.15, 0.5"],
+  ["learning rate", "How big a step we take each time.", "Baby steps or giant leaps: too big and you overshoot.", "lesson 5: try 0.02, 0.15 and 0.5 on the gradient-descent slide"],
   ["batch / epoch", "A handful of examples / one pass through all of them.", "A few flash cards at a time / the whole pack once.", "batch 128, up to 150 epochs"],
-  ["neural network", "Layers of simple units, one after the other.", "An assembly line: each station does a small job.", "slide 22: watch numbers flow layer by layer"],
+  ["neural network", "Layers of simple units, one after the other.", "An assembly line: each station does a small job.", "lesson 4: watch numbers flow layer by layer"],
   ["ReLU", "Keep positive numbers, turn negatives into 0.", "A one-way valve.", "after every hidden layer"],
   ["train / validation / test", "Learn on / check while learning on / final exam, used once.", "Homework / practice test / the real exam.", "dry + rain week 2 / storm 1 / storm 2"],
   ["overfitting", "Memorising examples instead of learning the pattern.", "Learning the answers of last year's exam by heart.", "notebook 2 section 7"],
@@ -1159,6 +1159,23 @@ const CM_TEXT = {
             "Read: the first row is names, not numbers. Read it as the header, name the columns, make them numbers.",
             "Check: time step, missing values, duplicates, impossible values. In the project these checks are tests (tests/test_official.py).",
             "Fix: repair broken readings (notebook), and the physics fix of the project: rain dilutes S_I (plant.py)."],
+  lesson3: ["Choose: the inputs are what a plant can measure at the inlet (flow, ammonium, COD); the target is the flow in the next 2 hours. The project's forecaster uses the same three channels.",
+            "Split by time: learn on the past, check on storm 1, test on storm 2. The warning model splits by whole simulated plants (seeds 0, 1000, 2000), never by random rows.",
+            "Scale with numbers from the training data only: log, then (x − mean) / std. In the project, the Normaliser is fitted on the training rollouts and then used everywhere.",
+            "Cut windows: 96 past steps → the next 8. The input always ends before the target begins, in the script, the notebook and _windows() alike."],
+  lesson4: ["Shapes first: (N, 96, 3) → (N, 8). A sequence in, eight numbers out: a regression on a sequence. The forecaster's encoder takes (B, T, C) too.",
+            "Baselines: persistence and 'same time yesterday'. Zero knobs, and the bar every model must clear.",
+            "Linear: every input times a weight, summed. 288 × 8 + 8 = 2 312 knobs.",
+            "MLP: linear layers with ReLU between them. The RL agents of the project are exactly this (_mlp in ddpg.py, mlp in sacil.py).",
+            "Causal CNN: a small filter slides along time, padded on the left only, so it never sees the future. The forecaster stacks six of these blocks."],
+  lesson5: ["Train: the four steps of lesson 1, on batches of 128, repeated for many epochs.",
+            "Validate after every epoch on data it never trains on, and keep the best epoch. warning/train.py keeps best_state exactly like this.",
+            "Test once, at the very end, on data nothing was chosen on (storm 2 here; the pre-registered held-out test in the project).",
+            "Save the weights with the scaler and the settings. forecast/predictor.py reloads the mean and std from the same file before every forecast."],
+  lesson6: ["Environment: reset() starts a day, step(action) moves 5 minutes on and returns the new state. The project's AerationEnv has the same interface.",
+            "Reward: one number per step, written down by you. Paper 2's reward is two lines in rewards.py.",
+            "Act: pick the best-known action, or a random one to explore (ε). The project's agents explore with noise on the action.",
+            "Learn: move the estimate towards reward + the value of the next state. In the project: agent.observe() stores it, agent.update() learns."],
 };
 const CMSTATE = {};
 A.codemap = {
@@ -1197,6 +1214,47 @@ A.codemap = {
   },
   next() { if (this.st.s < this.M.steps.length - 1) { this.st.s++; this.paint(); return true; } return false; },
   prev() { if (this.st.s >= 0) { this.st.s--; this.paint(); return true; } return false; },
+  stop() {}
+};
+
+
+// ═════════════════════════════ check yourself: click a question (or press →) to reveal the answer
+const QUIZ = {
+  l1: [["Which parts of ŷ = w·x + b does training change?", "Only w and b, the knobs. The inputs x and the true answers y are data and never change. The shape of the function is chosen by us before training."],
+       ["The loss is very large. What does that tell you?", "The guesses are far from the true answers: the knobs are not yet good, or the model's shape cannot fit the data."],
+       ["Why did the loss explode with a learning rate of 1.2?", "Each step jumped over the bottom of the valley and landed higher on the other side, further each time. Smaller steps walk down; too-big steps bounce out."]],
+  l2: [["Why did every column come out as text?", "The first row holds names. One text row makes pandas read the whole column as text. Tell it row 0 is the header."],
+       ["All checks passed. Can the data still be wrong?", "Yes: S_I stays at 30 while rain doubles the flow. Only physics (rain dilutes) catches it."],
+       ["When may you fill a gap by interpolation?", "Only when it is short (here ≤ 1 hour). Filling a long gap invents data."]],
+  l3: [["Why not split the windows at random?", "Neighbouring windows share 95 of 96 samples: the test would hold near-copies of training examples and the score would be far too good."],
+       ["Where do the mean and std for scaling come from?", "From the training data only. Then the same numbers are used for validation, test and the real plant."],
+       ["Read the shape (1906, 96, 3).", "1 906 examples, each with 96 time steps, each step with 3 measurements (flow, ammonium, COD)."]],
+  l4: [["How many knobs has a layer from 64 to 8 units?", "64 × 8 weights + 8 biases = 520."],
+       ["What does ReLU do?", "Keeps positive numbers, turns negative ones into 0. That bend is what lets a network learn curved patterns."],
+       ["Why is the convolution 'causal'?", "It is padded on the left only, so each output sees only the present and the past, never the future."]],
+  l5: [["Training loss falls, validation loss rises. What is happening?", "Overfitting: the model memorises the training examples. Keep the best epoch, regularise, use a smaller model or get more data."],
+       ["Why use the test set only once?", "Every look that changes a decision turns the test into training data. Then it no longer measures the future."],
+       ["What must be saved with the weights?", "The scaler (mean, std) and the settings. Without them nobody can feed new raw measurements to the model."]],
+  l6: [["What is the difference between a reward and a label?", "A label is the right answer for this example. A reward only scores what happened, often late, and never says what the right action was."],
+       ["Why does the agent sometimes act at random?", "To explore: without trying new actions it can never find out that one is better."],
+       ["Air made very expensive in the reward: what did the agent do?", "Switched the air almost off and let the oxygen fall. It did exactly what the reward said, not what we meant."]],
+  l7: [["MAACC as printed equals its PID in 80 of 80 runs. Why?", "Its learning signal with the printed weights is about 10⁻⁴: the networks hardly move from their zero start."],
+       ["What does the safety gate do?", "When an input leaves the range seen in training, the learned part is switched off and the expert PID acts alone."],
+       ["Our learned controller vs a tuned PID + ILC: which won?", "The tuned PID with the daily ILC matched or beat it on the test week. Reported honestly in the README."]],
+};
+const QSTATE = {};
+A.quiz = {
+  start(el) {
+    const key = el.dataset.key, Qs = QUIZ[key];
+    const st = QSTATE[key] || (QSTATE[key] = {shown: 0});
+    Object.assign(this, {Qs, st, root: $(".quiz-root", el)});
+    this.root.innerHTML = Qs.map(([q, a], i) => `<div class="qz"><button class="qz-q"><span class="qz-n">${i + 1}</span>${q}</button><div class="qz-a">${a}</div></div>`).join("");
+    $$(".qz-q", this.root).forEach((b, i) => b.onclick = () => { st.shown = Math.max(st.shown, i + 1); $$(".qz", this.root)[i].classList.toggle("open"); });
+    this.paint();
+  },
+  paint() { $$(".qz", this.root).forEach((q, i) => q.classList.toggle("open", i < this.st.shown)); },
+  next() { if (this.st.shown < this.Qs.length) { this.st.shown++; this.paint(); return true; } return false; },
+  prev() { if (this.st.shown > 0) { this.st.shown--; this.paint(); return true; } return false; },
   stop() {}
 };
 

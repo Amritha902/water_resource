@@ -54,7 +54,7 @@ th{font-size:14px;color:var(--ink2);font-weight:600}
 .handson h1,.handson h2{color:#fff}.handson .kicker{color:#bfdbfe}.handson p,.handson li{color:#e0e7ff}
 .handson .card{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:#fff}
 .handson code{background:rgba(255,255,255,.18)!important;color:#fff}
-.agenda td{font-size:17px;padding:7px 10px}
+.agenda td{font-size:16px;padding:5px 10px;line-height:1.35}
 .agenda td:first-child{font-family:Consolas,monospace;color:var(--blue);white-space:nowrap}
 .note{border-left:4px solid var(--orange);background:#fff7ed;padding:10px 14px;border-radius:0 8px 8px 0;font-size:17px;line-height:1.4}
 .note.blue{border-color:var(--blue);background:#eff6ff}
@@ -138,6 +138,19 @@ pre.nb-text{background:#fff;color:#111827;font-size:12px;line-height:1.4;max-hei
 .cl .ln{width:30px;flex:none;text-align:right;padding-right:8px;color:#b6bcc6}
 .cm-code .tk{color:#7c3aed;font-weight:600}.cm-code .ts{color:#b45309}.cm-code .tc{color:#8a919c;font-style:italic}.cm-code .tn{color:#0f766e}.cm-code .tb{color:#2563eb}.cm-code .tf{color:#1d4ed8}
 .cm-caption{margin-top:10px;font-size:17px;line-height:1.4;min-height:48px}
+
+/* lesson dividers and quizzes */
+.slide.divider{background:linear-gradient(160deg,#fbfaf7 0,#e8eefb 100%)}
+.ltrack{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:34px}
+.ltrack span{font-size:13px;padding:4px 10px;border-radius:99px;background:#fff;border:1px solid var(--line);color:var(--muted)}
+.ltrack span.done{color:var(--ink2);border-color:#c7d2fe}
+.ltrack span.on{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:700}
+.quiz-root{display:flex;flex-direction:column;gap:14px}
+.qz{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.qz-q{display:flex;gap:14px;align-items:center;width:100%;text-align:left;border:none;border-radius:0;font-size:21px;padding:14px 18px;background:#fff}
+.qz-n{flex:none;width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px}
+.qz-a{max-height:0;overflow:hidden;transition:max-height .45s ease,padding .45s;font-size:18.5px;line-height:1.45;padding:0 18px 0 66px;background:#f0fdf4;color:#14532d}
+.qz.open .qz-a{max-height:200px;padding:12px 18px 14px 66px}
 </style>
 </head>
 <body>
@@ -160,19 +173,11 @@ pre.nb-text{background:#fff;color:#111827;font-size:12px;line-height:1.4;max-hei
 <!-- 2 ─────────────────────────────── AGENDA -->
 <section class="slide">
   <div class="kicker">Plan</div>
-  <h2>What we will do in 90 minutes</h2>
-  <p class="sub">Short slides, then you run the same step yourself. Every step points to the file in the repository that does it for real.</p>
+  <h2>One lesson, seven steps, 90 minutes</h2>
+  <p class="sub">Every step has the same rhythm: the idea (animated) → where the code is → the code running → three questions → your turn. Every step points to the file in the repository that does it for real.</p>
   <div class="cols">
     <div class="col">
-      <table class="agenda">
-        <tr><td>0:00</td><td>The plant and the problem. What a <b>model</b> is.</td></tr>
-        <tr><td>0:10</td><td><b>Collect</b> and <b>clean</b> the data <span class="pill b">notebook 1</span></td></tr>
-        <tr><td>0:27</td><td><b>Prepare</b> it: transform, scale, windows, split <span class="pill b">notebook 1</span></td></tr>
-        <tr><td>0:40</td><td><b>Choose a model</b>: inputs and outputs decide. Inside a network, layer by layer. Counting parameters.</td></tr>
-        <tr><td>0:52</td><td><b>Train</b> it: loss, gradient descent, the training loop, overfitting <span class="pill b">notebook 2</span></td></tr>
-        <tr><td>1:12</td><td><b>Reinforcement learning</b> in brief: when there are no labels <span class="pill b">notebook 3</span></td></tr>
-        <tr><td>1:25</td><td>Lessons from the project, questions</td></tr>
-      </table>
+      <table class="agenda"><tr><td>1</td><td><b>What is a model?</b> <span class="small">· 8 min · A model is a function with knobs. Training turns the knobs, in four steps that every model uses.</span></td></tr><tr><td>2</td><td><b>Collect and clean the data</b> <span class="small">· 20 min · Download data reproducibly, read it without traps, check it, and fix what is wrong, including the physics.</span></td></tr><tr><td>3</td><td><b>Prepare the data</b> <span class="small">· 12 min · Choose inputs and target, split by time, scale with training numbers only, cut examples.</span></td></tr><tr><td>4</td><td><b>Choose the model</b> <span class="small">· 10 min · Let the input and output shapes pick the model family; look inside a network layer by layer; count its knobs.</span></td></tr><tr><td>5</td><td><b>Train and evaluate</b> <span class="small">· 20 min · Train with a validation set, spot overfitting, beat the baselines, test once, save the model with its scaler.</span></td></tr><tr><td>6</td><td><b>Reinforcement learning</b> <span class="small">· 13 min · Learn from a reward instead of right answers: environment, reward, exploring, learning. Then the project's agents.</span></td></tr><tr><td>7</td><td><b>Our project's code</b> <span class="small">· 5 min · Read the published methods and our controller in the project's own code, and the lessons they taught us.</span></td></tr></table>
     </div>
     <div class="col" style="flex:.8">
       <div class="card">
@@ -234,9 +239,20 @@ jupyter lab workshop/notebooks</pre>
   <div class="pipe-root"></div>
 </section>
 
+<!-- lesson 1 divider -->
+<section class="slide divider">
+  <div class="ltrack"><span class="on">1. What is a model?</span><span class="">2. Collect and clean the data</span><span class="">3. Prepare the data</span><span class="">4. Choose the model</span><span class="">5. Train and evaluate</span><span class="">6. Reinforcement learning</span><span class="">7. Our project's code</span></div>
+  <div class="kicker">Lesson 1 of 7 · 8 min</div>
+  <h1 style="font-size:58px;margin:6px 0 18px">What is a model?</h1>
+  <div class="cols" style="margin-top:10px">
+    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">A model is a function with knobs. Training turns the knobs, in four steps that every model uses.</p></div></div>
+    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: <code>python workshop/examples/lesson1_knobs.py</code></p><p style="margin:0">Notebook: none needed; slide 8 shows the same lines in notebook 2 and the project.</p></div></div>
+  </div>
+</section>
+
 <!-- 4 ─────────────────────────────── WHAT IS A MODEL -->
 <section class="slide" data-anim="fit">
-  <div class="kicker">The core idea</div>
+  <div class="kicker">Lesson 1 · the core idea</div>
   <h2>What is a model?</h2>
   <div class="cols">
     <div class="col" style="flex:1.25">
@@ -261,15 +277,34 @@ jupyter lab workshop/notebooks</pre>
 
 <!-- ★ code map: lesson1 -->
 <section class="slide" data-anim="codemap" data-key="lesson1">
-  <div class="kicker">Where is the code? · training</div>
-  <h2>Four steps train every model, everywhere</h2>
-  <p class="small" style="margin:2px 0 0">Run it yourself: <code>python workshop/examples/lesson1_knobs.py</code></p>
+  <div class="kicker">Lesson 1 · where is the code?</div>
+  <h2>Four steps train every model</h2>
+  <p class="small" style="margin:2px 0 0">The same steps in the hands-on script, the notebook and the project. Run it yourself: <code>python workshop/examples/lesson1_knobs.py</code></p>
   <div class="cm-root"></div>
+</section>
+
+<!-- lesson 1 quiz -->
+<section class="slide" data-anim="quiz" data-key="l1">
+  <div class="kicker">Lesson 1 · check yourself</div>
+  <h2>Three questions before we move on</h2>
+  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
+  <div class="quiz-root"></div>
+</section>
+
+<!-- lesson 2 divider -->
+<section class="slide divider">
+  <div class="ltrack"><span class="done">1. What is a model?</span><span class="on">2. Collect and clean the data</span><span class="">3. Prepare the data</span><span class="">4. Choose the model</span><span class="">5. Train and evaluate</span><span class="">6. Reinforcement learning</span><span class="">7. Our project's code</span></div>
+  <div class="kicker">Lesson 2 of 7 · 20 min</div>
+  <h1 style="font-size:58px;margin:6px 0 18px">Collect and clean the data</h1>
+  <div class="cols" style="margin-top:10px">
+    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">Download data reproducibly, read it without traps, check it, and fix what is wrong, including the physics.</p></div></div>
+    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: <code>python workshop/examples/lesson2_load_and_clean.py</code></p><p style="margin:0">Notebook: notebook 1, parts A and B</p></div></div>
+  </div>
 </section>
 
 <!-- 5 ─────────────────────────────── COLLECT -->
 <section class="slide" data-anim="collect">
-  <div class="kicker">Step 1 · collect</div>
+  <div class="kicker">Lesson 2 · collect</div>
   <h2>Where the data comes from</h2>
   <div class="cols">
     <div class="col" style="flex:1.45">
@@ -291,7 +326,7 @@ jupyter lab workshop/notebooks</pre>
 
 <!-- 6 ─────────────────────────────── LOAD CODE -->
 <section class="slide">
-  <div class="kicker">Step 1 · collect · the code</div>
+  <div class="kicker">Lesson 2 · collect · the code</div>
   <h2>Load it once, record where it came from, cache it</h2>
   <div class="cols" style="margin-top:12px">
     <div class="col" style="flex:1.3">
@@ -325,7 +360,7 @@ _SRC = <span class="s">"https://raw.githubusercontent.com/davidfernand/"</span>
 
 <!-- 7 ─────────────────────────────── CLEAN -->
 <section class="slide" data-anim="clean">
-  <div class="kicker">Step 2 · clean</div>
+  <div class="kicker">Lesson 2 · clean</div>
   <h2>Cleaning: look before you learn</h2>
   <div class="cols">
     <div class="col" style="flex:1.1">
@@ -357,7 +392,7 @@ _SRC = <span class="s">"https://raw.githubusercontent.com/davidfernand/"</span>
 
 <!-- 8 ─────────────────────────────── RESAMPLE -->
 <section class="slide" data-anim="zoh">
-  <div class="kicker">Step 2 · clean · time grid</div>
+  <div class="kicker">Lesson 2 · clean · time grid</div>
   <h2>Put everything on one time grid</h2>
   <p class="sub">Sensors sample every 15 min, but the controller acts every 45 s. Between samples the influent is held constant (a zero-order hold): 20 control steps per sample.</p>
   <canvas id="cv-zoh" width="1160" height="360"></canvas>
@@ -367,32 +402,41 @@ idx = np.minimum(np.searchsorted(d[:, 0], t, side=<span class="s">"right"</span>
 flow = d[idx, 15]</pre>
 </section>
 
+<!-- ★ code map: lesson2 -->
+<section class="slide" data-anim="codemap" data-key="lesson2">
+  <div class="kicker">Lesson 2 · where is the code?</div>
+  <h2>Download, read, check, fix</h2>
+  <p class="small" style="margin:2px 0 0">The same steps in the hands-on script, the notebook and the project. Run it yourself: <code>python workshop/examples/lesson2_load_and_clean.py</code></p>
+  <div class="cm-root"></div>
+</section>
+
 <!-- ★ code tour: data -->
 <section class="slide" data-anim="tour" data-key="data">
-  <div class="kicker">Our code · data</div>
+  <div class="kicker">Lesson 2 · our code</div>
   <h2>How the project loads and corrects the official data</h2>
   <div class="tour-root"></div>
 </section>
 
 <!-- ★ player: collect -->
 <section class="slide" data-anim="player" data-key="collect">
-  <div class="kicker">In code · notebook 1, parts A and B</div>
+  <div class="kicker">Lesson 2 · the notebook running</div>
   <h2>Collect and clean, cell by cell</h2>
   <div class="player-root"></div>
 </section>
 
-<!-- ★ code map: lesson2 -->
-<section class="slide" data-anim="codemap" data-key="lesson2">
-  <div class="kicker">Where is the code? · collect and clean</div>
-  <h2>Download, read, check, fix: in the script, the notebook and the project</h2>
-  <p class="small" style="margin:2px 0 0">Run it yourself: <code>python workshop/examples/lesson2_load_and_clean.py</code></p>
-  <div class="cm-root"></div>
+<!-- lesson 2 quiz -->
+<section class="slide" data-anim="quiz" data-key="l2">
+  <div class="kicker">Lesson 2 · check yourself</div>
+  <h2>Three questions before we move on</h2>
+  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
+  <div class="quiz-root"></div>
 </section>
 
 <!-- 9 ─────────────────────────────── HANDS ON 1 -->
 <section class="slide handson">
   <div class="kicker">Your turn · 12 minutes</div>
   <h1>Notebook 1, parts A and B</h1>
+  <p style="margin:4px 0 0">Short on time? The same steps in one terminal command: <code>python workshop/examples/lesson2_load_and_clean.py</code></p>
   <div class="cols" style="margin-top:20px">
     <div class="col card">
       <h3>A · Collect</h3>
@@ -406,9 +450,20 @@ flow = d[idx, 15]</pre>
   <p style="margin-top:22px"><code>workshop/notebooks/01_data_collect_clean_prepare.ipynb</code> · <a href="https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq" style="color:#fff;font-weight:600">open it as a web page, with all results ↗</a></p>
 </section>
 
+<!-- lesson 3 divider -->
+<section class="slide divider">
+  <div class="ltrack"><span class="done">1. What is a model?</span><span class="done">2. Collect and clean the data</span><span class="on">3. Prepare the data</span><span class="">4. Choose the model</span><span class="">5. Train and evaluate</span><span class="">6. Reinforcement learning</span><span class="">7. Our project's code</span></div>
+  <div class="kicker">Lesson 3 of 7 · 12 min</div>
+  <h1 style="font-size:58px;margin:6px 0 18px">Prepare the data</h1>
+  <div class="cols" style="margin-top:10px">
+    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">Choose inputs and target, split by time, scale with training numbers only, cut examples.</p></div></div>
+    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: <code>python workshop/examples/lesson3_prepare.py</code></p><p style="margin:0">Notebook: notebook 1, part C</p></div></div>
+  </div>
+</section>
+
 <!-- 10 ─────────────────────────────── TRANSFORM & SCALE -->
 <section class="slide" data-anim="scale">
-  <div class="kicker">Step 3 · prepare</div>
+  <div class="kicker">Lesson 3 · prepare</div>
   <h2>Transform and scale the inputs</h2>
   <div class="cols">
     <div class="col" style="flex:1.35">
@@ -438,7 +493,7 @@ flow = d[idx, 15]</pre>
 
 <!-- 11 ─────────────────────────────── WINDOWS -->
 <section class="slide" data-anim="window">
-  <div class="kicker">Step 3 · prepare</div>
+  <div class="kicker">Lesson 3 · prepare</div>
   <h2>Turn one long series into many (input, target) examples</h2>
   <canvas id="cv-window" width="1160" height="380"></canvas>
   <div class="cols" style="margin-top:6px">
@@ -459,7 +514,7 @@ flow = d[idx, 15]</pre>
 
 <!-- 12 ─────────────────────────────── SPLIT -->
 <section class="slide" data-anim="split">
-  <div class="kicker">Step 3 · prepare</div>
+  <div class="kicker">Lesson 3 · prepare</div>
   <h2>Split by time, not at random</h2>
   <canvas id="cv-split" width="1160" height="300"></canvas>
   <div class="btns"><button id="split-random">random split</button><button id="split-time" class="on">split by time</button></div>
@@ -481,17 +536,34 @@ flow = d[idx, 15]</pre>
   </div>
 </section>
 
+<!-- code map: lesson3 -->
+<section class="slide" data-anim="codemap" data-key="lesson3">
+  <div class="kicker">Lesson 3 · where is the code?</div>
+  <h2>Choose, split, scale, cut</h2>
+  <p class="small" style="margin:2px 0 0">The same steps in the hands-on script, the notebook and the project. Run it yourself: <code>python workshop/examples/lesson3_prepare.py</code></p>
+  <div class="cm-root"></div>
+</section>
+
 <!-- ★ player: prepare -->
 <section class="slide" data-anim="player" data-key="prepare">
-  <div class="kicker">In code · notebook 1, part C</div>
+  <div class="kicker">Lesson 3 · the notebook running</div>
   <h2>Prepare, cell by cell</h2>
   <div class="player-root"></div>
+</section>
+
+<!-- lesson 3 quiz -->
+<section class="slide" data-anim="quiz" data-key="l3">
+  <div class="kicker">Lesson 3 · check yourself</div>
+  <h2>Three questions before we move on</h2>
+  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
+  <div class="quiz-root"></div>
 </section>
 
 <!-- 13 ─────────────────────────────── HANDS ON 2 -->
 <section class="slide handson">
   <div class="kicker">Your turn · 10 minutes</div>
   <h1>Notebook 1, part C: prepare</h1>
+  <p style="margin:4px 0 0">Short on time? The same steps in one terminal command: <code>python workshop/examples/lesson3_prepare.py</code></p>
   <div class="cols" style="margin-top:20px">
     <div class="col card">
       <ul>
@@ -510,9 +582,20 @@ flow = d[idx, 15]</pre>
   </div>
 </section>
 
+<!-- lesson 4 divider -->
+<section class="slide divider">
+  <div class="ltrack"><span class="done">1. What is a model?</span><span class="done">2. Collect and clean the data</span><span class="done">3. Prepare the data</span><span class="on">4. Choose the model</span><span class="">5. Train and evaluate</span><span class="">6. Reinforcement learning</span><span class="">7. Our project's code</span></div>
+  <div class="kicker">Lesson 4 of 7 · 10 min</div>
+  <h1 style="font-size:58px;margin:6px 0 18px">Choose the model</h1>
+  <div class="cols" style="margin-top:10px">
+    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">Let the input and output shapes pick the model family; look inside a network layer by layer; count its knobs.</p></div></div>
+    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: <code>python workshop/examples/lesson4_models.py</code></p><p style="margin:0">Notebook: notebook 2, sections 1–6</p></div></div>
+  </div>
+</section>
+
 <!-- 14 ─────────────────────────────── SHAPES DECIDE -->
 <section class="slide" data-anim="shapes">
-  <div class="kicker">Step 4 · choose a model</div>
+  <div class="kicker">Lesson 4 · choose a model</div>
   <h2>The input and output decide the model</h2>
   <div class="cols" style="margin-top:8px">
     <div class="col" style="flex:.9">
@@ -544,7 +627,7 @@ flow = d[idx, 15]</pre>
 
 <!-- 15 ─────────────────────────────── INSIDE A NETWORK -->
 <section class="slide" data-anim="forward">
-  <div class="kicker">Step 4 · inside the model</div>
+  <div class="kicker">Lesson 4 · inside the model</div>
   <h2>What happens inside a neural network, layer by layer</h2>
   <div class="cols">
     <div class="col" style="flex:1.45">
@@ -567,7 +650,7 @@ flow = d[idx, 15]</pre>
 
 <!-- 16 ─────────────────────────────── PARAMETERS -->
 <section class="slide" data-anim="params">
-  <div class="kicker">Step 4 · size of the model</div>
+  <div class="kicker">Lesson 4 · size of the model</div>
   <h2>Counting parameters</h2>
   <div class="cols">
     <div class="col" style="flex:1.3">
@@ -586,7 +669,7 @@ flow = d[idx, 15]</pre>
 
 <!-- 17 ─────────────────────────────── CONV -->
 <section class="slide" data-anim="conv">
-  <div class="kicker">Step 4 · models for sequences (1)</div>
+  <div class="kicker">Lesson 4 · models for sequences (1)</div>
   <h2>A causal convolution: the same small filter slides along time</h2>
   <canvas id="cv-conv" width="1160" height="370"></canvas>
   <div class="cols">
@@ -604,7 +687,7 @@ flow = d[idx, 15]</pre>
 
 <!-- 18 ─────────────────────────────── GRU -->
 <section class="slide" data-anim="gru">
-  <div class="kicker">Step 4 · models for sequences (2)</div>
+  <div class="kicker">Lesson 4 · models for sequences (2)</div>
   <h2>A recurrent network carries a memory through time</h2>
   <canvas id="cv-gru" width="1160" height="360"></canvas>
   <div class="cols">
@@ -620,16 +703,43 @@ flow = d[idx, 15]</pre>
   </div>
 </section>
 
+<!-- code map: lesson4 -->
+<section class="slide" data-anim="codemap" data-key="lesson4">
+  <div class="kicker">Lesson 4 · where is the code?</div>
+  <h2>Shapes → baselines → linear → MLP → CNN</h2>
+  <p class="small" style="margin:2px 0 0">The same steps in the hands-on script, the notebook and the project. Run it yourself: <code>python workshop/examples/lesson4_models.py</code></p>
+  <div class="cm-root"></div>
+</section>
+
 <!-- ★ player: model -->
 <section class="slide" data-anim="player" data-key="model">
-  <div class="kicker">In code · notebook 2, part 1</div>
+  <div class="kicker">Lesson 4 · the notebook running</div>
   <h2>Shapes, baselines and models, cell by cell</h2>
   <div class="player-root"></div>
 </section>
 
+<!-- lesson 4 quiz -->
+<section class="slide" data-anim="quiz" data-key="l4">
+  <div class="kicker">Lesson 4 · check yourself</div>
+  <h2>Three questions before we move on</h2>
+  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
+  <div class="quiz-root"></div>
+</section>
+
+<!-- lesson 5 divider -->
+<section class="slide divider">
+  <div class="ltrack"><span class="done">1. What is a model?</span><span class="done">2. Collect and clean the data</span><span class="done">3. Prepare the data</span><span class="done">4. Choose the model</span><span class="on">5. Train and evaluate</span><span class="">6. Reinforcement learning</span><span class="">7. Our project's code</span></div>
+  <div class="kicker">Lesson 5 of 7 · 20 min</div>
+  <h1 style="font-size:58px;margin:6px 0 18px">Train and evaluate</h1>
+  <div class="cols" style="margin-top:10px">
+    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">Train with a validation set, spot overfitting, beat the baselines, test once, save the model with its scaler.</p></div></div>
+    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: <code>python workshop/examples/lesson5_train_and_evaluate.py</code></p><p style="margin:0">Notebook: notebook 2, sections 5–9</p></div></div>
+  </div>
+</section>
+
 <!-- 19 ─────────────────────────────── LOSS -->
 <section class="slide" data-anim="loss">
-  <div class="kicker">Step 5 · train</div>
+  <div class="kicker">Lesson 5 · train</div>
   <h2>The loss says what "wrong" means</h2>
   <div class="cols">
     <div class="col" style="flex:1.2">
@@ -653,7 +763,7 @@ flow = d[idx, 15]</pre>
 
 <!-- 20 ─────────────────────────────── GRADIENT DESCENT -->
 <section class="slide" data-anim="descent">
-  <div class="kicker">Step 5 · train</div>
+  <div class="kicker">Lesson 5 · train</div>
   <h2>Gradient descent: walk downhill on the loss</h2>
   <div class="cols">
     <div class="col" style="flex:1.2">
@@ -675,7 +785,7 @@ flow = d[idx, 15]</pre>
 
 <!-- 21 ─────────────────────────────── TRAINING LOOP -->
 <section class="slide" data-anim="loop">
-  <div class="kicker">Step 5 · train</div>
+  <div class="kicker">Lesson 5 · train</div>
   <h2>The training loop</h2>
   <div class="cols">
     <div class="col" style="flex:1">
@@ -702,16 +812,24 @@ flow = d[idx, 15]</pre>
   </div>
 </section>
 
+<!-- code map: lesson5 -->
+<section class="slide" data-anim="codemap" data-key="lesson5">
+  <div class="kicker">Lesson 5 · where is the code?</div>
+  <h2>Train, validate, test once, save</h2>
+  <p class="small" style="margin:2px 0 0">The same steps in the hands-on script, the notebook and the project. Run it yourself: <code>python workshop/examples/lesson5_train_and_evaluate.py</code></p>
+  <div class="cm-root"></div>
+</section>
+
 <!-- ★ player: train -->
 <section class="slide" data-anim="player" data-key="train">
-  <div class="kicker">In code · notebook 2, part 2</div>
+  <div class="kicker">Lesson 5 · the notebook running</div>
   <h2>Training, overfitting and the test, cell by cell</h2>
   <div class="player-root"></div>
 </section>
 
 <!-- 22 ─────────────────────────────── EVALUATION -->
 <section class="slide" data-anim="baselines">
-  <div class="kicker">Step 6 · evaluate</div>
+  <div class="kicker">Lesson 5 · evaluate</div>
   <h2>A model is only good compared with something simple</h2>
   <div class="cols">
     <div class="col">
@@ -730,10 +848,19 @@ flow = d[idx, 15]</pre>
   </div>
 </section>
 
+<!-- lesson 5 quiz -->
+<section class="slide" data-anim="quiz" data-key="l5">
+  <div class="kicker">Lesson 5 · check yourself</div>
+  <h2>Three questions before we move on</h2>
+  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
+  <div class="quiz-root"></div>
+</section>
+
 <!-- 23 ─────────────────────────────── HANDS ON 3 -->
 <section class="slide handson">
   <div class="kicker">Your turn · 20 minutes</div>
   <h1>Notebook 2: choose and train</h1>
+  <p style="margin:4px 0 0">Short on time? The same steps in one terminal command: <code>python workshop/examples/lesson4_models.py</code> and <code>python workshop/examples/lesson5_train_and_evaluate.py</code></p>
   <div class="cols" style="margin-top:18px">
     <div class="col card">
       <ul>
@@ -755,9 +882,20 @@ flow = d[idx, 15]</pre>
   <p style="margin-top:14px"><code>workshop/notebooks/02_choose_and_train_a_model.ipynb</code> · <a href="https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm" style="color:#fff;font-weight:600">open it as a web page, with all results ↗</a></p>
 </section>
 
+<!-- lesson 6 divider -->
+<section class="slide divider">
+  <div class="ltrack"><span class="done">1. What is a model?</span><span class="done">2. Collect and clean the data</span><span class="done">3. Prepare the data</span><span class="done">4. Choose the model</span><span class="done">5. Train and evaluate</span><span class="on">6. Reinforcement learning</span><span class="">7. Our project's code</span></div>
+  <div class="kicker">Lesson 6 of 7 · 13 min</div>
+  <h1 style="font-size:58px;margin:6px 0 18px">Reinforcement learning</h1>
+  <div class="cols" style="margin-top:10px">
+    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">Learn from a reward instead of right answers: environment, reward, exploring, learning. Then the project's agents.</p></div></div>
+    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: <code>python workshop/examples/lesson6_rl.py</code></p><p style="margin:0">Notebook: notebook 3</p></div></div>
+  </div>
+</section>
+
 <!-- 24 ─────────────────────────────── RL LOOP -->
 <section class="slide" data-anim="rl">
-  <div class="kicker">Reinforcement learning</div>
+  <div class="kicker">Lesson 6 · reinforcement learning</div>
   <h2>When there is no correct answer to copy</h2>
   <div class="cols">
     <div class="col" style="flex:1.3">
@@ -782,7 +920,7 @@ flow = d[idx, 15]</pre>
 
 <!-- 25 ─────────────────────────────── RL PIECES -->
 <section class="slide">
-  <div class="kicker">Reinforcement learning</div>
+  <div class="kicker">Lesson 6 · reinforcement learning</div>
   <h2>The parts of an actor-critic agent (DDPG, SAC)</h2>
   <div class="cols" style="margin-top:10px">
     <div class="col">
@@ -811,23 +949,31 @@ soft_update(actor, actor_target, tau=0.001)</pre>
   </div>
 </section>
 
+<!-- code map: lesson6 -->
+<section class="slide" data-anim="codemap" data-key="lesson6">
+  <div class="kicker">Lesson 6 · where is the code?</div>
+  <h2>Environment, reward, act, learn</h2>
+  <p class="small" style="margin:2px 0 0">The same steps in the hands-on script, the notebook and the project. Run it yourself: <code>python workshop/examples/lesson6_rl.py</code></p>
+  <div class="cm-root"></div>
+</section>
+
 <!-- ★ tour: rl code -->
 <section class="slide" data-anim="tour" data-key="rlcode">
-  <div class="kicker">Our code · reinforcement learning</div>
+  <div class="kicker">Lesson 6 · our code</div>
   <h2>Reward, DDPG update and SAC-IL update, in the project's code</h2>
   <div class="tour-root"></div>
 </section>
 
 <!-- ★ player: rl -->
 <section class="slide" data-anim="player" data-key="rl">
-  <div class="kicker">In code · notebook 3</div>
+  <div class="kicker">Lesson 6 · the notebook running</div>
   <h2>Reinforcement learning, cell by cell</h2>
   <div class="player-root"></div>
 </section>
 
 <!-- 26 ─────────────────────────────── SAC-IL -->
 <section class="slide">
-  <div class="kicker">Reinforcement learning · the project's controller</div>
+  <div class="kicker">Lesson 6 · the project's controller</div>
   <h2>Start from the expert, then improve, behind a safety gate</h2>
   <div class="flow" style="margin:20px 0 22px;justify-content:center;flex-wrap:nowrap;gap:6px">
     <div class="box frag" style="border-color:var(--orange)"><b>1 · Expert</b><br><span class="small">run the PID on dry week 1, record (state, action)</span></div><span class="arrow frag">→</span>
@@ -854,24 +1000,19 @@ soft_update(actor, actor_target, tau=0.001)</pre>
   </div>
 </section>
 
-<!-- ★ tour: papers -->
-<section class="slide" data-anim="tour" data-key="papers">
-  <div class="kicker">Our code · reproducing the papers</div>
-  <h2>Papers 1 and 3 exactly as printed, and why they don't learn</h2>
-  <div class="tour-root"></div>
-</section>
-
-<!-- ★ tour: ours -->
-<section class="slide" data-anim="tour" data-key="ours">
-  <div class="kicker">Our code · our controller</div>
-  <h2>ILC, the control step, the safety gate and the training script</h2>
-  <div class="tour-root"></div>
+<!-- lesson 6 quiz -->
+<section class="slide" data-anim="quiz" data-key="l6">
+  <div class="kicker">Lesson 6 · check yourself</div>
+  <h2>Three questions before we move on</h2>
+  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
+  <div class="quiz-root"></div>
 </section>
 
 <!-- 27 ─────────────────────────────── HANDS ON 4 -->
 <section class="slide handson">
   <div class="kicker">Your turn · 12 minutes</div>
   <h1>Notebook 3: reinforcement learning in brief</h1>
+  <p style="margin:4px 0 0">Short on time? The same steps in one terminal command: <code>python workshop/examples/lesson6_rl.py</code></p>
   <div class="cols" style="margin-top:20px">
     <div class="col card">
       <ul>
@@ -890,9 +1031,42 @@ soft_update(actor, actor_target, tau=0.001)</pre>
   <p style="margin-top:20px"><code>workshop/notebooks/03_reinforcement_learning_in_brief.ipynb</code> · <a href="https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5" style="color:#fff;font-weight:600">open it as a web page, with all results ↗</a></p>
 </section>
 
+<!-- lesson 7 divider -->
+<section class="slide divider">
+  <div class="ltrack"><span class="done">1. What is a model?</span><span class="done">2. Collect and clean the data</span><span class="done">3. Prepare the data</span><span class="done">4. Choose the model</span><span class="done">5. Train and evaluate</span><span class="done">6. Reinforcement learning</span><span class="on">7. Our project's code</span></div>
+  <div class="kicker">Lesson 7 of 7 · 5 min</div>
+  <h1 style="font-size:58px;margin:6px 0 18px">Our project's code</h1>
+  <div class="cols" style="margin-top:10px">
+    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">Read the published methods and our controller in the project's own code, and the lessons they taught us.</p></div></div>
+    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: the code tours in this lesson</p><p style="margin:0">Notebook: none needed; slide 8 shows the same lines in notebook 2 and the project.</p></div></div>
+  </div>
+</section>
+
+<!-- ★ tour: papers -->
+<section class="slide" data-anim="tour" data-key="papers">
+  <div class="kicker">Lesson 7 · reproducing the papers</div>
+  <h2>Papers 1 and 3 exactly as printed, and why they don't learn</h2>
+  <div class="tour-root"></div>
+</section>
+
+<!-- ★ tour: ours -->
+<section class="slide" data-anim="tour" data-key="ours">
+  <div class="kicker">Lesson 7 · our controller</div>
+  <h2>ILC, the control step, the safety gate and the training script</h2>
+  <div class="tour-root"></div>
+</section>
+
+<!-- lesson 7 quiz -->
+<section class="slide" data-anim="quiz" data-key="l7">
+  <div class="kicker">Lesson 7 · check yourself</div>
+  <h2>Three questions before we move on</h2>
+  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
+  <div class="quiz-root"></div>
+</section>
+
 <!-- 28 ─────────────────────────────── LESSONS -->
 <section class="slide">
-  <div class="kicker">Take home</div>
+  <div class="kicker">Lesson 7 · take home</div>
   <h2>What this project teaches about doing ML research</h2>
   <div class="cols" style="margin-top:14px">
     <div class="col">

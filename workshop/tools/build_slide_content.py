@@ -300,6 +300,77 @@ CODEMAPS = {
 }
 
 
+CODEMAPS.update({
+    "lesson3": {
+        "steps": ["1 · choose inputs and target", "2 · split by time", "3 · scale (training only)", "4 · cut windows"],
+        "panels": [
+            ("Hands-on script", ("file", "workshop/examples/lesson3_prepare.py", "# ── 1 CHOOSE", 'print(f"4 WINDOWS'),
+             {0: ("CHANNELS = [", "LOOKBACK, HORIZON"), 1: ("SPLITS = {", '"test": [("storm"'),
+              2: ("train_rows =", "return (np.log(x) - MEAN) / STD"), 3: ("def windows(", "return np.array(X)")}),
+            ("Notebook 1 · part C", ("cells", "01_data_collect_clean_prepare", ["CHANNELS = [", "SPLITS = {", "def rows_of(", "def scale(x):"]),
+             {0: ("CHANNELS = [", "LOOKBACK, HORIZON"), 1: ("SPLITS = {", '"test": [("storm"'),
+              2: ("train_rows =", "MEAN, STD ="), 3: ("def windows(", "assert s + LOOKBACK - 1 < first")}),
+            ("Project · forecaster dataset", ("file", "src/wwtp/forecast/dataset.py", 'CHANNELS = ("Q_in"', "return ForecastCorpus("),
+             {0: ('CHANNELS = ("Q_in"', "HORIZON = 8"), 2: ("if mean is None or std is None:", "y = (y - mean) / std"),
+              3: ("def _windows(", "return xs, ys")}),
+            ("Project · split by plant, scaler on train", ("multi", [
+                ("file", "experiments/04_collect_warning_data.py", 'SPLITS = {"train"', 'SPLITS = {"train"'),
+                ("file", "experiments/05_warning_benchmark.py", "norm = Normaliser().fit", "test = window("),
+                ("func", "src/wwtp/warning/dataset.py", "Normaliser", None, None)]),
+             {1: ('SPLITS = {"train"', 'SPLITS = {"train"'), 2: ("norm = Normaliser().fit", "norm = Normaliser().fit")}),
+        ]},
+    "lesson4": {
+        "steps": ["1 · shapes", "2 · baselines", "3 · linear", "4 · MLP (layers)", "5 · causal CNN"],
+        "panels": [
+            ("Hands-on script", ("file", "workshop/examples/lesson4_models.py", "# ── 1 SHAPES", "return x + F.gelu"),
+             {0: ('print("1 SHAPES', 'print("1 SHAPES'), 1: ("for name, pred in", 'print(f"2 BASELINE'), 2: ("lin = Ridge", 'print(f"3 LINEAR'),
+              3: ("mlp = nn.Sequential", "print(f\"             {str(layer)"), 4: ("class CausalBlock", "return x + F.gelu")}),
+            ("Notebook 2 · models", ("cells", "02_choose_and_train_a_model", ['d = np.load(DATA / "prepared.npz")', "def persistence(x):",
+                                                                           "flat = lambda", "def mlp(hidden", "class CausalBlock"]),
+             {0: ("d = np.load", 'print(f"{s:5s} X'), 1: ("def persistence(x):", 'report("same time yesterday"'),
+              2: ("lin = Ridge", 'report("linear (ridge)"'), 3: ("def mlp(hidden", "return nn.Sequential(*layers)"),
+              4: ("class CausalBlock", "return x + F.gelu")}),
+            ("Project · influent forecaster", ("file", "src/wwtp/forecast/models.py", "class CausalBlock", "return q, self.regime_head(ctx), ctx"),
+             {0: ('"""``x``: (B, T, C)', '"""``x``: (B, T, C)'), 3: ("self.head = nn.Sequential(", "nn.Linear(2 * width, horizon"),
+              4: ("class CausalBlock", "return self.norm(x + h)")}),
+            ("Project · MLPs of the RL agents", ("multi", [("func", "src/wwtp/rl/ddpg.py", "_mlp", None, None),
+                                                          ("func", "src/wwtp/sacil/sacil.py", "mlp", None, None)]),
+             {3: ("def _mlp", "return nn.Sequential(*layers)")}),
+        ]},
+    "lesson5": {
+        "steps": ["1 · train (batches, epochs)", "2 · validate, keep the best", "3 · test once", "4 · save with the scaler"],
+        "panels": [
+            ("Hands-on script", ("file", "workshop/examples/lesson5_train_and_evaluate.py", "def fit(model", "z = (np.log(raw) - blob"),
+             {0: ("for xb, yb in loader:", "opt.zero_grad(); loss.backward(); opt.step()"), 1: ("model.eval()", "best, best_state, best_epoch"),
+              2: ("lin = Ridge", 'print("3 TEST'), 3: ("torch.save({", "z = (np.log(raw) - blob")}),
+            ("Notebook 2 · fit, test, save", ("cells", "02_choose_and_train_a_model", ["def loader(split", "test_models = {", 'torch.save({"state_dict": cnn']),
+             {0: ("for xb, yb in tl:", "opt.step(); sched.step()"), 1: ("model.eval()", "model.load_state_dict(best_state)"),
+              2: ("test_models = {", 'print(f"{name:22s}'), 3: ("torch.save({", "return np.exp(out")}),
+            ("Project · early-warning training", ("func", "src/wwtp/warning/train.py", "train_warning", "for epoch in range(epochs):", '"quantiles": QUANTILES'),
+             {0: ("for xb, lb, eb in tl:", "sched.step()"), 1: ("lv, pe = predict(model, val.x", "model.load_state_dict(best_state)"),
+              3: ("torch.save({", '"quantiles": QUANTILES')}),
+            ("Project · using the saved model", ("func", "src/wwtp/forecast/predictor.py", "InfluentPredictor.__init__", None, None),
+             {3: ("blob = torch.load(checkpoint", "self.std = np.asarray(blob")}),
+        ]},
+    "lesson6": {
+        "steps": ["1 · environment", "2 · reward", "3 · act (explore)", "4 · learn"],
+        "panels": [
+            ("Hands-on script", ("file", "workshop/examples/lesson6_rl.py", "class OxygenTank", "return best[1]"),
+             {0: ("def reset(self):", "return np.array([self.S - 2.0"), 1: ("# ── 2 REWARD", "return self.state(), reward"),
+              2: ("eps = max(0.05", "a = int(rng.integers(5))"), 3: ("target = r +", "Q[c + (a,)] +=")}),
+            ("Notebook 3", ("cells", "03_reinforcement_learning_in_brief", ["class OxygenTank:", "E_BINS = np.array("]),
+             {0: ("def reset(self):", "return np.array([self.S - 2.0"), 1: ("reward = -abs", "return self.obs(), reward"),
+              2: ("eps = max(0.05", "else int(np.argmax(Q[s]))"), 3: ("target = r +", "Q[s + (a,)] +=")}),
+            ("Project · paper 2 environment and reward", ("multi", [
+                ("func", "src/wwtp/rl/env.py", "AerationEnv.step", "def step(self, action", "self.kla = float(np.clip(self.kla + a * cfg.da_max"),
+                ("func", "src/wwtp/rl/rewards.py", "reward_ae_eq", None, None)]),
+             {0: ("def step(self, action", "self.kla = float(np.clip(self.kla + a * cfg.da_max"), 1: ("def reward_ae_eq", "+ b2 * _excess")}),
+            ("Project · RL training loop", ("func", "src/wwtp/rl/train.py", "train", "while True:", "agent.update()"),
+             {1: ("r = reward(info)", "r = reward(info)"), 2: ("action = agent.act(x, info=None, explore=True", "nxt, info, done = env.step(action)"),
+              3: ("agent.observe(x, action, r", "agent.update()")}),
+        ]},
+})
+
 def execute(name: str):
     nb = nbformat.read(NBDIR / f"{name}.ipynb", 4)
     print("running", name, flush=True)

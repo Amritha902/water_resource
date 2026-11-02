@@ -208,7 +208,7 @@ const PLAYERS = {
 {
 "code": "net = mlp()\nhist, be = fit(net)\nplot_curves(hist, be, \"MLP 288 → 64 → 64 → 8\")\nreport(\"MLP 288-64-64-8\", predict(net, \"val\"), count(net))",
 "out": {
-"text": "epoch   0  train 0.9952  val 0.9483\nepoch  10  train 0.0607  val 0.3880\nepoch  20  train 0.0520  val 0.3404\nepoch  30  train 0.0324  val 0.3239\nepoch  40  train 0.0260  val 0.3144\nepoch  50  train 0.0221  val 0.3158\nepoch  59  train 0.0213  val 0.3139\nbest epoch 41, val loss 0.3091  (2 s)\nMLP 288-64-64-8              params    23,176   val MAE: 15 min    2209   2 h    3120  m³/d",
+"text": "epoch   0  train 0.9952  val 0.9483\nepoch  10  train 0.0607  val 0.3880\nepoch  20  train 0.0520  val 0.3404\nepoch  30  train 0.0324  val 0.3239\nepoch  40  train 0.0260  val 0.3144\nepoch  50  train 0.0221  val 0.3158\nepoch  59  train 0.0213  val 0.3139\nbest epoch 41, val loss 0.3091  (1 s)\nMLP 288-64-64-8              params    23,176   val MAE: 15 min    2209   2 h    3120  m³/d",
 "img": [
 "img/train1_0.png"
 ]
@@ -1552,6 +1552,1150 @@ const CODEMAPS = {
 "3": [
 13,
 14
+]
+}
+}
+]
+},
+"lesson3": {
+"steps": [
+"1 · choose inputs and target",
+"2 · split by time",
+"3 · scale (training only)",
+"4 · cut windows"
+],
+"panels": [
+{
+"title": "Hands-on script",
+"where": "workshop/examples/lesson3_prepare.py",
+"code": [
+"# ── 1 CHOOSE: inputs a real plant measures at the inlet; target = the flow in the next 2 hours",
+"CHANNELS = [\"Q\", \"S_NH\", \"S_S\"]                             # as forecast/dataset.py: CHANNELS",
+"LOOKBACK, HORIZON = 96, 8                                   # 24 h in, 2 h out (15-min samples)",
+"print(\"1 CHOOSE  inputs:\", CHANNELS, f\"  one example: ({LOOKBACK}, {len(CHANNELS)}) → ({HORIZON},)\")",
+"",
+"# ── 2 SPLIT by the time of the TARGET: train = past and calm, val = storm 1, test = storm 2",
+"SPLITS = {\"train\": [(\"dry\", 1.0, 14.0), (\"rain\", 7.0, 14.0)],",
+"          \"val\": [(\"storm\", 7.0, 10.25)],",
+"          \"test\": [(\"storm\", 10.25, 14.0)]}",
+"print(\"2 SPLIT   \", {k: v for k, v in SPLITS.items()})",
+"",
+"# ── 3 SCALE: log, then (x − mean) / std, with mean and std from the training rows only",
+"train_rows = np.concatenate([df[w][(df[w].t >= lo - 1) & (df[w].t < hi)][CHANNELS].values for w, lo, hi in SPLITS[\"train\"]])",
+"MEAN, STD = np.log(train_rows).mean(0), np.log(train_rows).std(0)",
+"leaky = np.log(np.concatenate([df[w][CHANNELS].values for w in FILES])).mean(0)",
+"print(\"3 SCALE   mean of log, training rows only:\", MEAN.round(3), \"  with the test leaking in:\", leaky.round(3))",
+"",
+"",
+"def scale(x):",
+"    return (np.log(x) - MEAN) / STD",
+"",
+"",
+"# ── 4 WINDOWS: past 96 steps → next 8 flows; the input always ends before the target starts",
+"def windows(weather, t_lo, t_hi):",
+"    z, t = scale(df[weather][CHANNELS].values).astype(np.float32), df[weather].t.values",
+"    X, Y, T = [], [], []",
+"    for s in range(len(z) - LOOKBACK - HORIZON + 1):",
+"        first = s + LOOKBACK                                # first target row",
+"        if t[first] < t_lo - 1e-9 or t[first + HORIZON - 1] >= t_hi - 1e-9:",
+"            continue",
+"        X.append(z[s:first]); Y.append(z[first:first + HORIZON, 0]); T.append(t[first])",
+"    return np.array(X), np.array(Y), np.array(T)",
+"",
+"",
+"data = {}",
+"for split, parts in SPLITS.items():",
+"    xs, ys, ts = zip(*[windows(*p) for p in parts])",
+"    data[split] = tuple(np.concatenate(a) for a in (xs, ys, ts))",
+"    print(f\"4 WINDOWS {split:5s} X {data[split][0].shape}  y {data[split][1].shape}\")"
+],
+"marks": {
+"0": [
+1,
+2
+],
+"1": [
+6,
+8
+],
+"2": [
+12,
+19
+],
+"3": [
+23,
+31
+]
+}
+},
+{
+"title": "Notebook 1 · part C",
+"where": "workshop/notebooks/01_data_collect_clean_prepare.ipynb",
+"code": [
+"# ── cell 17",
+"CHANNELS = [\"Q\", \"S_NH\", \"S_S\"]",
+"LOOKBACK, HORIZON = 96, 8           # 24 h in, 2 h out, at 15 min",
+"",
+"# ── cell 18",
+"SPLITS = {\"train\": [(\"dry\", 1.0, 14.0), (\"rain\", 7.0, 14.0)],",
+"          \"val\": [(\"storm\", 7.0, 10.25)],",
+"          \"test\": [(\"storm\", 10.25, 14.0)]}",
+"",
+"# ── cell 19",
+"def rows_of(weather, t_lo, t_hi):",
+"    \"\"\"Raw samples whose time lies in [t_lo, t_hi) (the training rows used for the statistics).\"\"\"",
+"    d = df[weather]",
+"    return d[(d.t >= t_lo) & (d.t < t_hi)][CHANNELS].values",
+"",
+"# every sample the training windows touch: their targets and their 24-h history",
+"train_rows = np.concatenate([rows_of(w, lo - 1.0, hi) for w, lo, hi in SPLITS[\"train\"]])",
+"log_train = np.log(train_rows)",
+"MEAN, STD = log_train.mean(0), log_train.std(0)",
+"print(\"training rows:\", len(train_rows))",
+"print(\"mean of log:\", MEAN.round(3), \"  std of log:\", STD.round(3))",
+"",
+"# what if we (wrongly) used all the data, test included?",
+"all_rows = np.concatenate([df[w][CHANNELS].values for w in FILES])",
+"print(\"with the test data included the mean would be\", np.log(all_rows).mean(0).round(3), \" ← information from the test set\")",
+"",
+"# ── cell 21",
+"def scale(x):",
+"    return (np.log(x) - MEAN) / STD",
+"",
+"",
+"def windows(weather, t_lo, t_hi, stride=1):",
+"    d = df[weather][df[weather].t < 14.0 - 1e-9]       # drop the repeated last row",
+"    z = scale(d[CHANNELS].values).astype(np.float32)",
+"    t = d.t.values",
+"    X, Y, T = [], [], []",
+"    for s in range(0, len(d) - LOOKBACK - HORIZON + 1, stride):",
+"        first, last = s + LOOKBACK, s + LOOKBACK + HORIZON - 1      # target rows",
+"        if t[first] < t_lo - 1e-9 or t[last] >= t_hi - 1e-9:",
+"            continue",
+"        X.append(z[s:s + LOOKBACK])                    # past",
+"        Y.append(z[first:last + 1, 0])                 # future flow (channel 0)",
+"        T.append(t[first])",
+"        assert s + LOOKBACK - 1 < first                # causal: input ends before the target starts",
+"    return np.array(X), np.array(Y), np.array(T)",
+"",
+"",
+"data = {}",
+"for split, parts in SPLITS.items():",
+"    xs, ys, ts = zip(*[windows(*p) for p in parts])",
+"    data[split] = (np.concatenate(xs), np.concatenate(ys), np.concatenate(ts))",
+"    print(f\"{split:5s}  X {data[split][0].shape}  y {data[split][1].shape}\")"
+],
+"marks": {
+"0": [
+1,
+2
+],
+"1": [
+5,
+7
+],
+"2": [
+16,
+18
+],
+"3": [
+31,
+43
+]
+}
+},
+{
+"title": "Project · forecaster dataset",
+"where": "src/wwtp/forecast/dataset.py",
+"code": [
+"CHANNELS = (\"Q_in\", \"S_NH_in\", \"S_S_in\")",
+"CHANNEL_INDEX = (None, asm1.S_NH, asm1.S_S)",
+"",
+"#: sensor sampling period of the inlet instruments",
+"FORECAST_DT_SECONDS = 900.0",
+"#: samples of history fed to the encoder (24 h)",
+"LOOKBACK = 96",
+"#: samples predicted ahead (2 h)",
+"HORIZON = 8",
+"#: quantile levels of the probabilistic head",
+"QUANTILES = (0.1, 0.5, 0.9)",
+"#: weather regimes used by the auxiliary classification head",
+"REGIMES = (\"dry\", \"rain\", \"storm\")",
+"",
+"",
+"def observable(series: InfluentSeries, dt_seconds: float = FORECAST_DT_SECONDS,",
+"               source_dt_seconds: float = 45.0) -> np.ndarray:",
+"    \"\"\"Down-sample a series to the inlet-sensor grid, shape (T, 3).\"\"\"",
+"    stride = max(1, int(round(dt_seconds / source_dt_seconds)))",
+"    q = series.flow[::stride]",
+"    out = np.empty((q.shape[0], len(CHANNELS)))",
+"    out[:, 0] = q",
+"    for j, idx in enumerate(CHANNEL_INDEX[1:], start=1):",
+"        out[:, j] = series.composition[::stride, idx]",
+"    return out",
+"",
+"",
+"def add_sensor_noise(x: np.ndarray, rng: np.random.Generator,",
+"                     rel_std: float = 0.03) -> np.ndarray:",
+"    return x * np.exp(rng.normal(0.0, rel_std, size=x.shape))",
+"",
+"",
+"@dataclass",
+"class ForecastCorpus:",
+"    \"\"\"Windowed supervised corpus for multi-horizon forecasting.\"\"\"",
+"",
+"    x: np.ndarray          # (N, LOOKBACK, C) normalised inputs",
+"    y: np.ndarray          # (N, HORIZON, C) normalised targets",
+"    regime: np.ndarray     # (N,) int labels",
+"    mean: np.ndarray       # (C,) log-space normalisation",
+"    std: np.ndarray        # (C,)",
+"",
+"    def __len__(self) -> int:",
+"        return self.x.shape[0]",
+"",
+"",
+"def _windows(obs: np.ndarray, stride: int) -> tuple[np.ndarray, np.ndarray]:",
+"    n = obs.shape[0] - LOOKBACK - HORIZON",
+"    starts = np.arange(0, max(n, 0), stride)",
+"    xs = np.stack([obs[s:s + LOOKBACK] for s in starts]) if len(starts) else np.zeros((0, LOOKBACK, obs.shape[1]))",
+"    ys = np.stack([obs[s + LOOKBACK:s + LOOKBACK + HORIZON] for s in starts]) if len(starts) else np.zeros((0, HORIZON, obs.shape[1]))",
+"    return xs, ys",
+"",
+"",
+"def build_corpus(n_scenarios: int = 160, seed: int = 0, stride: int = 2,",
+"                 days: float = 14.0, noisy: bool = True,",
+"                 mean: np.ndarray | None = None,",
+"                 std: np.ndarray | None = None) -> ForecastCorpus:",
+"    \"\"\"Simulate ``n_scenarios`` random influent series and window them.\"\"\"",
+"    rng = np.random.default_rng(seed)",
+"    xs, ys, regimes = [], [], []",
+"    for _ in range(n_scenarios):",
+"        series = random_scenario(rng, days=days)",
+"        obs = observable(series)",
+"        if noisy:",
+"            obs = add_sensor_noise(obs, rng)",
+"        xw, yw = _windows(np.log(np.maximum(obs, 1e-3)), stride)",
+"        if len(xw) == 0:",
+"            continue",
+"        xs.append(xw)",
+"        ys.append(yw)",
+"        regimes.append(np.full(len(xw), REGIMES.index(series.weather)))",
+"",
+"    x = np.concatenate(xs).astype(np.float32)",
+"    y = np.concatenate(ys).astype(np.float32)",
+"    regime = np.concatenate(regimes).astype(np.int64)",
+"",
+"    if mean is None or std is None:",
+"        mean = x.reshape(-1, x.shape[-1]).mean(0)",
+"        std = x.reshape(-1, x.shape[-1]).std(0) + 1e-6",
+"    x = (x - mean) / std",
+"    y = (y - mean) / std",
+"    return ForecastCorpus(x, y, regime, np.asarray(mean, np.float32),"
+],
+"marks": {
+"0": [
+0,
+8
+],
+"2": [
+77,
+81
+],
+"3": [
+46,
+51
+]
+}
+},
+{
+"title": "Project · split by plant, scaler on train",
+"where": "experiments/04_collect_warning_data.py + experiments/05_warning_benchmark.py + src/wwtp/warning/dataset.py",
+"code": [
+"# ── experiments/04_collect_warning_data.py",
+"SPLITS = {\"train\": (0, 96), \"val\": (1000, 16), \"test\": (2000, 24)}",
+"",
+"# ── experiments/05_warning_benchmark.py",
+"    norm = Normaliser().fit([r[\"x\"] for r in data[\"train\"]])",
+"    train = window(data[\"train\"], norm, stride=2)",
+"    val = window(data[\"val\"], norm)",
+"    test = window(data[\"test\"], norm)",
+"",
+"# ── src/wwtp/warning/dataset.py · Normaliser()",
+"class Normaliser:",
+"    \"\"\"Per-channel affine scaling; flows and loads are log-transformed.\"\"\"",
+"",
+"    LOG = (0, 1, 2, 6)",
+"",
+"    def __init__(self, mean=None, std=None):",
+"        self.mean = mean",
+"        self.std = std",
+"",
+"    def _pre(self, x: np.ndarray) -> np.ndarray:",
+"        x = x.copy()",
+"        for c in self.LOG:",
+"            x[..., c] = np.log(np.maximum(x[..., c], 1.0))",
+"        return x",
+"",
+"    def fit(self, xs: list[np.ndarray]) -> \"Normaliser\":",
+"        z = self._pre(np.concatenate(xs))",
+"        self.mean = z.mean(0).astype(np.float32)",
+"        self.std = (z.std(0) + 1e-3).astype(np.float32)",
+"        return self",
+"",
+"    def __call__(self, x: np.ndarray) -> np.ndarray:",
+"        return ((self._pre(x) - self.mean) / self.std).astype(np.float32)",
+"",
+"    def state(self) -> dict:",
+"        return {\"mean\": self.mean, \"std\": self.std}"
+],
+"marks": {
+"1": [
+1,
+1
+],
+"2": [
+4,
+4
+]
+}
+}
+]
+},
+"lesson4": {
+"steps": [
+"1 · shapes",
+"2 · baselines",
+"3 · linear",
+"4 · MLP (layers)",
+"5 · causal CNN"
+],
+"panels": [
+{
+"title": "Hands-on script",
+"where": "workshop/examples/lesson4_models.py",
+"code": [
+"# ── 1 SHAPES",
+"print(\"1 SHAPES     X\", X[\"train\"].shape, \"→ y\", Y[\"train\"].shape, \"  (examples, time steps, channels) → (examples, 8 future flows)\")",
+"",
+"# ── 2 BASELINES: no learning at all",
+"for name, pred in ((\"persistence (= now)\", np.repeat(X[\"val\"][:, -1:, 0], 8, 1)),",
+"                   (\"same time yesterday\", X[\"val\"][:, :8, 0])):",
+"    e = mae(pred)",
+"    print(f\"2 BASELINE   {name:22s} error 15 min {e[0]:6.0f}   2 h {e[-1]:6.0f} m³/d   knobs: 0\")",
+"",
+"# ── 3 LINEAR: flatten the window into 288 numbers; ŷ = W·x + b",
+"lin = Ridge(alpha=1.0).fit(X[\"train\"].reshape(len(X[\"train\"]), -1), Y[\"train\"])",
+"e = mae(lin.predict(X[\"val\"].reshape(len(X[\"val\"]), -1)))",
+"print(f\"3 LINEAR     knobs {lin.coef_.size + lin.intercept_.size}  (= 288 × 8 + 8)   error 15 min {e[0]:6.0f}   2 h {e[-1]:6.0f} m³/d\")",
+"",
+"# ── 4 MLP: the same, with two hidden layers and ReLU in between",
+"torch.manual_seed(0)",
+"mlp = nn.Sequential(nn.Flatten(), nn.Linear(288, 64), nn.ReLU(), nn.Linear(64, 64), nn.ReLU(), nn.Linear(64, 8))",
+"print(f\"4 MLP        knobs {count(mlp)}  = (288·64 + 64) + (64·64 + 64) + (64·8 + 8)\")",
+"h = torch.from_numpy(X[\"val\"][:1])",
+"print(f\"             {'input':26s} {tuple(h.shape)}\")",
+"for layer in mlp:",
+"    h = layer(h)",
+"    extra = f\"   {(h == 0).float().mean():.0%} switched off by ReLU\" if isinstance(layer, nn.ReLU) else \"\"",
+"    print(f\"             {str(layer)[:26]:26s} {tuple(h.shape)}{extra}\")",
+"",
+"",
+"# ── 5 CNN: a small filter slides along time; padding only on the left = causal",
+"class CausalBlock(nn.Module):",
+"    def __init__(self, ch, dilation):",
+"        super().__init__()",
+"        self.pad, self.conv = 2 * dilation, nn.Conv1d(ch, ch, 3, dilation=dilation)",
+"",
+"    def forward(self, x):",
+"        return x + F.gelu(self.conv(F.pad(x, (self.pad, 0))))           # pad LEFT only: no future"
+],
+"marks": {
+"0": [
+1,
+1
+],
+"1": [
+4,
+7
+],
+"2": [
+10,
+12
+],
+"3": [
+16,
+23
+],
+"4": [
+27,
+33
+]
+}
+},
+{
+"title": "Notebook 2 · models",
+"where": "workshop/notebooks/02_choose_and_train_a_model.ipynb",
+"code": [
+"# ── cell 2",
+"d = np.load(DATA / \"prepared.npz\")",
+"X = {s: d[f\"X_{s}\"] for s in (\"train\", \"val\", \"test\")}",
+"Y = {s: d[f\"y_{s}\"] for s in (\"train\", \"val\", \"test\")}",
+"T = {s: d[f\"t_{s}\"] for s in (\"train\", \"val\", \"test\")}",
+"MEAN, STD, LOOKBACK, HORIZON = d[\"mean\"], d[\"std\"], int(d[\"lookback\"]), int(d[\"horizon\"])",
+"for s in X:",
+"    print(f\"{s:5s} X {X[s].shape}  →  y {Y[s].shape}\")",
+"",
+"# ── cell 4",
+"def persistence(x):",
+"    return np.repeat(x[:, -1:, 0], HORIZON, axis=1)",
+"",
+"",
+"def yesterday(x):",
+"    return x[:, :HORIZON, 0]",
+"",
+"",
+"for s in (\"val\",):",
+"    report(\"persistence\", persistence(X[s]), 0, s)",
+"    report(\"same time yesterday\", yesterday(X[s]), 0, s)",
+"",
+"# ── cell 5",
+"flat = lambda x: x.reshape(len(x), -1)",
+"lin = Ridge(alpha=1.0).fit(flat(X[\"train\"]), Y[\"train\"])",
+"n_lin = lin.coef_.size + lin.intercept_.size",
+"print(\"weights\", lin.coef_.shape, \"+ biases\", lin.intercept_.shape, \"=\", n_lin, \"parameters\")",
+"report(\"linear (ridge)\", lin.predict(flat(X[\"val\"])), n_lin)",
+"",
+"# ── cell 7",
+"def mlp(hidden=(64, 64), dropout=0.0):",
+"    layers, n_in = [nn.Flatten()], LOOKBACK * 3",
+"    for h in hidden:",
+"        layers += [nn.Linear(n_in, h), nn.ReLU()] + ([nn.Dropout(dropout)] if dropout else [])",
+"        n_in = h",
+"    layers.append(nn.Linear(n_in, HORIZON))",
+"    return nn.Sequential(*layers)",
+"",
+"",
+"def count(model):",
+"    return sum(p.numel() for p in model.parameters() if p.requires_grad)",
+"",
+"",
+"torch.manual_seed(0)",
+"net = mlp()",
+"print(net)",
+"print(\"\\nparameters per layer:\")",
+"for name, p in net.named_parameters():",
+"    print(f\"  {name:10s} {str(tuple(p.shape)):12s} {p.numel():>7,}\")",
+"print(\"  total\", f\"{count(net):,}\")",
+"",
+"# ── cell 11",
+"class CausalBlock(nn.Module):",
+"    \"\"\"Dilated causal convolution with a residual connection (simplified from forecast/models.py).\"\"\"",
+"",
+"    def __init__(self, ch, dilation, kernel=3):",
+"        super().__init__()",
+"        self.pad = (kernel - 1) * dilation",
+"        self.conv = nn.Conv1d(ch, ch, kernel, dilation=dilation)",
+"",
+"    def forward(self, x):                               # x: (batch, channels, time)",
+"        return x + F.gelu(self.conv(F.pad(x, (self.pad, 0))))   # pad on the LEFT only: no future",
+"",
+"",
+"class CausalCNN(nn.Module):",
+"    def __init__(self, width=24, dilations=(1, 2, 4, 8, 16, 32)):",
+"        super().__init__()",
+"        self.stem = nn.Conv1d(3, width, 1)",
+"        self.blocks = nn.Sequential(*[CausalBlock(width, d) for d in dilations])",
+"        self.head = nn.Linear(width, HORIZON)",
+"",
+"    def forward(self, x):                               # x: (batch, time, channels)",
+"        h = self.blocks(self.stem(x.transpose(1, 2)))   # → (batch, width, time)",
+"        return self.head(h[:, :, -1])                   # read out at the last time step = \"now\"",
+"",
+"",
+"cnn = CausalCNN()",
+"rf = 1 + 2 * sum((1, 2, 4, 8, 16, 32))",
+"print(f\"parameters {count(cnn):,}   receptive field {rf} steps = {rf / 4:.0f} h (input is {LOOKBACK} steps)\")",
+"",
+"# check, don't trust: changing the future must not change the output at \"now\"",
+"x = torch.from_numpy(X[\"val\"][:2]).clone()",
+"y0 = cnn(x)",
+"x_late = x.clone(); x_late[:, -1] += 5.0              # change only the newest sample",
+"x_early = x.clone(); x_early[:, :10] += 5.0           # change only the oldest samples",
+"print(\"output changes when the newest sample changes:\", not torch.allclose(y0, cnn(x_late)))",
+"print(\"output changes when the oldest samples change:\", not torch.allclose(y0, cnn(x_early)))"
+],
+"marks": {
+"0": [
+1,
+7
+],
+"1": [
+10,
+20
+],
+"2": [
+24,
+27
+],
+"3": [
+30,
+36
+],
+"4": [
+52,
+61
+]
+}
+},
+{
+"title": "Project · influent forecaster",
+"where": "src/wwtp/forecast/models.py",
+"code": [
+"class CausalBlock(nn.Module):",
+"    \"\"\"Dilated causal convolution with a residual connection.\"\"\"",
+"",
+"    def __init__(self, channels: int, dilation: int, kernel: int = 3,",
+"                 dropout: float = 0.1):",
+"        super().__init__()",
+"        self.pad = (kernel - 1) * dilation",
+"        self.conv1 = nn.Conv1d(channels, channels, kernel, dilation=dilation)",
+"        self.conv2 = nn.Conv1d(channels, channels, kernel, dilation=dilation)",
+"        self.norm = nn.GroupNorm(1, channels)",
+"        self.drop = nn.Dropout(dropout)",
+"",
+"    def forward(self, x: torch.Tensor) -> torch.Tensor:",
+"        h = F.pad(x, (self.pad, 0))",
+"        h = F.gelu(self.conv1(h))",
+"        h = F.pad(h, (self.pad, 0))",
+"        h = self.drop(F.gelu(self.conv2(h)))",
+"        return self.norm(x + h)",
+"",
+"",
+"class InfluentForecaster(nn.Module):",
+"    \"\"\"TCN encoder + quantile head + weather-regime head.\"\"\"",
+"",
+"    def __init__(self, n_channels: int = len(CHANNELS), width: int = 64,",
+"                 dilations: tuple[int, ...] = (1, 2, 4, 8, 16, 32),",
+"                 n_quantiles: int = len(QUANTILES), horizon: int = HORIZON,",
+"                 n_regimes: int = len(REGIMES), dropout: float = 0.1):",
+"        super().__init__()",
+"        self.n_channels = n_channels",
+"        self.horizon = horizon",
+"        self.n_quantiles = n_quantiles",
+"",
+"        self.stem = nn.Conv1d(n_channels, width, 1)",
+"        self.blocks = nn.ModuleList(",
+"            [CausalBlock(width, d, dropout=dropout) for d in dilations])",
+"        self.head = nn.Sequential(",
+"            nn.Linear(width, 2 * width), nn.GELU(),",
+"            nn.Linear(2 * width, horizon * n_channels * n_quantiles))",
+"        self.regime_head = nn.Sequential(",
+"            nn.Linear(width, width), nn.GELU(), nn.Linear(width, n_regimes))",
+"",
+"    def encode(self, x: torch.Tensor) -> torch.Tensor:",
+"        \"\"\"``x``: (B, T, C) -> context vector (B, width) at the last step.\"\"\"",
+"        h = self.stem(x.transpose(1, 2))",
+"        for block in self.blocks:",
+"            h = block(h)",
+"        return h[:, :, -1]",
+"",
+"    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor,",
+"                                                torch.Tensor]:",
+"        ctx = self.encode(x)",
+"        q = self.head(ctx).view(-1, self.horizon, self.n_channels,",
+"                                self.n_quantiles)",
+"        # enforce monotone quantiles: q10 <= q50 <= q90",
+"        base = q[..., :1]",
+"        widths = F.softplus(q[..., 1:])",
+"        q = torch.cat([base, base + torch.cumsum(widths, dim=-1)], dim=-1)",
+"        return q, self.regime_head(ctx), ctx"
+],
+"marks": {
+"0": [
+42,
+42
+],
+"3": [
+35,
+37
+],
+"4": [
+0,
+17
+]
+}
+},
+{
+"title": "Project · MLPs of the RL agents",
+"where": "src/wwtp/rl/ddpg.py + src/wwtp/sacil/sacil.py",
+"code": [
+"# ── src/wwtp/rl/ddpg.py · _mlp()",
+"def _mlp(sizes: list[int], out_activation: nn.Module | None = None) -> nn.Sequential:",
+"    layers: list[nn.Module] = []",
+"    for i in range(len(sizes) - 1):",
+"        layers.append(nn.Linear(sizes[i], sizes[i + 1]))",
+"        if i < len(sizes) - 2:",
+"            layers.append(nn.ReLU())",
+"    if out_activation is not None:",
+"        layers.append(out_activation)",
+"    return nn.Sequential(*layers)",
+"",
+"# ── src/wwtp/sacil/sacil.py · mlp()",
+"def mlp(i, o, h=128):",
+"    return nn.Sequential(nn.Linear(i, h), nn.ReLU(), nn.Linear(h, h), nn.ReLU(), nn.Linear(h, o))"
+],
+"marks": {
+"3": [
+1,
+9
+]
+}
+}
+]
+},
+"lesson5": {
+"steps": [
+"1 · train (batches, epochs)",
+"2 · validate, keep the best",
+"3 · test once",
+"4 · save with the scaler"
+],
+"panels": [
+{
+"title": "Hands-on script",
+"where": "workshop/examples/lesson5_train_and_evaluate.py",
+"code": [
+"def fit(model, epochs, n_train=None, wd=1e-4, lr=3e-3):",
+"    torch.manual_seed(0)",
+"    xt, yt = X[\"train\"][:n_train], Y[\"train\"][:n_train]",
+"    loader = DataLoader(TensorDataset(xt, yt), batch_size=128, shuffle=True)",
+"    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)",
+"    best, best_state, curve = np.inf, None, []",
+"    for epoch in range(epochs):",
+"        model.train()",
+"        for xb, yb in loader:                                   # ── 1 TRAIN: the four steps, batch by batch",
+"            loss = F.mse_loss(model(xb), yb)",
+"            opt.zero_grad(); loss.backward(); opt.step()",
+"        model.eval()",
+"        with torch.no_grad():                                   # ── 2 VALIDATE: no learning here",
+"            tr = F.mse_loss(model(xt), yt).item()",
+"            va = F.mse_loss(model(X[\"val\"]), Y[\"val\"]).item()",
+"        curve.append((tr, va))",
+"        if va < best:                                           #    keep the best epoch",
+"            best, best_state, best_epoch = va, copy.deepcopy(model.state_dict()), epoch",
+"    model.load_state_dict(best_state)",
+"    return np.array(curve), best_epoch",
+"",
+"",
+"net = mlp((64, 64))",
+"curve, be = fit(net, 40)",
+"print(f\"1-2 TRAIN+VALIDATE  MLP: best epoch {be}; train loss {curve[be, 0]:.3f}, validation loss {curve[be, 1]:.3f}\")",
+"",
+"big = mlp((512, 512))",
+"curve_big, be_big = fit(big, 80, n_train=200, wd=0.0, lr=1e-3)",
+"print(f\"    OVERFITTING     415k knobs on 200 examples: train loss {curve_big[0, 0]:.3f} → {curve_big[-1, 0]:.4f}, \"",
+"      f\"validation {curve_big[be_big, 1]:.3f} at epoch {be_big} → {curve_big[-1, 1]:.3f} at the end  (it memorised)\")",
+"",
+"# ── 3 TEST: once. Persistence, linear, MLP on storm 2",
+"lin = Ridge(alpha=1.0).fit(X[\"train\"].reshape(len(X[\"train\"]), -1).numpy(), Y[\"train\"].numpy())",
+"with torch.no_grad():",
+"    tests = {\"persistence\": X[\"test\"][:, -1:, 0].repeat(1, 8).numpy(),",
+"             \"linear\": lin.predict(X[\"test\"].reshape(len(X[\"test\"]), -1).numpy()),",
+"             \"MLP\": net(X[\"test\"]).numpy()}",
+"print(\"3 TEST (once)       error 2 h ahead on storm 2: \" + \"   \".join(f\"{k} {mae2h(v, 'test'):.0f}\" for k, v in tests.items()) + \"  m³/d\")",
+"",
+"# ── 4 SAVE everything the model needs; then use it like the plant would",
+"torch.save({\"state_dict\": net.state_dict(), \"mean\": MEAN, \"std\": STD, \"hidden\": (64, 64),",
+"            \"channels\": [\"Q\", \"S_NH\", \"S_S\"]}, DATA / \"lesson5_mlp.pt\")",
+"blob = torch.load(DATA / \"lesson5_mlp.pt\", weights_only=False)",
+"model = mlp(blob[\"hidden\"]); model.load_state_dict(blob[\"state_dict\"]); model.eval()",
+"for i, when in ((len(d[\"X_test\"]) - 1, \"calm, end of test\"), (100, \"during storm 2\")):",
+"    raw = np.exp(d[\"X_test\"][i] * STD + MEAN)                           # 24 h of raw sensor values",
+"    z = (np.log(raw) - blob[\"mean\"]) / blob[\"std\"]                      # the SAVED scaler, not a new one"
+],
+"marks": {
+"0": [
+8,
+10
+],
+"1": [
+11,
+17
+],
+"2": [
+32,
+37
+],
+"3": [
+40,
+46
+]
+}
+},
+{
+"title": "Notebook 2 · fit, test, save",
+"where": "workshop/notebooks/02_choose_and_train_a_model.ipynb",
+"code": [
+"# ── cell 9",
+"def loader(split, batch=128, shuffle=False, n=None):",
+"    x, y = X[split], Y[split]",
+"    if n is not None:",
+"        x, y = x[:n], y[:n]",
+"    return DataLoader(TensorDataset(torch.from_numpy(x), torch.from_numpy(y)), batch_size=batch, shuffle=shuffle)",
+"",
+"",
+"def fit(model, epochs=60, lr=3e-3, weight_decay=1e-4, n_train=None, loss_fn=F.mse_loss, verbose=10):",
+"    torch.manual_seed(0)",
+"    tl, vl = loader(\"train\", shuffle=True, n=n_train), loader(\"val\")",
+"    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)",
+"    sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=lr, total_steps=epochs * len(tl))",
+"    hist, best, best_state = [], np.inf, None",
+"    t0 = time.time()",
+"    for epoch in range(epochs):",
+"        model.train()                                   # dropout on",
+"        tr = 0.0",
+"        for xb, yb in tl:                               # 1 a batch",
+"            pred = model(xb)                            # 2 forward",
+"            loss = loss_fn(pred, yb)                    # 3 loss",
+"            opt.zero_grad()",
+"            loss.backward()                             # 4 gradients by backpropagation",
+"            nn.utils.clip_grad_norm_(model.parameters(), 1.0)",
+"            opt.step(); sched.step()                    # 5 update the weights",
+"            tr += loss.item() * len(xb)",
+"        model.eval()                                    # dropout off",
+"        with torch.no_grad():                           # 6 validation, no gradients",
+"            va = sum(loss_fn(model(xb), yb).item() * len(xb) for xb, yb in vl) / len(vl.dataset)",
+"        hist.append((tr / len(tl.dataset), va))",
+"        if va < best:",
+"            best, best_state, best_epoch = va, copy.deepcopy(model.state_dict()), epoch",
+"        if verbose and (epoch % verbose == 0 or epoch == epochs - 1):",
+"            print(f\"epoch {epoch:3d}  train {hist[-1][0]:.4f}  val {va:.4f}\")",
+"    model.load_state_dict(best_state)                   # keep the best epoch",
+"    print(f\"best epoch {best_epoch}, val loss {best:.4f}  ({time.time() - t0:.0f} s)\")",
+"    return np.array(hist), best_epoch",
+"",
+"",
+"def predict(model, split):",
+"    model.eval()",
+"    with torch.no_grad():",
+"        return model(torch.from_numpy(X[split])).numpy()",
+"",
+"",
+"def plot_curves(hist, best_epoch, title):",
+"    plt.figure(figsize=(6, 3))",
+"    plt.plot(hist[:, 0], label=\"train\"); plt.plot(hist[:, 1], label=\"validation\")",
+"    plt.axvline(best_epoch, color=\"tab:green\", ls=\"--\", label=\"best epoch\")",
+"    plt.yscale(\"log\"); plt.xlabel(\"epoch\"); plt.ylabel(\"loss (MSE, scaled units)\"); plt.title(title); plt.legend()",
+"",
+"# ── cell 16",
+"test_models = {\"persistence\": (persistence(X[\"test\"]), 0), \"same time yesterday\": (yesterday(X[\"test\"]), 0),",
+"               \"linear (ridge)\": (lin.predict(flat(X[\"test\"])), n_lin),",
+"               \"MLP 288-64-64-8\": (predict(net, \"test\"), count(net)), \"causal CNN\": (predict(cnn, \"test\"), count(cnn))}",
+"print(f\"{'model':22s} {'params':>8s}  test MAE 15 min   2 h  [m³/d]\")",
+"for name, (p, n) in test_models.items():",
+"    e = mae(p, \"test\")",
+"    print(f\"{name:22s} {n:>8,}  {e[0]:14.0f} {e[-1]:7.0f}\")",
+"",
+"# ── cell 18",
+"torch.save({\"state_dict\": cnn.state_dict(), \"mean\": MEAN, \"std\": STD, \"channels\": [\"Q\", \"S_NH\", \"S_S\"],",
+"            \"lookback\": LOOKBACK, \"horizon\": HORIZON, \"model\": \"CausalCNN(width=24, dilations=1..32)\"},",
+"           DATA / \"flow_forecaster.pt\")",
+"",
+"blob = torch.load(DATA / \"flow_forecaster.pt\", weights_only=False)",
+"model = CausalCNN(); model.load_state_dict(blob[\"state_dict\"]); model.eval()",
+"",
+"",
+"def forecast(last_24h_raw):",
+"    \"\"\"last_24h_raw: (96, 3) array of Q [m³/d], S_NH, S_S [g/m³] as measured. Returns 8 flows [m³/d].\"\"\"",
+"    z = (np.log(last_24h_raw) - blob[\"mean\"]) / blob[\"std\"]",
+"    with torch.no_grad():",
+"        out = model(torch.from_numpy(z[None].astype(np.float32)))[0].numpy()",
+"    return np.exp(out * blob[\"std\"][0] + blob[\"mean\"][0])",
+"",
+"",
+"raw_window = np.exp(X[\"test\"][100] * STD + MEAN)          # pretend these came from the sensors",
+"print(\"forecast for the next 2 h [m³/d]:\", forecast(raw_window).round(0))",
+"print(\"what really happened       [m³/d]:\", to_flow(Y[\"test\"][100]).round(0))"
+],
+"marks": {
+"0": [
+18,
+24
+],
+"1": [
+26,
+34
+],
+"2": [
+52,
+58
+],
+"3": [
+61,
+74
+]
+}
+},
+{
+"title": "Project · early-warning training",
+"where": "src/wwtp/warning/train.py · train_warning()",
+"code": [
+"    for epoch in range(epochs):",
+"        model.train()",
+"        tot = 0.0",
+"        for xb, lb, eb in tl:",
+"            levels, p = model(_mask(xb, drop))",
+"            loss = (pinball(levels, lb)",
+"                    + event_weight * F.binary_cross_entropy(p, eb))",
+"            opt.zero_grad(set_to_none=True)",
+"            loss.backward()",
+"            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)",
+"            opt.step()",
+"            sched.step()",
+"            tot += float(loss.detach()) * len(xb)",
+"",
+"        lv, pe = predict(model, val.x, drop=drop)",
+"        v_pin = float(pinball(torch.from_numpy(lv), torch.from_numpy(val.level)))",
+"        v_bce = float(F.binary_cross_entropy(torch.from_numpy(pe),",
+"                                             torch.from_numpy(val.event)))",
+"        v = v_pin + event_weight * v_bce",
+"        history.append({\"epoch\": epoch, \"train\": tot / len(train),",
+"                        \"val_pinball\": v_pin, \"val_bce\": v_bce})",
+"        print(f\"epoch {epoch:2d} train {tot / len(train):.4f} \"",
+"              f\"val pinball {v_pin:.4f} bce {v_bce:.4f}\", flush=True)",
+"        if v < best:",
+"            best = v",
+"            best_state = {k: t.clone() for k, t in model.state_dict().items()}",
+"",
+"    model.load_state_dict(best_state)",
+"    out = Path(out)",
+"    out.parent.mkdir(parents=True, exist_ok=True)",
+"    torch.save({\"state_dict\": model.state_dict(), **norm.state(),",
+"                \"channels\": CHANNELS, \"horizons\": HORIZONS,",
+"                \"quantiles\": QUANTILES, \"drop_channels\": drop_channels}, out)"
+],
+"marks": {
+"0": [
+3,
+11
+],
+"1": [
+14,
+27
+],
+"3": [
+30,
+32
+]
+}
+},
+{
+"title": "Project · using the saved model",
+"where": "src/wwtp/forecast/predictor.py · __init__()",
+"code": [
+"    def __init__(self, checkpoint: str | Path, dt_seconds: float = 45.0,",
+"                 device: str = \"cpu\"):",
+"        blob = torch.load(checkpoint, map_location=device, weights_only=False)",
+"        self.model = InfluentForecaster().to(device)",
+"        self.model.load_state_dict(blob[\"state_dict\"])",
+"        self.model.eval()",
+"        self.mean = np.asarray(blob[\"mean\"], dtype=np.float32)",
+"        self.std = np.asarray(blob[\"std\"], dtype=np.float32)",
+"        self.device = device",
+"        self.stride = max(1, int(round(FORECAST_DT_SECONDS / dt_seconds)))",
+"        self.reset()"
+],
+"marks": {
+"3": [
+2,
+7
+]
+}
+}
+]
+},
+"lesson6": {
+"steps": [
+"1 · environment",
+"2 · reward",
+"3 · act (explore)",
+"4 · learn"
+],
+"panels": [
+{
+"title": "Hands-on script",
+"where": "workshop/examples/lesson6_rl.py",
+"code": [
+"class OxygenTank:",
+"    ACTIONS = np.array([-20.0, -5.0, 0.0, 5.0, 20.0])                    # change of the air (KLa)",
+"",
+"    def __init__(self, day, energy_weight=0.1, seed=0):",
+"        self.day, self.w, self.rng = day, energy_weight, np.random.default_rng(seed)",
+"",
+"    def reset(self):",
+"        self.k0, self.k, self.kla, self.S, self.e1 = int(self.day * 288), 0, 120.0, 2.0, 0.0",
+"        return self.state()",
+"",
+"    def state(self):",
+"        return np.array([self.S - 2.0, self.e1, self.kla / 240.0, LOAD[self.k0 + min(self.k, 287)]])",
+"",
+"    def step(self, dkla):",
+"        self.e1 = self.S - 2.0",
+"        self.kla = float(np.clip(self.kla + dkla, 0.0, 240.0))",
+"        our = 700.0 * LOAD[self.k0 + self.k] * (1 + 0.05 * self.rng.normal())",
+"        s_eq = 8.0 - our / max(self.kla, 1e-6)",
+"        self.S = max(0.0, s_eq + (self.S - s_eq) * np.exp(-self.kla * 5 / 1440))",
+"        self.k += 1",
+"        # ── 2 REWARD: be at 2 mg/L, don't waste air",
+"        reward = -abs(self.S - 2.0) - self.w * self.kla / 240.0",
+"        return self.state(), reward, self.k >= 288",
+"",
+"",
+"def run(env, policy):",
+"    s, done, R, err = env.reset(), False, 0.0, []",
+"    while not done:",
+"        s, r, done = env.step(policy(s)); R += r; err.append(abs(env.S - 2))",
+"    return R, np.mean(err), env.kla",
+"",
+"",
+"pid = lambda s: float(np.clip(80 * (-s[0] + s[1]) + 25 * -s[0], -20, 20))   # the expert: a PID, no learning",
+"print(f\"1 ENVIRONMENT  PID on an unseen day: error {run(OxygenTank(10), pid)[1]:.3f} mg/L\")",
+"",
+"# ── 3 + 4: Q-learning. A table Q[state, action] = how good this move is here, as far as we know.",
+"E, K, L = np.array([-.5, -.25, -.1, .1, .25, .5]), np.linspace(0, 1, 17)[1:-1], np.array([.6, .8, 1., 1.2, 1.4])",
+"cell = lambda s: (np.digitize(s[0], E), np.digitize(s[2], K), np.digitize(s[3], L))",
+"greedy = lambda Q: (lambda s: OxygenTank.ACTIONS[int(np.argmax(Q[cell(s)]))])",
+"",
+"",
+"def q_learning(energy_weight=0.1, episodes=1500, seed=0):",
+"    rng = np.random.default_rng(seed)",
+"    Q = np.zeros((7, 16, 6, 5))",
+"    best = (-np.inf, None)",
+"    for ep in range(episodes):",
+"        eps = max(0.05, 1 - ep / (0.6 * episodes))                      # explore a lot at first, then less",
+"        env = OxygenTank(int(rng.integers(0, 7)), energy_weight, seed=ep)",
+"        s, done = env.reset(), False",
+"        while not done:",
+"            c = cell(s)",
+"            a = int(rng.integers(5)) if rng.random() < eps else int(np.argmax(Q[c]))   # ── 3 ACT",
+"            s, r, done = env.step(OxygenTank.ACTIONS[a])",
+"            target = r + (0.0 if done else 0.9 * Q[cell(s)].max())",
+"            Q[c + (a,)] += 0.2 * (target - Q[c + (a,)])                  # ── 4 LEARN (Bellman update)",
+"        if ep % 100 == 99:",
+"            v = run(OxygenTank(6, energy_weight), greedy(Q))[0]",
+"            if v > best[0]:",
+"                best = (v, Q.copy())",
+"    return best[1]"
+],
+"marks": {
+"0": [
+6,
+11
+],
+"1": [
+20,
+22
+],
+"2": [
+46,
+51
+],
+"3": [
+53,
+54
+]
+}
+},
+{
+"title": "Notebook 3",
+"where": "workshop/notebooks/03_reinforcement_learning_in_brief.ipynb",
+"code": [
+"# ── cell 2",
+"class OxygenTank:",
+"    ACTIONS = np.array([-20.0, -5.0, 0.0, 5.0, 20.0])",
+"    STEPS_PER_DAY, DT = 288, 5 / 1440           # 5-minute steps, in days",
+"",
+"    def __init__(self, weather=\"dry\", day=0, energy_weight=0.1, noise=0.05, seed=0):",
+"        self.load, self.day, self.w, self.noise = LOAD[weather], day, energy_weight, noise",
+"        self.rng = np.random.default_rng(seed)",
+"",
+"    def reset(self):",
+"        self.k0, self.k = int(self.day * self.STEPS_PER_DAY), 0",
+"        self.kla, self.S, self.e1 = 120.0, 2.0, 0.0",
+"        return self.obs()",
+"",
+"    def obs(self):",
+"        load_now = self.load[self.k0 + min(self.k, self.STEPS_PER_DAY - 1)]",
+"        return np.array([self.S - 2.0, self.e1, self.kla / 240.0, load_now])",
+"",
+"    def step(self, dkla):",
+"        self.e1 = self.S - 2.0",
+"        self.kla = float(np.clip(self.kla + dkla, 0.0, 240.0))",
+"        our = 700.0 * self.load[self.k0 + self.k] * (1 + self.noise * self.rng.normal())",
+"        if self.kla > 1e-6:                                         # exact solution over the step",
+"            s_eq = 8.0 - our / self.kla",
+"            self.S = s_eq + (self.S - s_eq) * np.exp(-self.kla * self.DT)",
+"        else:",
+"            self.S = self.S - our * self.DT",
+"        self.S = max(self.S, 0.0)",
+"        self.k += 1",
+"        reward = -abs(self.S - 2.0) - self.w * self.kla / 240.0",
+"        done = self.k >= self.STEPS_PER_DAY",
+"        return self.obs(), reward, done, {\"S\": self.S, \"kla\": self.kla}",
+"",
+"",
+"def run(env, policy):",
+"    \"\"\"One episode; returns the total reward and the traces.\"\"\"",
+"    o, done, R, S, K = env.reset(), False, 0.0, [], []",
+"    while not done:",
+"        o, r, done, info = env.step(policy(o))",
+"        R += r; S.append(info[\"S\"]); K.append(info[\"kla\"])",
+"    S, K = np.array(S), np.array(K)",
+"    return {\"return\": R, \"oxygen error\": np.abs(S - 2).mean(), \"mean KLa\": K.mean(), \"S\": S, \"K\": K}",
+"",
+"",
+"# try two silly policies first: always the same air, and random",
+"for name, pol in ((\"constant air\", lambda o: 0.0),",
+"                  (\"random\", lambda o, rng=np.random.default_rng(0): rng.choice(OxygenTank.ACTIONS))):",
+"    r = run(OxygenTank(\"dry\", day=10), pol)",
+"    print(f\"{name:13s} return {r['return']:8.1f}   mean |S_O − 2| {r['oxygen error']:.3f} mg/L\")",
+"",
+"# ── cell 5",
+"E_BINS = np.array([-0.5, -0.25, -0.1, 0.1, 0.25, 0.5])      # oxygen error",
+"K_BINS = np.linspace(0, 1, 17)[1:-1]                         # aeration level",
+"L_BINS = np.array([0.6, 0.8, 1.0, 1.2, 1.4])                 # load",
+"",
+"",
+"def state(o):",
+"    return np.digitize(o[0], E_BINS), np.digitize(o[2], K_BINS), np.digitize(o[3], L_BINS)",
+"",
+"",
+"def greedy(Q):",
+"    return lambda o: OxygenTank.ACTIONS[int(np.argmax(Q[state(o)]))]",
+"",
+"",
+"def q_learning(episodes=1500, alpha=0.2, gamma=0.9, energy_weight=0.1, seed=0):",
+"    rng = np.random.default_rng(seed)",
+"    Q = np.zeros((len(E_BINS) + 1, len(K_BINS) + 1, len(L_BINS) + 1, len(OxygenTank.ACTIONS)))",
+"    curve, best = [], (-np.inf, None, 0)",
+"    for ep in range(episodes):",
+"        eps = max(0.05, 1 - ep / (0.6 * episodes))",
+"        env = OxygenTank(\"dry\", day=int(rng.integers(0, 7)), energy_weight=energy_weight, seed=10_000 * seed + ep)",
+"        o, done, R = env.reset(), False, 0.0",
+"        s = state(o)",
+"        while not done:",
+"            a = int(rng.integers(len(OxygenTank.ACTIONS))) if rng.random() < eps else int(np.argmax(Q[s]))",
+"            o, r, done, _ = env.step(OxygenTank.ACTIONS[a])",
+"            s2 = state(o)",
+"            target = r + (0.0 if done else gamma * Q[s2].max())",
+"            Q[s + (a,)] += alpha * (target - Q[s + (a,)])          # the Bellman update",
+"            s, R = s2, R + r",
+"        curve.append(R)",
+"        if ep % 100 == 99:                                      # check the greedy policy on a training day",
+"            val = run(OxygenTank(\"dry\", day=6, energy_weight=energy_weight), greedy(Q))[\"return\"]",
+"            if val > best[0]:",
+"                best = (val, Q.copy(), ep)                      # keep the best, as the repository does",
+"    return best[1], np.array(curve), best[2]",
+"",
+"",
+"Qtab, curve, kept = q_learning(seed=0)",
+"print(\"table size:\", Qtab.shape, \"=\", Qtab.size, \"numbers   kept the policy of episode\", kept)",
+"plt.plot(curve, lw=.6, alpha=.5, label=\"each training episode\")",
+"plt.plot(np.convolve(curve, np.ones(50) / 50, mode=\"valid\"), lw=2, label=\"moving average\")",
+"pid_train = np.mean([run(OxygenTank(\"dry\", day=d, seed=d), pid_policy)[\"return\"] for d in range(7)])",
+"plt.axhline(pid_train, color=\"k\", ls=\"--\", label=\"PID, average over the training days\")",
+"plt.xlabel(\"episode (one day)\"); plt.ylabel(\"return\"); plt.ylim(-400, 0); plt.legend(); plt.title(\"Q-learning: return per episode\")"
+],
+"marks": {
+"0": [
+9,
+16
+],
+"1": [
+29,
+31
+],
+"2": [
+69,
+74
+],
+"3": [
+77,
+78
+]
+}
+},
+{
+"title": "Project · paper 2 environment and reward",
+"where": "src/wwtp/rl/env.py + src/wwtp/rl/rewards.py",
+"code": [
+"# ── src/wwtp/rl/env.py · step()",
+"    def step(self, action: float) -> tuple[np.ndarray, dict, bool]:",
+"        \"\"\"Apply the action and advance one agent decision interval.",
+"",
+"        The returned ``info`` holds the *means* over the interval for every",
+"        reward-relevant quantity, plus the per-period effluent samples that",
+"        the effluent-quality index is accumulated from.",
+"        \"\"\"",
+"        cfg = self.cfg",
+"        a = float(np.clip(action, -1.0, 1.0))",
+"        if cfg.action_mode == \"absolute\":",
+"            self.kla = float(0.5 * (a + 1.0) * KLA5_BOUNDS[1])",
+"        else:",
+"            self.kla = float(np.clip(self.kla + a * cfg.da_max, *KLA5_BOUNDS))",
+"",
+"# ── src/wwtp/rl/rewards.py · reward_ae_eq()",
+"def reward_ae_eq(info: dict, b1: float = BETA_1, b2: float = BETA_2) -> float:",
+"    \"\"\"Equation (23): energy + ammonium reward (the paper's DDPG-B).\"\"\"",
+"    return -(b1 * info[\"aeration_fraction\"]",
+"             + b2 * _excess(info[\"S_NH\"], NH_LIMIT))"
+],
+"marks": {
+"0": [
+1,
+13
+],
+"1": [
+16,
+19
+]
+}
+},
+{
+"title": "Project · RL training loop",
+"where": "src/wwtp/rl/train.py · train()",
+"code": [
+"        while True:",
+"            x = np.concatenate([obs, ctx])",
+"            action = agent.act(x, info=None, explore=True, sigma=sigma)",
+"            nxt, info, done = env.step(action)",
+"            r = reward(info)",
+"            cost = (agent.constraint_costs(info)",
+"                    if hasattr(agent, \"constraint_costs\") else np.zeros(0))",
+"            if hasattr(agent, \"push_inlet\"):",
+"                agent.push_inlet(info[\"inlet\"])",
+"                ctx = agent.context()",
+"            try:",
+"                agent.observe(x, action, r, np.concatenate([nxt, ctx]), done,",
+"                              cost=cost if cost.size else None,",
+"                              inlet=info[\"inlet\"])",
+"            except TypeError:        # the base DDPG agent takes no inlet",
+"                agent.observe(x, action, r, np.concatenate([nxt, ctx]), done,",
+"                              cost=cost if cost.size else None)",
+"            agent.update()"
+],
+"marks": {
+"1": [
+4,
+4
+],
+"2": [
+2,
+3
+],
+"3": [
+11,
+17
 ]
 }
 }
