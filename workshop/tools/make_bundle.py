@@ -62,19 +62,32 @@ START_HERE = """# Start here
 Bundle of the repository `amritha902/water_resource` at commit `{sha}` ({day}), with the
 hands-on ML/RL workshop, its data and the notebooks already run. Nothing in it needs the internet.
 
-## 1. The workshop (90 minutes, any laptop, Python 3.10+)
+## 1. The workshop: one lesson in seven steps (90 minutes, any laptop, Python 3.10+)
 
 ```bash
 pip install -r workshop/requirements.txt
 ```
 
-1. Slides: open `workshop/slides/index.html` in Chrome, Edge or Firefox. Use → and ←; on the
-   "In code" slides → runs the next notebook cell; on the "Our code" slides → steps through the code.
-2. Notebooks: `jupyter lab workshop/notebooks`. They run as they are (the data is already in
-   `workshop/data/`). To see every output without running anything, open
-   `workshop/notebooks/executed/`.
-3. Presenter guide, timetable and expected results: `workshop/README.md`.
-4. Pictures of every slide: `workshop/slides/stills/`; narration per slide: `workshop/SPEECHIFY_OUTLINE.md`.
+1. **Slides:** open `workshop/slides/index.html` in Chrome, Edge or Firefox (no internet needed).
+   → and ← move; on interactive slides → first steps inside the slide (next notebook cell, next code block,
+   next highlighted step, next quiz answer). R replays an animation, F is full screen.
+2. **The seven steps, each as one terminal command** (seconds each), in `workshop/examples/`:
+
+   ```bash
+   python workshop/examples/lesson1_knobs.py
+   python workshop/examples/lesson2_load_and_clean.py
+   python workshop/examples/lesson3_prepare.py
+   python workshop/examples/lesson4_models.py
+   python workshop/examples/lesson5_train_and_evaluate.py
+   python workshop/examples/lesson6_rl.py
+   ```
+
+3. **Notebooks:** `jupyter lab workshop/notebooks`. To read them with every result, without running
+   anything, open `workshop/notebooks/html/*.html` in a browser (or `workshop/notebooks/executed/` in Jupyter).
+4. **Presenter guide**, timetable and expected results: `workshop/README.md`. Pictures of every slide:
+   `workshop/slides/stills/`; narration per slide: `workshop/SPEECHIFY_OUTLINE.md`.
+5. **Online copies** (private until the owner shares them): the deck and the three notebook pages are listed
+   in `workshop/README.md`, under "Published pages".
 
 ## 2. The full project (Python 3.11)
 

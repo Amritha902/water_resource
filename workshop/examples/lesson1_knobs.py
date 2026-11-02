@@ -25,6 +25,9 @@ for step in range(201):
     loss = np.mean((pred - y) ** 2)           # 2 HOW WRONG: one number, the mean squared error
     if step in (0, 1, 2, 5, 10, 50, 200):
         print(f"  step {step:3d}   w = {w:6.3f}   b = {b:6.3f}   loss = {loss:.5f}")
+    # 3 WHICH WAY: the gradient = how the loss changes when a knob is nudged.
+    #   loss = mean((w·x + b − y)²); by the chain rule  d loss/dw = mean(2·(pred − y)·x),  d loss/db = mean(2·(pred − y)).
+    #   PyTorch computes this for you with loss.backward() (Part B).
     grad_w = np.mean(2 * (pred - y) * x)      # 3 WHICH WAY: the gradient, for each knob
     grad_b = np.mean(2 * (pred - y))
     w = w - lr * grad_w                       # 4 TURN THE KNOBS a little, downhill

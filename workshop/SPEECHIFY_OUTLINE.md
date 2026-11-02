@@ -30,7 +30,7 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 
 ### Slide 3 · Every word you will hear today, explained simply
 - Section: Before we start · words in plain language
-- Click a word (or press →). Each one has a plain meaning, an everyday comparison, and where it shows up in our project.
+- Click any word. Each one has a plain meaning, an everyday comparison, and where it shows up in our project. Come back to this slide whenever a word is new.
 - Image: `stills/slide03.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
 
@@ -39,8 +39,8 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 ### Slide 4 · What the project is about
 - Section: The problem
 - The plant: BSM1, the standard test plant in this field. Five tanks and a settler. The bacteria remove pollution; they need oxygen.
-- What we measure: oxygen in tank 5 (SO,5), nitrate in tank 2 (SNO,2), what flows in (flow Q, ammonium, COD), every 15 min to 45 s.
-- What we can change: the air blown into tank 5 (KLa5, 0–240 per day) and the recycle pump (Qa).
+- What we measure: oxygen in tank 5 (S O,5 ), nitrate in tank 2 (S NO,2 ), and what flows in: flow Q, ammonium (S NH ) and COD (the organic dirt). The inflow is sampled every 15 min; the controller acts every 45 s.
+- What we can change: the air blown into tank 5 (KLa 5 : how fast oxygen dissolves, 0–240 per day; more air = higher KLa) and the recycle pump (Q a ).
 - The goal: hold oxygen at 2 mg/L and nitrate at 1 mg/L whatever arrives, without wasting energy.
 - What we did: rebuilt three published learning controllers, checked their claims, and trained forecasters, a digital twin, a warning model and RL agents.
 - Image: `stills/slide04.jpg`
@@ -65,8 +65,8 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 
 ### Slide 7 · What is a model?
 - Section: Lesson 1 · the core idea
-- Loss: one number for "how wrong": the mean squared length of the red lines.
-- Training: turn the knobs a little in the direction that lowers the loss (the gradient). Repeat.
+- Loss : one number for "how wrong": the mean squared length of the red lines.
+- Training : turn the knobs a little in the direction that lowers the loss (the gradient). Repeat.
 - A neural network is the same thing with thousands of knobs and a more flexible function.
 - Image: `stills/slide07.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
@@ -86,11 +86,11 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 - Section: Lesson 1 · check yourself
 - Q: Which parts of ŷ = w·x + b does training change? → A: Only w and b, the knobs. The inputs x and the true answers y are data and never change. The shape of the function is chosen by us before training.
 - Q: The loss is very large. What does that tell you? → A: The guesses are far from the true answers: the knobs are not yet good, or the model's shape cannot fit the data.
-- Q: Why did the loss explode with a learning rate of 1.2? → A: Each step jumped over the bottom of the valley and landed higher on the other side, further each time. Smaller steps walk down; too-big steps bounce out.
+- Q: What happens if the step size (learning rate) is far too big? → A: Each step jumps over the bottom of the valley and lands higher on the other side, further each time: the loss explodes. Try lr = 1.2 in lesson1_knobs.py and see it.
 - Image: `stills/slide09.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
 
-**Narration:** Lesson 1 ends with three questions. Ask the room first, then reveal each answer. Which parts of ŷ = w·x + b does training change? Only w and b, the knobs. The inputs x and the true answers y are data and never change. The shape of the function is chosen by us before training. The loss is very large. What does that tell you? The guesses are far from the true answers: the knobs are not yet good, or the model's shape cannot fit the data. Why did the loss explode with a learning rate of 1.2? Each step jumped over the bottom of the valley and landed higher on the other side, further each time. Smaller steps walk down; too-big steps bounce out.
+**Narration:** Lesson 1 ends with three questions. Ask the room first, then reveal each answer. Which parts of ŷ = w·x + b does training change? Only w and b, the knobs. The inputs x and the true answers y are data and never change. The shape of the function is chosen by us before training. The loss is very large. What does that tell you? The guesses are far from the true answers: the knobs are not yet good, or the model's shape cannot fit the data. What happens if the step size (learning rate) is far too big? Each step jumps over the bottom of the valley and lands higher on the other side, further each time: the loss explodes. Try lr = 1.2 in lesson1_knobs.py and see it.
 
 ### Slide 10 · Collect and clean the data
 - Section: Lesson 2 of 7 · 20 min
@@ -103,7 +103,7 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 
 ### Slide 11 · Where the data comes from
 - Section: Lesson 2 · collect
-- The IWA files: 14 days × 96 samples/day = 1345 rows, 15 columns (time, 13 concentrations, flow).
+- The IWA files: 14 days × 96 samples/day = 1345 rows , 15 columns (time, 13 concentrations, flow).
 - Three weathers: dry, rain, storm. Week 1 is the same dry week in all three: a trap for splitting, as we'll see.
 - Image: `stills/slide11.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
@@ -123,11 +123,11 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 ### Slide 13 · Cleaning: look before you learn
 - Section: Lesson 2 · clean
 - Text rows (titles, units): drop them, but write the units down.
-- Missing values: count them first. Short gaps → interpolate in time; long gaps → drop the window.
-- Duplicate timestamps: keep one. Then check the step is a constant 15 min.
+- Missing values : count them first. Short gaps → interpolate in time; long gaps → drop the window.
+- Duplicate timestamps : keep one. Then check the step is a constant 15 min.
 - Spikes (×10 here: a unit or typing error): flag against a rolling median, then fix or drop.
-- Physics check. S_I stays at 30 while rain doubles the flow, so the rain should have diluted it. The official rain file has S_I = 30·Qdry/Q, and the project applies the same rule (plant.py:89).
-- Missing columns the model needs: TSS = 0.75·(XI+XS+XBH+XBA+XP) (plant.py:90).
+- Physics check. S_I stays at 30 while rain doubles the flow, so the rain should have diluted it. The official rain file has S_I = 30·Q dry /Q , and the project applies the same rule ( plant.py:89 ).
+- Missing columns the model needs: TSS = 0.75·(X I +X S +X BH +X BA +X P ) ( plant.py:90 ).
 - Image: `stills/slide13.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
 
@@ -198,8 +198,8 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 ### Slide 21 · Transform and scale the inputs
 - Section: Lesson 3 · prepare
 - log for quantities that only grow by factors (flows, loads): storms stop dominating.
-- standardise: z = (x − mean) / std, per channel.
-- Compute mean and std on the training data only, then reuse those numbers for validation, test and deployment. Otherwise the test set leaks into training.
+- standardise : z = (x − mean) / std, per channel.
+- Compute mean and std on the training data only , then reuse those numbers for validation, test and deployment. Otherwise the test set leaks into training.
 - Image: `stills/slide21.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
 
@@ -210,15 +210,15 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 - Image: `stills/slide22.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
 
-**Narration:** Turn one long series into many (input, target) examples. Lesson 3 · prepare Turn one long series into many (input, target) examples # src/wwtp/forecast/dataset.py:67 LOOKBACK = 96 (24 h), HORIZON = 8 (2 h) def _windows(obs, stride): n = obs.shape[0] - LOOKBACK - HORIZON starts = np.arange(0, n, stride) xs = np.stack([obs[s:s+LOOKBACK] for s in starts]) # 
+**Narration:** Turn one long series into many (input, target) examples. Lesson 3 · prepare Turn one long series into many (input, target) examples # src/wwtp/forecast/dataset.py:67 LOOKBACK = 96 (24 h), HORIZON = 8 (2 h) def _windows(obs, stride): n = obs.shape[0] - LOOKBACK - HORIZON starts = np.arange(0, n, stride) xs = np.stack([obs[s:s+LOOKBACK] for s in starts]) #
 
 ### Slide 23 · Split by time, not at random
 - Section: Lesson 3 · prepare
 - Neighbouring windows share 95 % of their samples. Split them at random and the test set holds near-copies of training examples, so the score looks far better than reality.
 - Train on the past, validate on later data, test on data that nothing was tuned on.
-- In this project: paper 2: learn on week 1, test on week 2 (rl/train.py)
-- warning model: separate simulated plants for train, val and test (seeds 0, 1000, 2000 in experiments/04)
-- paper 1: a held-out test whose protocol was committed before it was run (docs/PAPER1_HELDOUT_PROTOCOL.md)
+- In this project: paper 2: learn on week 1, test on week 2 ( rl/train.py )
+- warning model: separate simulated plants for train, val and test (seeds 0, 1000, 2000 in experiments/04 )
+- paper 1: a held-out test whose protocol was committed before it was run ( docs/PAPER1_HELDOUT_PROTOCOL.md )
 - Image: `stills/slide23.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
 
@@ -252,7 +252,7 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 
 ### Slide 27 · Notebook 1, part C: prepare
 - Section: Your turn · 10 minutes
-- Pick the inputs a real plant can measure at the inlet: flow, ammonium, COD (as forecast/dataset.py)
+- Pick the inputs a real plant can measure at the inlet: flow, ammonium, COD (as forecast/dataset.py )
 - Split: train = dry (14 d) + rain week 2; validation = storm days 7–10.25 (storm 1); test = storm days 10.25–14 (storm 2)
 - log, then standardise with training statistics
 - Cut windows: 96 past steps → 8 future steps of flow
@@ -280,8 +280,8 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 
 ### Slide 30 · What happens inside a neural network, layer by layer
 - Section: Lesson 4 · inside the model
-- Each neuron: weighted sum + bias, then an activation (here ReLU: negatives become 0).
-- A whole layer at once: h = ReLU(W·x + b). That's one matrix multiplication.
+- Each neuron: weighted sum + bias , then an activation (here ReLU: negatives become 0).
+- A whole layer at once: h = ReLU(W·x + b) . That's one matrix multiplication.
 - Line colour is the weight's sign (blue +, red −); thickness is its size. Training only changes these numbers.
 - Image: `stills/slide30.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
@@ -297,7 +297,7 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 
 ### Slide 32 · A causal convolution: the same small filter slides along time
 - Section: Lesson 4 · models for sequences (1)
-- Each output looks at 3 inputs (kernel 3), only from the past: padding is added on the left (F.pad(x, (pad, 0)), forecast/models.py:38).
+- Each output looks at 3 inputs (kernel 3), only from the past: padding is added on the left ( F.pad(x, (pad, 0)) , forecast/models.py:38 ).
 - Dilation 1, 2, 4… makes each layer look twice as far back, so a few layers cover a whole day.
 - Image: `stills/slide32.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
@@ -307,7 +307,7 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 ### Slide 33 · A recurrent network carries a memory through time
 - Section: Lesson 4 · models for sequences (2)
 - At every step the same cell reads the new input and the previous memory h, and writes a new h.
-- The digital twin (twin/models.py): input [oxygen, nitrate, air, recycle, inflow…], output the next oxygen and nitrate.
+- The digital twin ( twin/models.py ): input [oxygen, nitrate, air, recycle, inflow…], output the next oxygen and nitrate.
 - Image: `stills/slide33.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
 
@@ -362,9 +362,9 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 ### Slide 39 · Gradient descent: walk downhill on the loss
 - Section: Lesson 5 · train
 - Contours are the loss over two weights; the ball is the model.
-- Too small: it barely moves. Too large: it overshoots and blows up. Try all three.
-- Backpropagation computes ∂loss/∂w for every weight in one backward pass: loss.backward().
-- In practice: Adam/AdamW (adaptive steps), a learning-rate schedule (OneCycle, cosine) and gradient clipping, as in every training file of the repo.
+- Too small : it barely moves. Too large : it overshoots and blows up. Try all three.
+- Backpropagation computes ∂loss/∂w for every weight in one backward pass: loss.backward() .
+- In practice: Adam/AdamW (adaptive steps), a learning-rate schedule (OneCycle, cosine) and gradient clipping , as in every training file of the repo.
 - Image: `stills/slide39.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
 
@@ -395,9 +395,9 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 
 ### Slide 43 · A model is only good compared with something simple
 - Section: Lesson 5 · evaluate
-- Persistence: "the next 2 h equal now". Free, and hard to beat at short horizons.
-- Seasonal naive: "the same time yesterday". Strong when there is a daily cycle.
-- Linear model, gradient-boosted trees. If a network can't beat these, it isn't earning its keep (warning/baselines.py).
+- Persistence : "the next 2 h equal now". Free, and hard to beat at short horizons.
+- Seasonal naive : "the same time yesterday". Strong when there is a daily cycle.
+- Linear model, gradient-boosted trees. If a network can't beat these, it isn't earning its keep ( warning/baselines.py ).
 - Report errors in physical units (m³/d, mg/L), per horizon, on the test set, over several seeds.
 - Image: `stills/slide43.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
@@ -440,13 +440,13 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 - Image: `stills/slide47.jpg`
 - Interactive in the HTML deck: use the live deck for this slide.
 
-**Narration:** When there is no correct answer to copy. Lesson 6 · reinforcement learning When there is no correct answer to copy SupervisedReinforcement dataa fixed datasetcollected by acting signalthe right answer ya reward, often late learnsx → ystate → action (policy) riskwrong predictionswrong actions on a plant # src/wwtp/rl/rewards.py:39 paper 2, 
+**Narration:** When there is no correct answer to copy. Lesson 6 · reinforcement learning When there is no correct answer to copy SupervisedReinforcement dataa fixed datasetcollected by acting signalthe right answer ya reward, often late learnsx → ystate → action (policy) riskwrong predictionswrong actions on a plant # src/wwtp/rl/rewards.py:39 paper 2,
 
 ### Slide 48 · The parts of an actor-critic agent (DDPG, SAC)
 - Section: Lesson 6 · reinforcement learning
 - Image: `stills/slide48.jpg`
 
-**Narration:** The parts of an actor-critic agent (DDPG, SAC). Lesson 6 · reinforcement learning The parts of an actor-critic agent (DDPG, SAC) Environmentreset(), step(action) → next state, reward, done (rl/env.py) Actor (policy)network: state → action. DDPG: 3 → 256 → 256 → 1, tanh Criticnetwork: (state, action) → expected future reward Q Replay bufferstores 
+**Narration:** The parts of an actor-critic agent (DDPG, SAC). Lesson 6 · reinforcement learning The parts of an actor-critic agent (DDPG, SAC) Environmentreset(), step(action) → next state, reward, done (rl/env.py) Actor (policy)network: state → action. DDPG: 3 → 256 → 256 → 1, tanh Criticnetwork: (state, action) → expected future reward Q Replay bufferstores
 
 ### Slide 49 · Environment, reward, act, learn
 - Section: Lesson 6 · where is the code?
@@ -491,7 +491,7 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 
 ### Slide 54 · Notebook 3: reinforcement learning in brief
 - Section: Your turn · 12 minutes
-- A one-tank aeration environment with reset() and step(), driven by the real daily load
+- A one-tank aeration environment with reset() and step() , driven by the real daily load
 - The PID baseline
 - Imitation: copy the PID with a small network (supervised learning)
 - Q-learning from reward alone: watch the learning curve
@@ -503,8 +503,8 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 ### Slide 55 · Our project's code
 - Section: Lesson 7 of 7 · 5 min
 - Goal: Read the published methods and our controller in the project's own code, and the lessons they taught us.
-- Terminal: the code tours in this lesson
-- Notebook: none needed; slide 8 shows the same lines in notebook 2 and the project.
+- Terminal: none; this lesson reads the project's own files on the slides
+- Notebook: none needed. To go deeper: docs/PAPER1_STUDY.md and README.md .
 - Image: `stills/slide55.jpg`
 
 **Narration:** Lesson 7 of 7: Our project's code After this lesson you will be able to say: Read the published methods and our controller in the project's own code, and the lessons they taught us.
@@ -533,15 +533,30 @@ Tone: plain English, for research scholars new to ML. Total narration ≈ 35 min
 
 **Narration:** Lesson 7 ends with three questions. Ask the room first, then reveal each answer. MAACC as printed equals its PID in 80 of 80 runs. Why? Its learning signal with the printed weights is about 10⁻⁴: the networks hardly move from their zero start. What does the safety gate do? When an input leaves the range seen in training, the learned part is switched off and the expert PID acts alone. Our learned controller vs a tuned PID + ILC: which won? The tuned PID with the daily ILC matched or beat it on the test week. Reported honestly in the README.
 
-### Slide 59 · What this project teaches about doing ML research
+### Slide 59 · Questions learners ask, with short answers
+- Section: Lesson 7 · questions people ask
+- Q: Do I need a GPU? → A: No. Every script and notebook here runs on a laptop CPU in seconds to a minute. GPUs matter for big models on big data, not for this.
+- Q: Where does the gradient formula 2·(pred − y)·x in lesson 1 come from? → A: It is the slope of the loss (pred − y)² when you nudge w: calculus (the chain rule). In real code loss.backward() computes it for every knob automatically.
+- Q: How big should my model be? → A: Start small and simple (a baseline, then a linear model). Grow only while the validation error keeps improving. Far more knobs than examples means it can memorise.
+- Q: Why did the simplest model win on the storm? → A: About 1 900 examples and no storm in training: the flexible models had little to learn and more to overfit. More varied data helps more than a bigger model.
+- Q: My data has no time order. Do I still split by time? → A: No: then a random split is fine. Split by whatever must be new at test time: time, plant, patient, sensor.
+- Q: Why not pick the best model on the test set? → A: Then the test score is part of your choices and no longer tells you about new data. Choose on validation, test once.
+- Q: Can the RL agent run on a real plant? → A: Not straight away: early exploration means bad actions. The project starts from the expert (imitation), keeps a safety gate, and tests in simulation first.
+- Q: What should I put in my paper? → A: The data source and version, every correction, the split, the baselines, several seeds, and the test result, whichever way it went.
+- Image: `stills/slide59.jpg`
+- Interactive in the HTML deck: use the live deck for this slide.
+
+**Narration:** Questions learners ask, with short answers. Do I need a GPU? No. Every script and notebook here runs on a laptop CPU in seconds to a minute. GPUs matter for big models on big data, not for this. Where does the gradient formula 2·(pred − y)·x in lesson 1 come from? It is the slope of the loss (pred − y)² when you nudge w: calculus (the chain rule). In real code loss.backward() computes it for every knob automatically. How big should my model be? Start small and simple (a baseline, then a linear model). Grow only while the validation error keeps improving. Far more knobs than examples means it can memorise. Why did the simplest model win on the storm? About 1 900 examples and no storm in training: the flexible models had little to learn and more to overfit. More varied data helps more than a bigger model. My data has no time order. Do I still split by time? No: then a random split is fine. Split by whatever must be new at test time: time, plant, patient, sensor. Why not pick the best model on the test set? Then the test score is part of your choices and no longer tells you about new data. Choose on validation, test once. Can the RL agent run on a real plant? Not straight away: early exploration means bad actions. The project starts from the expert (imitation), keeps a safety gate, and tests in simulation first. What should I put in my paper? The data source and version, every correction, the split, the baselines, several seeds, and the test result, whichever way it went.
+
+### Slide 60 · What this project teaches about doing ML research
 - Section: Lesson 7 · take home
 - Look at the data first. Units, gaps, physics. The S_I column needed a fix nobody had written down.
-- The input and output shapes choose the model family; the amount of data limits its size.
-- Split by time or by plant, fit the scaler on training data only, never tune on the test.
-- Baselines first: persistence, a linear model, a well-tuned PID.
+- The input and output shapes choose the model family ; the amount of data limits its size.
+- Split by time or by plant , fit the scaler on training data only, never tune on the test.
+- Baselines first : persistence, a linear model, a well-tuned PID.
 - Reproduce before you improve. Two of three published methods did not work as printed.
 - Several seeds. DDPG's energy saving ranged from 5.6 to 15.7 % between seeds.
-- Image: `stills/slide59.jpg`
+- Image: `stills/slide60.jpg`
 
 **Narration:** To finish, eight habits from this project. Look at your data. Let the shapes choose the model. Split honestly. Beat simple baselines. Reproduce published work before claiming to improve it. Use several seeds. Write your test down before you run it. And save your model with everything it needs to be used again. Everything we showed is in the repository. Questions?
 

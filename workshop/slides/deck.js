@@ -923,7 +923,7 @@ A.player = {
   start(el) {
     const key = el.dataset.key, P = PLAYERS[key];
     const st = PSTATE[key] || (PSTATE[key] = {ran: 0});
-    this.st = st; this.P = P;
+    this.st = st; this.P = P; this.busy = false; this.target = st.ran;
     const root = $(".player-root", el);
     root.innerHTML = `
       <div class="nb">
@@ -957,21 +957,25 @@ A.player = {
       $(".nb-list", root).appendChild(li);
     });
     $(".nb-all", root).onclick = () => this.runTo(P.cells.length);
-    $(".nb-reset", root).onclick = () => { st.ran = 0; this.paint(true); };
+    $(".nb-reset", root).onclick = () => { st.ran = 0; this.target = 0; this.paint(true); };
     this.root = root;
     this.paint(true);
   },
   runTo(n) {
-    const from = this.st.ran;
-    if (n <= from) { this.st.ran = n; this.paint(); return; }
-    // cells run one after the other, with a short busy state, like a kernel
-    const step = k => {
-      if (k > n) return;
+    // cells run one after the other, with a short busy state, like a kernel; presses made while
+    // a cell is running are queued (target), so a fast presenter never loses a press
+    if (n <= this.st.ran && !this.busy) { this.st.ran = n; this.target = n; this.paint(); return; }
+    this.target = Math.max(this.target || 0, n);
+    if (this.busy) return;
+    const step = () => {
+      const k = this.st.ran + 1;
+      if (k > this.target || !this.root.isConnected) { this.busy = false; return; }
+      this.busy = true;
       const cell = $$(".nb-cell", this.root)[k - 1];
       $(".nb-count", cell).textContent = "In [*]:"; cell.classList.add("busy");
-      setTimeout(() => { this.st.ran = k; cell.classList.remove("busy"); this.paint(); step(k + 1); }, 450);
+      setTimeout(() => { this.st.ran = k; cell.classList.remove("busy"); this.paint(); step(); }, 450);
     };
-    step(from + 1);
+    step();
   },
   paint(instant) {
     const {P, st, root} = this;
@@ -992,8 +996,8 @@ A.player = {
     if (st.ran && cur) box.scrollTo({top: cur.offsetTop - box.offsetTop - 8, behavior: instant ? "auto" : "smooth"});
     else box.scrollTop = 0;
   },
-  next() { if (this.st.ran < this.P.cells.length) { this.runTo(this.st.ran + 1); return true; } return false; },
-  prev() { if (this.st.ran > 0) { this.st.ran--; this.paint(); return true; } return false; },
+  next() { const t = Math.max(this.target || 0, this.st.ran); if (t < this.P.cells.length) { this.runTo(t + 1); return true; } return false; },
+  prev() { if (this.busy) return true; if (this.st.ran > 0) { this.st.ran--; this.target = this.st.ran; this.paint(); return true; } return false; },
   stop() {}
 };
 
@@ -1124,6 +1128,14 @@ const GLOSSARY = [
   ["reward", "A score after each action.", "The treat. The agent does whatever earns treats.", "−|oxygen − 2| − air cost"],
   ["policy", "The agent's rule: in this situation, do this.", "A cook's habits.", "the actor network"],
   ["PID", "A classic controller: too low → more, too high → less.", "A thermostat.", "the expert of all three papers"],
+  ["BSM1", "Benchmark Simulation Model no. 1: a standard computer model of a wastewater plant.", "A flight simulator, for wastewater engineers.", "src/wwtp/official/plant.py; every result of the project"],
+  ["COD / ammonium / TSS", "How much organic dirt / nitrogen as ammonium / floating solids are in the water.", "The ingredients list of the dirty water.", "S_S, S_NH and the TSS column in the data"],
+  ["KLa", "How fast oxygen from the blown air dissolves into the water (per day).", "The volume knob of the air blower.", "KLa5: the action of every controller in the project"],
+  ["mean / standard deviation", "The average / how far values typically are from it.", "The average height in a class / how much heights vary.", "the scaler of lesson 3"],
+  ["MLP / CNN / GRU", "Plain stacked layers / a filter sliding over time / a network with a memory.", "An assembly line / a magnifying glass moved along / a notepad carried along.", "lesson 4; the forecaster is a CNN, the digital twin a GRU"],
+  ["DDPG / SAC", "Two actor-critic RL methods: an actor picks actions, a critic scores them. SAC adds a little planned randomness.", "A player and a coach watching every move.", "paper 2's agent (DDPG); our controller (SAC-IL)"],
+  ["ILC", "Iterative learning control: learns a pattern that repeats every day and acts on it ahead of time.", "Leaving earlier because you know rush hour comes at 8 every day.", "our controller, lesson 7"],
+  ["MAACC / IOQL", "The learning controllers of papers 1 and 3 (adaptive-critic and Q-learning methods).", "Two published recipes we cooked exactly as written.", "lesson 7: neither learned as printed"],
 ];
 A.glossary = {
   start(el) {
@@ -1141,8 +1153,6 @@ A.glossary = {
     $$("button", grid).forEach(b => b.onclick = () => this.pick(+b.dataset.i));
     this.pick(this.i ?? 0);
   },
-  next() { if (this.i < GLOSSARY.length - 1) { this.pick(this.i + 1); return true; } return false; },
-  prev() { if (this.i > 0) { this.pick(this.i - 1); return true; } return false; },
   stop() {}
 };
 
@@ -1222,7 +1232,7 @@ A.codemap = {
 const QUIZ = {
   l1: [["Which parts of ŷ = w·x + b does training change?", "Only w and b, the knobs. The inputs x and the true answers y are data and never change. The shape of the function is chosen by us before training."],
        ["The loss is very large. What does that tell you?", "The guesses are far from the true answers: the knobs are not yet good, or the model's shape cannot fit the data."],
-       ["Why did the loss explode with a learning rate of 1.2?", "Each step jumped over the bottom of the valley and landed higher on the other side, further each time. Smaller steps walk down; too-big steps bounce out."]],
+       ["What happens if the step size (learning rate) is far too big?", "Each step jumps over the bottom of the valley and lands higher on the other side, further each time: the loss explodes. Try lr = 1.2 in lesson1_knobs.py and see it."]],
   l2: [["Why did every column come out as text?", "The first row holds names. One text row makes pandas read the whole column as text. Tell it row 0 is the header."],
        ["All checks passed. Can the data still be wrong?", "Yes: S_I stays at 30 while rain doubles the flow. Only physics (rain dilutes) catches it."],
        ["When may you fill a gap by interpolation?", "Only when it is short (here ≤ 1 hour). Filling a long gap invents data."]],
@@ -1241,6 +1251,14 @@ const QUIZ = {
   l7: [["MAACC as printed equals its PID in 80 of 80 runs. Why?", "Its learning signal with the printed weights is about 10⁻⁴: the networks hardly move from their zero start."],
        ["What does the safety gate do?", "When an input leaves the range seen in training, the learned part is switched off and the expert PID acts alone."],
        ["Our learned controller vs a tuned PID + ILC: which won?", "The tuned PID with the daily ILC matched or beat it on the test week. Reported honestly in the README."]],
+  faq: [["Do I need a GPU?", "No. Every script and notebook here runs on a laptop CPU in seconds to a minute. GPUs matter for big models on big data, not for this."],
+        ["Where does the gradient formula 2·(pred − y)·x in lesson 1 come from?", "It is the slope of the loss (pred − y)² when you nudge w: calculus (the chain rule). In real code loss.backward() computes it for every knob automatically."],
+        ["How big should my model be?", "Start small and simple (a baseline, then a linear model). Grow only while the validation error keeps improving. Far more knobs than examples means it can memorise."],
+        ["Why did the simplest model win on the storm?", "About 1 900 examples and no storm in training: the flexible models had little to learn and more to overfit. More varied data helps more than a bigger model."],
+        ["My data has no time order. Do I still split by time?", "No: then a random split is fine. Split by whatever must be new at test time: time, plant, patient, sensor."],
+        ["Why not pick the best model on the test set?", "Then the test score is part of your choices and no longer tells you about new data. Choose on validation, test once."],
+        ["Can the RL agent run on a real plant?", "Not straight away: early exploration means bad actions. The project starts from the expert (imitation), keeps a safety gate, and tests in simulation first."],
+        ["What should I put in my paper?", "The data source and version, every correction, the split, the baselines, several seeds, and the test result, whichever way it went."]],
 };
 const QSTATE = {};
 A.quiz = {

@@ -1,0 +1,85 @@
+"""Rebuild workshop/SPEECHIFY_OUTLINE.md from the deck: one entry per slide, in order.
+
+Keeps every narration already written (matched by slide title) and writes one for dividers,
+code maps, quizzes and any slide without one.
+
+    python workshop/tools/build_outline.py
+"""
+
+import html as H
+import re
+from pathlib import Path
+
+WS = Path(__file__).resolve().parents[1]
+OUT = WS / "SPEECHIFY_OUTLINE.md"
+LESSON = {"lesson1": "the four training steps", "lesson2": "download, read, check and fix",
+          "lesson3": "choose, split, scale and cut", "lesson4": "shapes, baselines, linear, MLP and CNN",
+          "lesson5": "train, validate, test once and save", "lesson6": "environment, reward, act and learn"}
+
+
+def txt(s):
+    return re.sub(r"\s+", " ", H.unescape(re.sub(r"<[^>]+>", " ", s))).strip()
+
+
+def main():
+    old = OUT.read_text(encoding="utf8")
+    intro = old[:old.index("## Deck") + len("## Deck")]
+    narr = {}
+    for blk in re.split(r"(?=### Slide \d+ ·)", old)[1:]:
+        t = re.match(r"### Slide \d+ · (.*)", blk).group(1).strip()
+        m = re.search(r"\*\*Narration:\*\* (.*)", blk, re.S)
+        if m:
+            narr[t] = m.group(1).strip().split("\n\n")[0]
+    h = (WS / "slides" / "index.html").read_text(encoding="utf8")
+    deck = (WS / "slides" / "deck.js").read_text(encoding="utf8")
+    qblock = deck[deck.index("const QUIZ = {"):deck.index("const QSTATE")]
+    quiz = {}
+    for key, body in re.findall(r"(\w+): \[(\[.*?\])\],?(?=\s*\n\s*(?:\w+: \[\[|\}))", qblock, re.S):
+        quiz[key] = re.findall(r'\["(.*?)", "(.*?)"\]', body)
+    secs = re.findall(r'<section class="(slide[^"]*)"([^>]*)>(.*?)</section>', h, re.S)
+    intro = re.sub(r"\d+ slides", f"{len(secs)} slides", intro)
+    out = [intro, "\n\n"]
+    for i, (cls, attrs, body) in enumerate(secs, 1):
+        m = re.search(r"<h[12][^>]*>(.*?)</h[12]>", body, re.S)
+        title = txt(m.group(1)) if m else f"Slide {i}"
+        k = re.search(r'<div class="kicker">(.*?)</div>', body)
+        kick = txt(k.group(1)) if k else ""
+        lis = [txt(x) for x in re.findall(r"<li[^>]*>(.*?)</li>", body, re.S)][:6]
+        anim = (re.search(r'data-anim="(\w+)"', attrs) or [None, ""])[1]
+        key = (re.search(r'data-key="(\w+)"', attrs) or [None, ""])[1]
+        bul = lis
+        if anim == "quiz":
+            qs = quiz.get(key, [])
+            bul = [f"Q: {q} → A: {a}" for q, a in qs]
+            lead = "Questions learners ask, with short answers." if key == "faq" else \
+                f"Lesson {key[1:]} ends with three questions. Ask the room first, then reveal each answer."
+            nar = lead + " " + " ".join(f"{q} {a}" for q, a in qs)
+        elif anim == "codemap":
+            scr = re.search(r"examples/(\w+\.py)", body).group(1)
+            bul = [f"The same steps ({LESSON[key]}), each in its own colour, in four panels: the hands-on script, "
+                   "the notebook, and the project's own code", f"Run it yourself: python workshop/examples/{scr}"]
+            nar = (f"Where is the code? These four panels are real files. Each step of this lesson, {LESSON[key]}, "
+                   "has one colour, and it lights up in every panel at once: first in the short script you can run, "
+                   "then in the notebook, then in the project's own code. What you just learned is exactly what the "
+                   "research code does.")
+        elif "divider" in cls:
+            goal = txt(re.search(r"After this lesson you can…</h3><p[^>]*>(.*?)</p>", body, re.S).group(1))
+            term = txt(re.search(r"Terminal: (.*?)</p>", body, re.S).group(1))
+            nb = txt(re.search(r"Notebook: (.*?)</p>", body, re.S).group(1))
+            bul = [f"Goal: {goal}", f"Terminal: {term}", f"Notebook: {nb}"]
+            nar = f"{kick.split('·')[0].strip()}: {title} After this lesson you will be able to say: {goal}"
+        else:
+            nar = narr.get(title) or (f"{title}. " + (" ".join(lis[:3]) if lis else txt(body)[:300]))
+        if not bul:
+            p = re.search(r'<p class="sub"[^>]*>(.*?)</p>', body, re.S)
+            bul = [txt(p.group(1))] if p else []
+        out.append(f"### Slide {i} · {title}\n" + (f"- Section: {kick}\n" if kick else "")
+                   + "".join(f"- {b}\n" for b in bul) + f"- Image: `stills/slide{i:02d}.jpg`\n"
+                   + ("- Interactive in the HTML deck: use the live deck for this slide.\n" if anim else "")
+                   + f"\n**Narration:** {nar}\n\n")
+    OUT.write_text("".join(out), encoding="utf8")
+    print("wrote", OUT, len(secs), "slides")
+
+
+if __name__ == "__main__":
+    main()

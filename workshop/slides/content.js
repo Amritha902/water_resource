@@ -208,7 +208,7 @@ const PLAYERS = {
 {
 "code": "net = mlp()\nhist, be = fit(net)\nplot_curves(hist, be, \"MLP 288 → 64 → 64 → 8\")\nreport(\"MLP 288-64-64-8\", predict(net, \"val\"), count(net))",
 "out": {
-"text": "epoch   0  train 0.9952  val 0.9483\nepoch  10  train 0.0607  val 0.3880\nepoch  20  train 0.0520  val 0.3404\nepoch  30  train 0.0324  val 0.3239\nepoch  40  train 0.0260  val 0.3144\nepoch  50  train 0.0221  val 0.3158\nepoch  59  train 0.0213  val 0.3139\nbest epoch 41, val loss 0.3091  (1 s)\nMLP 288-64-64-8              params    23,176   val MAE: 15 min    2209   2 h    3120  m³/d",
+"text": "epoch   0  train 0.9952  val 0.9483\nepoch  10  train 0.0607  val 0.3880\nepoch  20  train 0.0520  val 0.3404\nepoch  30  train 0.0324  val 0.3239\nepoch  40  train 0.0260  val 0.3144\nepoch  50  train 0.0221  val 0.3158\nepoch  59  train 0.0213  val 0.3139\nbest epoch 41, val loss 0.3091  (2 s)\nMLP 288-64-64-8              params    23,176   val MAE: 15 min    2209   2 h    3120  m³/d",
 "img": [
 "img/train1_0.png"
 ]
@@ -1117,6 +1117,9 @@ const CODEMAPS = {
 "    loss = np.mean((pred - y) ** 2)           # 2 HOW WRONG: one number, the mean squared error",
 "    if step in (0, 1, 2, 5, 10, 50, 200):",
 "        print(f\"  step {step:3d}   w = {w:6.3f}   b = {b:6.3f}   loss = {loss:.5f}\")",
+"    # 3 WHICH WAY: the gradient = how the loss changes when a knob is nudged.",
+"    #   loss = mean((w·x + b − y)²); by the chain rule  d loss/dw = mean(2·(pred − y)·x),  d loss/db = mean(2·(pred − y)).",
+"    #   PyTorch computes this for you with loss.backward() (Part B).",
 "    grad_w = np.mean(2 * (pred - y) * x)      # 3 WHICH WAY: the gradient, for each knob",
 "    grad_b = np.mean(2 * (pred - y))",
 "    w = w - lr * grad_w                       # 4 TURN THE KNOBS a little, downhill",
@@ -1136,12 +1139,12 @@ const CODEMAPS = {
 6
 ],
 "3": [
-9,
-10
+12,
+13
 ],
 "4": [
-11,
-12
+14,
+15
 ]
 }
 },

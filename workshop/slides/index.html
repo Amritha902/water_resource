@@ -151,6 +151,7 @@ pre.nb-text{background:#fff;color:#111827;font-size:12px;line-height:1.4;max-hei
 .qz-n{flex:none;width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px}
 .qz-a{max-height:0;overflow:hidden;transition:max-height .45s ease,padding .45s;font-size:18.5px;line-height:1.45;padding:0 18px 0 66px;background:#f0fdf4;color:#14532d}
 .qz.open .qz-a{max-height:200px;padding:12px 18px 14px 66px}
+.quiz-root.faq{max-height:540px;overflow:auto;gap:8px}.faq .qz-q{font-size:17.5px;padding:9px 14px}.faq .qz-n{width:28px;height:28px;font-size:14px}.faq .qz-a{font-size:16px;padding:0 14px 0 56px}.faq .qz.open .qz-a{padding:8px 14px 10px 56px}
 </style>
 </head>
 <body>
@@ -195,7 +196,7 @@ jupyter lab workshop/notebooks</pre>
 <section class="slide" data-anim="glossary">
   <div class="kicker">Before we start · words in plain language</div>
   <h2>Every word you will hear today, explained simply</h2>
-  <p class="sub" style="margin-bottom:10px">Click a word (or press →). Each one has a plain meaning, an everyday comparison, and where it shows up in our project.</p>
+  <p class="sub" style="margin-bottom:10px">Click any word. Each one has a plain meaning, an everyday comparison, and where it shows up in our project. Come back to this slide whenever a word is new.</p>
   <div class="cols">
     <div class="gl-grid" style="flex:1.15;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start"></div>
     <div class="card gl-card" style="flex:1;min-height:420px"></div>
@@ -210,8 +211,8 @@ jupyter lab workshop/notebooks</pre>
     <div class="col">
       <ul>
         <li><b>The plant:</b> BSM1, the standard test plant in this field. Five tanks and a settler. The bacteria remove pollution; they need oxygen.</li>
-        <li class="frag"><b>What we measure:</b> oxygen in tank 5 (S<sub>O,5</sub>), nitrate in tank 2 (S<sub>NO,2</sub>), what flows in (flow Q, ammonium, COD), every 15 min to 45 s.</li>
-        <li class="frag"><b>What we can change:</b> the air blown into tank 5 (KLa<sub>5</sub>, 0–240 per day) and the recycle pump (Q<sub>a</sub>).</li>
+        <li class="frag"><b>What we measure:</b> oxygen in tank 5 (S<sub>O,5</sub>), nitrate in tank 2 (S<sub>NO,2</sub>), and what flows in: flow Q, ammonium (S<sub>NH</sub>) and COD (the organic dirt). The inflow is sampled every 15 min; the controller acts every 45 s.</li>
+        <li class="frag"><b>What we can change:</b> the air blown into tank 5 (KLa<sub>5</sub>: how fast oxygen dissolves, 0–240 per day; more air = higher KLa) and the recycle pump (Q<sub>a</sub>).</li>
         <li class="frag"><b>The goal:</b> hold oxygen at 2 mg/L and nitrate at 1 mg/L whatever arrives, without wasting energy.</li>
         <li class="frag"><b>What we did:</b> rebuilt three published learning controllers, checked their claims, and trained forecasters, a digital twin, a warning model and RL agents.</li>
       </ul>
@@ -601,8 +602,8 @@ flow = d[idx, 15]</pre>
     <div class="col" style="flex:.9">
       <table style="font-size:15px">
         <tr><th>If your input is…</th><th>start with…</th></tr>
-        <tr><td>a table, N × features</td><td>linear model, gradient-boosted trees, MLP</td></tr>
-        <tr><td>a sequence, N × time × channels</td><td>1-D CNN / TCN, GRU / LSTM, Transformer</td></tr>
+        <tr><td>a table, N × features</td><td>linear model, gradient-boosted trees, MLP (multi-layer perceptron: plain layers of neurons)</td></tr>
+        <tr><td>a sequence, N × time × channels</td><td>1-D CNN / TCN (convolutions over time), GRU / LSTM (recurrent: a memory), Transformer</td></tr>
         <tr><td>an image, N × H × W × C</td><td>CNN</td></tr>
         <tr><td>a decision with no correct answer, only a reward</td><td>reinforcement learning</td></tr>
       </table>
@@ -839,7 +840,7 @@ flow = d[idx, 15]</pre>
         <li><b>Linear model, gradient-boosted trees.</b> If a network can't beat these, it isn't earning its keep (<code>warning/baselines.py</code>).</li>
         <li>Report errors in <b>physical units</b> (m³/d, mg/L), per horizon, on the test set, over several seeds.</li>
       </ul>
-      <div class="note red frag" style="margin-top:10px;font-size:16px"><b>What happened in this project:</b> the published learning controller, rebuilt exactly, did nothing beyond its PID. And our own learned controller was matched by a carefully tuned PID with the daily ILC.</div>
+      <div class="note red frag" style="margin-top:10px;font-size:16px"><b>What happened in this project:</b> the published learning controller, rebuilt exactly, did nothing beyond its PID. And our own learned controller was matched by a carefully tuned PID with the daily ILC (iterative learning control: it learns the repeating daily pattern).</div>
     </div>
     <div class="col">
       <canvas id="cv-base" width="560" height="380"></canvas>
@@ -1038,7 +1039,7 @@ soft_update(actor, actor_target, tau=0.001)</pre>
   <h1 style="font-size:58px;margin:6px 0 18px">Our project's code</h1>
   <div class="cols" style="margin-top:10px">
     <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">Read the published methods and our controller in the project's own code, and the lessons they taught us.</p></div></div>
-    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: the code tours in this lesson</p><p style="margin:0">Notebook: none needed; slide 8 shows the same lines in notebook 2 and the project.</p></div></div>
+    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: none; this lesson reads the project's own files on the slides</p><p style="margin:0">Notebook: none needed. To go deeper: <code>docs/PAPER1_STUDY.md</code> and <code>README.md</code>.</p></div></div>
   </div>
 </section>
 
@@ -1062,6 +1063,14 @@ soft_update(actor, actor_target, tau=0.001)</pre>
   <h2>Three questions before we move on</h2>
   <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
   <div class="quiz-root"></div>
+</section>
+
+<!-- questions learners ask -->
+<section class="slide" data-anim="quiz" data-key="faq">
+  <div class="kicker">Lesson 7 · questions people ask</div>
+  <h2>Questions learners ask, with short answers</h2>
+  <p class="sub" style="margin-bottom:10px">Collected by going through this lesson from scratch. Click a question (or press →).</p>
+  <div class="quiz-root faq"></div>
 </section>
 
 <!-- 28 ─────────────────────────────── LESSONS -->
