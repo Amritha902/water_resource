@@ -1,0 +1,382 @@
+[
+ {
+  "check": "PID gains = paper 1 (Kp diag{100,100000}, Ki diag{20,30000}, Kd diag{10,1000})",
+  "ok": true,
+  "detail": "Kp [   100. 100000.], Ki [2.e+01 3.e+04], Kd [  10. 1000.]"
+ },
+ {
+  "check": "control period 45 s (paper 1)",
+  "ok": true,
+  "detail": "45.000 s"
+ },
+ {
+  "check": "input limits 0-240 1/d and 0-92230 m3/d (paper 1)",
+  "ok": true,
+  "detail": "[0. 0.] - [  240. 92230.]"
+ },
+ {
+  "check": "Q_a limit = 5 x Q_in0 (BSM1)",
+  "ok": true,
+  "detail": "5 x 18446"
+ },
+ {
+  "check": "actuator noise std = 3 % of the upper bound (paper 1)",
+  "ok": true,
+  "detail": "[   7.2 2766.9]"
+ },
+ {
+  "check": "set points [S_O,5, S_NO,2] = [2, 1] (paper prints [1, 2]; its figures and PID numbers match [2, 1])",
+  "ok": true,
+  "detail": "[2. 1.]"
+ },
+ {
+  "check": "tank volumes and KLa of tanks 3-4 (aeration energy formula)",
+  "ok": true,
+  "detail": "V 1000/1333, KLa3/4 240/240, S_O,sat 8"
+ },
+ {
+  "check": "influent dry: 14 days at 15 min",
+  "ok": true,
+  "detail": "1345 rows, last t 14.0000 d"
+ },
+ {
+  "check": "influent rain: 14 days at 15 min",
+  "ok": true,
+  "detail": "1345 rows, last t 14.0000 d"
+ },
+ {
+  "check": "influent storm: 14 days at 15 min",
+  "ok": true,
+  "detail": "1345 rows, last t 14.0000 d"
+ },
+ {
+  "check": "re-run matches stored: study PID dry seed 0 sensors None",
+  "ok": true,
+  "detail": "stored 0.0112974 / re-run 0.0112974, steps 26879, fail False"
+ },
+ {
+  "check": "re-run matches stored: study PIDtuned+ILC rain seed 0 sensors None",
+  "ok": true,
+  "detail": "stored 0.00114868 / re-run 0.00114868, steps 26879, fail False"
+ },
+ {
+  "check": "re-run matches stored: study Robust storm seed 0 sensors None",
+  "ok": true,
+  "detail": "stored 0.00329442 / re-run 0.00329442, steps 26879, fail False"
+ },
+ {
+  "check": "re-run matches stored: study Ours dry seed 2 sensors None",
+  "ok": true,
+  "detail": "stored 0.00138939 / re-run 0.00138939, steps 26879, fail False"
+ },
+ {
+  "check": "re-run matches stored: study rMAACC rain seed 0 sensors None",
+  "ok": true,
+  "detail": "stored 0.00368454 / re-run 0.00368454, steps 26879, fail False"
+ },
+ {
+  "check": "re-run matches stored: study PIDx3 dry seed 0 sensors None",
+  "ok": true,
+  "detail": "stored 0.0185946 / re-run 0.0185946, steps 26879, fail False"
+ },
+ {
+  "check": "re-run matches stored: H1 PIDtuned+ILC bsm2:245 seed 0 sensors None",
+  "ok": true,
+  "detail": "stored 0.265992 / re-run 0.265992, steps 26879, fail False"
+ },
+ {
+  "check": "re-run matches stored: H2 Ours dry seed 0 sensors 0",
+  "ok": true,
+  "detail": "stored 1.77581 / re-run 1.77581, steps 917, fail True"
+ },
+ {
+  "check": "re-run matches stored: H5 PIDtuned+ILC-AW bsm2:385 seed 0 sensors None",
+  "ok": true,
+  "detail": "stored 0.0784877 / re-run 0.0784877, steps 26879, fail False"
+ },
+ {
+  "check": "re-run matches stored: H6 Robust rain seed 0 sensors 11",
+  "ok": true,
+  "detail": "stored 0.238158 / re-run 0.238158, steps 26879, fail False"
+ },
+ {
+  "check": "re-run matches stored: H7 rMAACC bsm2c:441 seed 3 sensors 10",
+  "ok": true,
+  "detail": "stored 0.204648 / re-run 0.204648, steps 26879, fail False"
+ },
+ {
+  "check": "independent metric computation: PID dry seed 0",
+  "ok": true,
+  "detail": "IAE 0.0112974 vs 0.0112974; AE 3690.4 vs 3690.4"
+ },
+ {
+  "check": "independent metric computation: PIDtuned+ILC rain seed 0",
+  "ok": true,
+  "detail": "IAE 0.00114868 vs 0.00114868; AE 3676.0 vs 3676.0"
+ },
+ {
+  "check": "independent metric computation: Ours dry seed 2",
+  "ok": true,
+  "detail": "IAE 0.00138939 vs 0.00138939; AE 3690.4 vs 3690.4"
+ },
+ {
+  "check": "test week oxygen, Ours dry: stated -87 %",
+  "ok": true,
+  "detail": "recomputed -87.3 %"
+ },
+ {
+  "check": "test week oxygen, Ours rain: stated -82 %",
+  "ok": true,
+  "detail": "recomputed -82.5 %"
+ },
+ {
+  "check": "test week oxygen, Ours storm: stated -74 %",
+  "ok": true,
+  "detail": "recomputed -73.8 %"
+ },
+ {
+  "check": "test week oxygen, PIDtuned+ILC dry: stated -90 %",
+  "ok": true,
+  "detail": "recomputed -90.2 %"
+ },
+ {
+  "check": "test week oxygen, PIDtuned+ILC rain: stated -89 %",
+  "ok": true,
+  "detail": "recomputed -88.5 %"
+ },
+ {
+  "check": "test week oxygen, PIDtuned+ILC storm: stated -80 %",
+  "ok": true,
+  "detail": "recomputed -80.1 %"
+ },
+ {
+  "check": "test week oxygen, PIDx3+ILC+rMAACC dry: stated -91 %",
+  "ok": true,
+  "detail": "recomputed -90.5 %"
+ },
+ {
+  "check": "test week oxygen, PIDx3+ILC+rMAACC rain: stated -87 %",
+  "ok": true,
+  "detail": "recomputed -86.6 %"
+ },
+ {
+  "check": "test week oxygen, PIDx3+ILC+rMAACC storm: stated -79 %",
+  "ok": true,
+  "detail": "recomputed -78.8 %"
+ },
+ {
+  "check": "test week oxygen, rMAACC dry: stated -85 %",
+  "ok": true,
+  "detail": "recomputed -85.0 %"
+ },
+ {
+  "check": "test week oxygen, rMAACC rain: stated -52 %",
+  "ok": true,
+  "detail": "recomputed -51.9 %"
+ },
+ {
+  "check": "test week oxygen, rMAACC storm: stated -67 %",
+  "ok": true,
+  "detail": "recomputed -67.2 %"
+ },
+ {
+  "check": "test week oxygen, OursT dry: stated -90 %",
+  "ok": true,
+  "detail": "recomputed -90.3 %"
+ },
+ {
+  "check": "test week oxygen, OursT rain: stated -88 %",
+  "ok": true,
+  "detail": "recomputed -88.2 %"
+ },
+ {
+  "check": "test week oxygen, OursT storm: stated -80 %",
+  "ok": true,
+  "detail": "recomputed -80.0 %"
+ },
+ {
+  "check": "test week oxygen, Robust dry: stated -83 %",
+  "ok": true,
+  "detail": "recomputed -83.2 %"
+ },
+ {
+  "check": "test week oxygen, Robust rain: stated -80 %",
+  "ok": true,
+  "detail": "recomputed -80.3 %"
+ },
+ {
+  "check": "test week oxygen, Robust storm: stated -73 %",
+  "ok": true,
+  "detail": "recomputed -72.6 %"
+ },
+ {
+  "check": "test week oxygen, MAACC dry: stated +0 %",
+  "ok": true,
+  "detail": "recomputed +0.0 %"
+ },
+ {
+  "check": "test week oxygen, MAACC rain: stated +0 %",
+  "ok": true,
+  "detail": "recomputed -0.0 %"
+ },
+ {
+  "check": "test week oxygen, MAACC storm: stated +0 %",
+  "ok": true,
+  "detail": "recomputed -0.1 %"
+ },
+ {
+  "check": "plant check: our PID 14-day oxygen IAE vs paper's Table II (dry)",
+  "ok": true,
+  "detail": "ours 0.0114, paper 0.0114 (-0 %)"
+ },
+ {
+  "check": "plant check: our PID 14-day oxygen IAE vs paper's Table II (rain)",
+  "ok": true,
+  "detail": "ours 0.0108, paper 0.0098 (+10 %)"
+ },
+ {
+  "check": "plant check: our PID 14-day oxygen IAE vs paper's Table II (storm)",
+  "ok": true,
+  "detail": "ours 0.0118, paper 0.0117 (+1 %)"
+ },
+ {
+  "check": "plant check, nitrate: our PID vs paper (known gap, reported in README Limits)",
+  "ok": true,
+  "detail": "dry ours 0.0064 paper 0.0145; rain ours 0.0107 paper 0.0204; storm ours 0.0104 paper 0.0196"
+ },
+ {
+  "check": "held-out 2 question (i) item 0: stated -39 %",
+  "ok": true,
+  "detail": "recomputed -39.2 %"
+ },
+ {
+  "check": "held-out 2 question (ii) item 0: stated +3 %",
+  "ok": true,
+  "detail": "recomputed +3.1 %"
+ },
+ {
+  "check": "held-out 2 question (ii) item 1: stated +24 %",
+  "ok": true,
+  "detail": "recomputed +23.9 %"
+ },
+ {
+  "check": "held-out 2 question (iii) item 0: stated +60 %",
+  "ok": true,
+  "detail": "recomputed +59.8 %"
+ },
+ {
+  "check": "held-out 2 question (iv) item 0: stated -83 %",
+  "ok": true,
+  "detail": "recomputed -82.6 %"
+ },
+ {
+  "check": "held-out 2 question (iv) item 1: stated -10 %",
+  "ok": true,
+  "detail": "recomputed -9.5 %"
+ },
+ {
+  "check": "held-out 2 question (v) item 0: stated -73 %",
+  "ok": true,
+  "detail": "recomputed -73.5 %"
+ },
+ {
+  "check": "held-out 2 question (v) item 1: stated -8 %",
+  "ok": true,
+  "detail": "recomputed -8.2 %"
+ },
+ {
+  "check": "held-out 2 failures Ours H6: stated 45/45",
+  "ok": true,
+  "detail": "counted 45/45"
+ },
+ {
+  "check": "held-out 2 failures Ours H7: stated 25/30",
+  "ok": true,
+  "detail": "counted 25/30"
+ },
+ {
+  "check": "held-out 2 failures PIDtuned+ILC-AW H6: stated 9/9",
+  "ok": true,
+  "detail": "counted 9/9"
+ },
+ {
+  "check": "held-out 2 failures Robust H6: stated 0/9",
+  "ok": true,
+  "detail": "counted 0/9"
+ },
+ {
+  "check": "held-out 2 failures Robust H7: stated 0/6",
+  "ok": true,
+  "detail": "counted 0/6"
+ },
+ {
+  "check": "held-out 2 failures PID H6: stated 0/9",
+  "ok": true,
+  "detail": "counted 0/9"
+ },
+ {
+  "check": "held-out 2 failures rMAACC H6: stated 5/45",
+  "ok": true,
+  "detail": "counted 5/45"
+ },
+ {
+  "check": "held-out 1 failures Ours H2: stated 45/45",
+  "ok": true,
+  "detail": "counted 45/45"
+ },
+ {
+  "check": "held-out 1 failures PIDx3 H2: stated 9/9",
+  "ok": true,
+  "detail": "counted 9/9"
+ },
+ {
+  "check": "held-out 1 failures PIDtuned H2: stated 8/9",
+  "ok": true,
+  "detail": "counted 8/9"
+ },
+ {
+  "check": "held-out 1 failures PID H2: stated 2/9",
+  "ok": true,
+  "detail": "counted 2/9"
+ },
+ {
+  "check": "held-out 1 failures MAACC H3: stated 3/3",
+  "ok": true,
+  "detail": "counted 3/3"
+ },
+ {
+  "check": "SAC-IL training runs on dry days 0-7 (train env days = --train-days, used with 7)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "repaired MAACC training runs on dry days 0-7",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "32_paper1_tuning.py: tuning on dry, 7 days",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "38_tuned_pid.py: tuning on dry, 7 days",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "42_robust_pid.py: tuning on dry, 7 days",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "SAC-IL training evaluations have 7 days of steps (no week-2 data)",
+  "ok": true,
+  "detail": "steps 13440"
+ },
+ {
+  "check": "held-out noise seeds differ from the tuning seeds (100, 101) and between tests",
+  "ok": true,
+  "detail": "test 1 ['0', '1', '2', 'None', 'lag'], test 2 ['10', '11', '12', 'None']"
+ }
+]

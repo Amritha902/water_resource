@@ -77,6 +77,7 @@ Details:
 - Our controller, step by step: `docs/PAPER1_STUDY.md`.
 - Baselines and held-out test: `docs/PAPER1_BASELINES_HELDOUT.md`.
 - Protocol, pushed before any held-out run: `docs/PAPER1_HELDOUT_PROTOCOL.md`.
+- Audit of every number (re-runs, independent metric check, paper's settings): `docs/PAPER1_AUDIT.md`, 76 of 76 checks pass.
 - All results in seven figures (each % compares only runs that both controllers finished): `docs/PAPER1_FIGURES.md`.
 - Fixes and held-out test 2: `docs/PAPER1_HELDOUT2.md` (protocol: `docs/PAPER1_HELDOUT2_PROTOCOL.md`).
 
@@ -96,7 +97,7 @@ src/wwtp/               the library
   baselines/              incremental PID used as the prior
   bsm1/, forecast/, twin/, warning/, panda/   earlier work (see below)
 experiments/            numbered scripts; 20, 23–27 produce the reimplementation results,
-                        28 and 32–45 the new paper 1 controller, its study, the stronger baselines and the held-out test
+                        28 and 32–46 the new paper 1 controller, its study, the stronger baselines and the held-out test
 demo/                   live demo (run_demo.py runs it all) and its cached start states
 tools/                  report builders (build_report.py writes docs/REPORT.md)
 tests/                  88 tests
