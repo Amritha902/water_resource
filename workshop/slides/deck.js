@@ -924,6 +924,7 @@ A.player = {
     const key = el.dataset.key, P = PLAYERS[key];
     const st = PSTATE[key] || (PSTATE[key] = {ran: 0});
     this.st = st; this.P = P; this.busy = false; this.target = st.ran;
+    this.run = (this.run || 0) + 1;                       // a new visit: any run still going from before stops
     const root = $(".player-root", el);
     root.innerHTML = `
       <div class="nb">
@@ -967,13 +968,15 @@ A.player = {
     if (n <= this.st.ran && !this.busy) { this.st.ran = n; this.target = n; this.paint(); return; }
     this.target = Math.max(this.target || 0, n);
     if (this.busy) return;
+    const run = this.run, st = this.st, root = this.root;
     const step = () => {
-      const k = this.st.ran + 1;
-      if (k > this.target || !this.root.isConnected) { this.busy = false; return; }
+      if (run !== this.run) return;                       // the slide was left: this run belongs to an old visit
+      const k = st.ran + 1;
+      if (k > this.target) { this.busy = false; return; }
       this.busy = true;
-      const cell = $$(".nb-cell", this.root)[k - 1];
+      const cell = $$(".nb-cell", root)[k - 1];
       $(".nb-count", cell).textContent = "In [*]:"; cell.classList.add("busy");
-      setTimeout(() => { this.st.ran = k; cell.classList.remove("busy"); this.paint(); step(); }, 450);
+      setTimeout(() => { if (run !== this.run) return; st.ran = k; cell.classList.remove("busy"); this.paint(); step(); }, 450);
     };
     step();
   },
@@ -998,7 +1001,7 @@ A.player = {
   },
   next() { const t = Math.max(this.target || 0, this.st.ran); if (t < this.P.cells.length) { this.runTo(t + 1); return true; } return false; },
   prev() { if (this.busy) return true; if (this.st.ran > 0) { this.st.ran--; this.target = this.st.ran; this.paint(); return true; } return false; },
-  stop() {}
+  stop() { this.run = (this.run || 0) + 1; this.busy = false; }
 };
 
 // ═════════════════════════════ code tour: the project's own code, block by block
