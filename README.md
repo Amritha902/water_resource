@@ -42,12 +42,12 @@ trained on dry weather, week 1 only (5 training runs per learner).
 | Oxygen IAE vs paper's PID | Test week: dry | rain | storm | Held-out: BSM2 influent | official sensors | sensor delay |
 |---|---|---|---|---|---|---|
 | MAACC as printed | 0 % | 0 % | 0 % | fails | fails | fails |
-| **Repaired MAACC** (paper's PID prior) | −85 % | −52 % | −67 % | −6 % | +2 % | **−86 %** |
+| **Repaired MAACC** (paper's PID prior) | −85 % | −52 % | −67 % | −6 % | +1 % | **−86 %** |
 | PID ×3 + ILC | −85 % | −82 % | −72 % | +52 % | fails | −56 % |
 | Ours: PID ×3 + ILC + SAC-IL + gate | −87 % | −82 % | −74 % | +52 % | fails | −56 % |
 | PID ×3 + ILC + repaired MAACC + gate | −91 % | −87 % | −79 % | +52 % | fails | −56 % |
-| **Tuned PID + ILC** | −90 % | **−89 %** | **−80 %** | +76 % | +48 % | −73 % |
-| Tuned PID + ILC + SAC-IL + gate | −90 % | −88 % | −80 % | +75 % | +48 % | −73 % |
+| **Tuned PID + ILC** | −90 % | **−89 %** | **−80 %** | +76 % | +46 % | −73 % |
+| Tuned PID + ILC + SAC-IL + gate | −90 % | −88 % | −80 % | +75 % | +46 % | −73 % |
 | Paper's claim (14 days, not reproducible) | −95 % | −95 % | −92 % | | | |
 
 In short:
@@ -77,6 +77,7 @@ Details:
 - Our controller, step by step: `docs/PAPER1_STUDY.md`.
 - Baselines and held-out test: `docs/PAPER1_BASELINES_HELDOUT.md`.
 - Protocol, pushed before any held-out run: `docs/PAPER1_HELDOUT_PROTOCOL.md`.
+- All results in seven figures (each % compares only runs that both controllers finished): `docs/PAPER1_FIGURES.md`.
 - Fixes and held-out test 2: `docs/PAPER1_HELDOUT2.md` (protocol: `docs/PAPER1_HELDOUT2_PROTOCOL.md`).
 
 ## What is in the repository
@@ -95,7 +96,7 @@ src/wwtp/               the library
   baselines/              incremental PID used as the prior
   bsm1/, forecast/, twin/, warning/, panda/   earlier work (see below)
 experiments/            numbered scripts; 20, 23–27 produce the reimplementation results,
-                        28 and 32–44 the new paper 1 controller, its study, the stronger baselines and the held-out test
+                        28 and 32–45 the new paper 1 controller, its study, the stronger baselines and the held-out test
 demo/                   live demo (run_demo.py runs it all) and its cached start states
 tools/                  report builders (build_report.py writes docs/REPORT.md)
 tests/                  88 tests
