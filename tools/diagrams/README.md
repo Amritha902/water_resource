@@ -16,6 +16,16 @@ node render.js d*.drawio             # writes the PNGs
 NOTITLE=1 python build.py && node render.js notitle/*.drawio   # versions without titles, used on the slides
 ```
 
+`audit.js` checks every diagram inside mxGraph for problems: text that
+overflows its box, labels lying on a box, boxes that overlap, lines that
+cross a box, and arrowheads with too little room. All six diagrams pass;
+the only overlaps it reports are the sensors, drawn inside their tanks on
+purpose.
+
+```bash
+node audit.js d*.drawio
+```
+
 `deck.js` builds `docs/Paper1_Architecture_Deck.pptx`. It needs pptxgenjs and
 expects two files in its folder:
 * `sizes.json`: the cropped title-less PNGs and their sizes;

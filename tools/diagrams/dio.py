@@ -6,7 +6,7 @@ import os
 NOTITLE = os.environ.get("NOTITLE") == "1"
 
 FONT = "fontFamily=Helvetica;"
-BASE = "rounded=1;arcSize=10;whiteSpace=wrap;html=1;" + FONT + "fontSize=14;"
+BASE = "rounded=1;arcSize=10;whiteSpace=wrap;html=1;spacing=8;" + FONT + "fontSize=15;"
 STY = {
     "paper": BASE + "fillColor=#F1F1EE;strokeColor=#7A7A74;fontColor=#1B2A33;strokeWidth=1.5;",
     "new": BASE + "fillColor=#E2F3EA;strokeColor=#1B7F5A;fontColor=#0E3B2A;strokeWidth=2.5;",
@@ -20,6 +20,8 @@ STY = {
                 "dashed=1;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=14;fontColor=#0E3B2A;",
     "text": "text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;" + FONT
             + "fontSize=13;fontColor=#4A5A62;",
+    "legend": "text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;" + FONT
+              + "fontSize=13;fontColor=#4A5A62;",
     "textc": "text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;" + FONT
              + "fontSize=13;fontColor=#4A5A62;",
     "title": "text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;" + FONT
@@ -63,7 +65,7 @@ class Diagram:
 
     def box(self, x, y, w, h, label, kind="paper", extra=""):
         i = self._id()
-        if NOTITLE and kind == "title":
+        if NOTITLE and kind in ("title", "legend"):
             return i
         self.cells.append(f'<mxCell id="{i}" value="{escape(label, {chr(34): "&quot;"})}" style="{STY[kind]}{extra}" '
                           f'vertex="1" parent="1"><mxGeometry x="{x}" y="{y}" width="{w}" height="{h}" as="geometry"/>'

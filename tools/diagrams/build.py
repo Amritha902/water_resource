@@ -37,7 +37,7 @@ def d0_plant():
     d.box(723, 200, 110, 28, "S_O,5 sensor", "white", "fontSize=12;fontStyle=1;")
     d.box(20, 470, 1160, 60, "<b>Loop 1</b>: KLa,5 → S_O,5 (dissolved oxygen in tank 5), set point 2 mg/L.   "
           "<b>Loop 2</b>: Q_a → S_NO,2 (nitrate in tank 2), set point 1 mg/L.<br>Influent: official dry, rain and "
-          "storm files, 14 days at 15 min.  Control step 45 s.  Green: the two inputs the controllers move.", "text")
+          "storm files, 14 days at 15 min.  Control step 45 s.  Green: the two inputs the controllers move.", "legend")
     d.save("d0_plant.drawio")
 
 
@@ -61,90 +61,88 @@ def d1_paper():
     d = Diagram("Paper 1 MAACC", 1200, 640)
     d.box(20, 8, 1100, 34, "Paper 1 (Wang et al., IEEE T-II 2026): multi-agent adaptive critic control (MAACC)",
           "title")
-    a1 = agent(d, 20, 60, "Agent 1: dissolved oxygen", "KLa,5", "z1", 1)
+    a1 = agent(d, 20, 66, "Agent 1: dissolved oxygen", "KLa,5", "z1", 1)
     a2 = agent(d, 20, 340, "Agent 2: nitrate", "Q_a", "z2", 2)
     s1 = d.box(640, 170, 44, 44, "Σ", "sum")
     s2 = d.box(640, 450, 44, 44, "Σ", "sum")
     for (g, an, integ, cn, td, pid), s in ((a1, s1), (a2, s2)):
         gy = d_y = None
-        top = {s1: 97, s2: 377}[s]
+        top = {s1: 103, s2: 377}[s]
         sx = 662
         d.edge(integ, s, "a", ex=(0.5, 0), en=(0.5, 0), pts=((290, top), (sx, top)))
-        d.edge(pid, s, "b", ex=(1, 0.5), en=(0, 0.5), pts=((600, top + 40), (600, top + 95)))
+        py = {s1: 66 + 45 + 32, s2: 340 + 45 + 32}[s]
+        sy = {s1: 192, s2: 472}[s]
+        d.edge(pid, s, "b", ex=(1, 0.5), en=(0, 0.5), pts=((600, py), (600, sy)))
     plant = d.box(800, 230, 200, 200, "<b>BSM1 plant</b><br>(two coupled<br>subsystems)", "plant",
                   "fontSize=16;")
     d.edge(s1, plant, "u₁ = a₁ + b₁ = KLa,5", ex=(1, 0.5), en=(0, 0.25), pts=((740, 192), (740, 280)))
     d.edge(s2, plant, "u₂ = a₂ + b₂ = Q_a", ex=(1, 0.5), en=(0, 0.75), pts=((740, 472), (740, 380)))
     meas = d.box(1040, 290, 140, 80, "measured<br>S_O,5, S_NO,2<br>z = s − r", "white")
     d.edge(plant, meas, ex=(1, 0.5), en=(0, 0.5))
-    d.edge(meas, a1[0], "z to both agents and PIDs", kind="fb", ex=(0.5, 0), en=(0.5, 0), pts=((1110, 50), (300, 50)))
+    d.edge(meas, a1[0], "z to both agents and PIDs", kind="fb", ex=(0.5, 0), en=(0.5, 0), pts=((1110, 48), (300, 48)))
     d.edge(meas, a2[0], "", kind="fb", ex=(0.5, 1), en=(0.5, 1), pts=((1110, 600), (300, 600)))
-    d.box(800, 470, 380, 110, "<b>Claim</b> (Table II): oxygen error −95 / −95 / −92 %, nitrate −75 / −71 / −76 % "
+    d.box(765, 468, 325, 125, "<b>Claim</b> (Table II): oxygen error −95 / −95 / −92 %, nitrate −75 / −71 / −76 % "
           "against the PID (dry / rain / storm).<br><b>What we found</b>: rebuilt exactly as printed, it equals its "
-          "PID in 80 of 80 runs (the learning signal is about 10⁻⁴).", "bad", "align=left;spacingLeft=10;fontSize=13;")
+          "PID in 80 of 80 runs (learning signal about 10⁻⁴).", "bad", "align=left;spacing=10;fontSize=13;")
     d.save("d1_paper.drawio")
 
 
 def d2_ours():
-    d = Diagram("Our controller", 1200, 620)
+    d = Diagram("Our controller", 1200, 560)
     d.box(20, 8, 1150, 34, "Our controller: the paper's PID, tuned, plus a daily learning feedforward (oxygen loop)",
           "title")
-    r = d.box(10, 255, 80, 50, "set point<br>S_O,5 = 2", "text", "align=center;fontSize=12;")
-    s0 = d.box(130, 258, 44, 44, "Σ", "sum")
-    d.box(108, 252, 20, 20, "+", "text", "fontSize=13;")
-    d.box(160, 300, 20, 20, "−", "text", "fontSize=16;")
-    pid = d.box(220, 235, 210, 90, "<b>Tuned PID</b><br>P and I tuned per loop<br>(robust version: gains ×0.5)", "new")
-    d.box(222, 217, 46, 18, "NEW", "tag")
-    s1 = d.box(500, 258, 44, 44, "Σ", "sum")
-    lim = d.box(600, 245, 150, 70, "<b>actuator limit</b><br>0 ≤ KLa,5 ≤ 240", "paper")
-    plant = d.box(820, 215, 170, 130, "<b>BSM1 plant</b><br>tank 5", "plant", "fontSize=15;")
-    ilc = d.box(330, 70, 300, 110, "<b>Daily ILC</b> (feedforward)<br>learns the PID's correction for each time of "
-                "day and applies it 3 min earlier;<br>bumpless at midnight, anti-windup", "new", "fontSize=13;")
-    d.box(332, 52, 46, 18, "NEW", "tag")
-    sens = d.box(820, 400, 170, 70, "<b>sensor</b><br>official model: delay + noise", "plant", "fontSize=13;")
-    filt = d.box(600, 400, 150, 70, "<b>oxygen filter</b><br>τ = 0.75 min", "new")
-    d.box(602, 382, 46, 18, "NEW", "tag")
-    learn = d.box(270, 380, 280, 100, "<b>Optional learned correction</b><br>SAC-IL or repaired MAACC, behind a "
-                  "safety gate. Tested: adds nothing on the tuned PID + ILC", "learn", "fontSize=12;")
+    r = d.box(10, 265, 90, 50, "set point<br>S_O,5 = 2", "textc", "fontSize=13;")
+    s0 = d.box(120, 268, 44, 44, "Σ", "sum")
+    d.box(100, 258, 20, 20, "+", "textc", "fontSize=15;")
+    d.box(150, 316, 20, 20, "−", "textc", "fontSize=18;")
+    pid = d.box(230, 245, 210, 90, "<b>Tuned PID</b><br>P and I tuned per loop<br>(robust: gains ×0.5)", "new")
+    d.box(232, 227, 46, 18, "NEW", "tag")
+    s1 = d.box(520, 268, 44, 44, "Σ", "sum")
+    lim = d.box(620, 250, 160, 80, "<b>actuator limit</b><br>0 ≤ KLa,5 ≤ 240", "paper")
+    plant = d.box(870, 225, 190, 130, "<b>BSM1 plant</b><br>tank 5", "plant", "fontSize=16;")
+    ilc = d.box(360, 70, 300, 120, "<b>Daily ILC</b> (feedforward)<br>learns the PID's correction for each time "
+                "of day and applies it 3 min earlier<br>bumpless at midnight, with anti&#8209;windup", "new", "fontSize=14;")
+    d.box(362, 52, 46, 18, "NEW", "tag")
+    sens = d.box(870, 410, 190, 80, "<b>sensor</b><br>official model:<br>delay + noise", "plant", "fontSize=14;")
+    filt = d.box(620, 410, 160, 80, "<b>oxygen filter</b><br>τ = 0.75 min", "new")
+    d.box(622, 392, 46, 18, "NEW", "tag")
+    learn = d.box(290, 400, 300, 100, "<b>Optional learned correction</b><br>SAC-IL or repaired MAACC + safety "
+                  "gate; adds nothing on the tuned PID + ILC", "learn", "fontSize=13;")
     d.edge(r, s0, ex=(1, 0.5), en=(0, 0.5))
     d.edge(s0, pid, "error", ex=(1, 0.5), en=(0, 0.5))
     d.edge(pid, s1, "u_PID", ex=(1, 0.5), en=(0, 0.5))
-    d.edge(ilc, s1, "f(time of day)", kind="new", ex=(0.64, 1), en=(0.5, 0))
-    d.edge(pid, ilc, "", kind="upd", ex=(0.43, 0), en=(0, 0.5), pts=((310, 125),))
-    d.box(200, 150, 104, 40, "records u_PID", "text", "align=right;fontSize=12;")
-    d.edge(lim, ilc, "", kind="upd", ex=(0.5, 0), en=(1, 0.5), pts=((675, 125),))
-    d.box(684, 140, 200, 50, "at a limit: PID limits shift,<br>ILC skips the slot", "text", "fontSize=12;")
-    d.edge(learn, s1, "", kind="learn", ex=(0.9, 0), en=(0.5, 1))
+    d.edge(ilc, s1, "f(time of day)", kind="new", ex=(0.6067, 1), en=(0.5, 0))
+    d.edge(pid, ilc, "", kind="upd", ex=(0.4286, 0), en=(0, 0.5), pts=((320, 130),))
+    d.box(186, 142, 126, 24, "records u_PID", "text", "align=right;fontSize=13;")
+    d.edge(lim, ilc, "", kind="upd", ex=(0.5, 0), en=(1, 0.5), pts=((700, 130),))
+    d.box(712, 146, 220, 46, "at a limit: PID limits shift,<br>ILC skips that slot", "text", "fontSize=13;")
+    d.edge(learn, s1, "", kind="learn", ex=(0.84, 0), en=(0.5, 1))
     d.edge(s1, lim, ex=(1, 0.5), en=(0, 0.5))
     d.edge(lim, plant, "KLa,5", ex=(1, 0.5), en=(0, 0.5))
     d.edge(plant, sens, "S_O,5", kind="fb", ex=(0.5, 1), en=(0.5, 0))
     d.edge(sens, filt, "", kind="fb", ex=(0, 0.5), en=(1, 0.5))
-    d.edge(filt, s0, "measured S_O,5", kind="fb", ex=(0.5, 1), en=(0.5, 1), pts=((675, 520), (152, 520)))
-    d.box(20, 545, 1160, 66, "<b>Nitrate loop</b> (Q_a → S_NO,2 = 1): the paper's PID with tuned gains, no ILC (an "
-          "ILC there helped in dry weather but hurt in rain).<br><b>Grey</b>: from paper 1.  <b>Green</b>: new.  "
-          "<b>Dashed orange</b>: learned options we built and tested.", "text")
+    d.edge(filt, s0, "measured S_O,5", kind="fb", ex=(0.5, 1), en=(0.5, 1), pts=((700, 535), (142, 535)))
     d.save("d2_ours.drawio")
 
 
 def d3_ilc():
-    d = Diagram("Daily ILC", 1200, 470)
+    d = Diagram("Daily ILC", 1200, 440)
     d.box(20, 8, 1150, 34, "How the daily ILC learns (one update per night, no neural network)", "title")
-    k = d.box(30, 80, 300, 150, "<b>Day k</b><br>the PID controls; the ILC records the PID's input u_PID for every "
-              "time of day (1 920 slots of 45 s)", "paper", "fontSize=14;spacing=10;")
-    m = d.box(420, 70, 360, 170, "<b>Midnight update</b><br>deviation from the day's mean, shifted 3 min "
-              "earlier, smoothed ±22 min:<br>f ← f + β · shift(u_PID − mean)<br>β = 1 (tuned on dry week 1)", "new",
-              "fontSize=14;")
-    k1 = d.box(870, 80, 300, 150, "<b>Day k+1</b><br>f(time of day) is added to the PID's output, ahead of the "
-               "daily load peak; the PID corrects less", "paper", "fontSize=14;spacing=10;")
+    k = d.box(30, 70, 320, 160, "<b>Day k</b><br>the PID controls; the ILC records the PID's input u_PID for every "
+              "time of day (1 920 slots of 45 s)", "paper")
+    m = d.box(440, 70, 320, 160, "<b>Midnight update</b><br>f ← f + β · shift(u_PID − mean)<br>shifted 3 min "
+              "earlier, smoothed ±22 min; β = 1 (tuned on dry week 1)", "new")
+    k1 = d.box(850, 70, 320, 160, "<b>Day k+1</b><br>f(time of day) is added to the PID's output, ahead of the "
+               "daily load peak, so the PID corrects less", "paper")
     d.edge(k, m, ex=(1, 0.5), en=(0, 0.5))
     d.edge(m, k1, ex=(1, 0.5), en=(0, 0.5))
-    d.edge(k1, k, "every day", kind="upd", ex=(0.5, 1), en=(0.5, 1), pts=((1020, 270), (180, 270)))
-    b = d.box(30, 310, 540, 140, "<b>Bumpless transfer</b> (round 2)<br>at midnight the same change is "
-              "taken out of the PID's state, so the total input does not jump.<br>Largest oxygen deviation near "
-              "midnight: 0.053 → 0.011 mg/L", "new", "align=left;spacingLeft=12;")
-    a = d.box(630, 310, 540, 140, "<b>Anti-windup</b> (after held-out test 1)<br>the PID's limits move with "
-              "f, and slots at an actuator limit teach nothing.<br>Under overload (new data): error −39 %; normal "
-              "weather unchanged", "new", "align=left;spacingLeft=12;")
+    d.edge(k1, k, "repeated every day", kind="upd", ex=(0.5, 1), en=(0.5, 1), pts=((1010, 275), (190, 275)))
+    d.box(30, 315, 550, 115, "<b>Bumpless transfer</b> (round 2)<br>at midnight the same change is taken out of "
+          "the PID's state, so the input does not jump. Largest oxygen deviation near midnight: 0.053 → 0.011 mg/L",
+          "new", "align=left;spacing=14;")
+    d.box(620, 315, 550, 115, "<b>Anti-windup</b> (after held-out test 1)<br>the PID's limits move with f, and "
+          "slots at an actuator limit teach nothing. Under overload (new data): error −39 %; normal weather unchanged",
+          "new", "align=left;spacing=14;")
     d.save("d3_ilc.drawio")
 
 

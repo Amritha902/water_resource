@@ -62,6 +62,10 @@ function fit(file, x, y, w, h) {
   if (H > h) { H = h; W = h * r; }
   return { path: path.join(HERE, file), x: x + (w - W) / 2, y, w: W, h: H };
 }
+function under(s, img, text, opts = {}) {
+  s.addImage(img);
+  caption(s, text, img.y + img.h + 0.2, opts);
+}
 function caption(s, text, y, opts = {}) {
   s.addText(text, { x: 0.5, y, w: 12.33, h: 0.5, fontSize: 13, color: C.text1, isTextBox: true, margin: 0,
     valign: "top", ...opts });
@@ -84,14 +88,23 @@ s.addNotes("Paper 1 claims a learning controller that cuts the oxygen tracking e
 
 // ---------------------------------------------------------------- 2. plant
 s = content("The plant and the control task", "Introduction");
-s.addImage(fit("notitle/d0_plant_crop.png", 0.5, 1.35, 12.33, 4.6));
-caption(s, "Two loops, as in paper 1: aeration KLa,5 keeps oxygen in tank 5 at 2 mg/L; internal recycle Q_a keeps nitrate in tank 2 at 1 mg/L. Score: IAE, the mean absolute tracking error (paper 1, eq. 36).", 6.25);
+const img2 = fit("notitle/d0_plant_crop.png", 0.5, 1.35, 12.33, 4.6);
+s.addImage(img2);
+[["Loop 1: oxygen", "aeration KLa,5 keeps S_O,5 in tank 5 at 2 mg/L"],
+ ["Loop 2: nitrate", "internal recycle Q_a keeps S_NO,2 in tank 2 at 1 mg/L"],
+ ["Score", "IAE: mean absolute tracking error (paper 1, eq. 36); 45 s step, 14 days"]].forEach(([t, d], k) => {
+  const x = 0.5 + k * 4.18, y = img2.y + img2.h + 0.35;
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w: 3.97, h: 1.2, fill: { color: HEX.lt2 }, line: { color: HEX.lt2 },
+    rectRadius: 0.08, objectName: "task card " + (k + 1) });
+  s.addText(t, { x: x + 0.2, y: y + 0.12, w: 3.57, h: 0.35, fontSize: 16, bold: true, color: C.text2, isTextBox: true, margin: 0 });
+  s.addText(d, { x: x + 0.2, y: y + 0.5, w: 3.57, h: 0.62, fontSize: 14, color: C.text1, isTextBox: true, margin: 0, valign: "top" });
+});
 s.addNotes("BSM1 is the IWA benchmark plant. Paper 1 controls two inputs, drawn in green. All our runs use the official plant code and the official influent files.");
 
 // ---------------------------------------------------------------- 3. paper architecture
 pres.addSection({ title: "Paper 1" });
 s = content("Paper 1's architecture: two adaptive-critic agents on top of a PID", "Paper 1");
-s.addImage(fit("notitle/d1_paper_crop.png", 0.5, 1.3, 12.33, 5.75));
+s.addImage(fit("notitle/d1_paper_crop.png", 0.5, 1.3, 12.33, 5.6));
 s.addNotes("Each loop has an agent with an action network and a critic. The output is the PID's input plus a learned part, u = a + b. The critic learns from one-step temporal-difference errors, each step used once.");
 
 // ---------------------------------------------------------------- 4. reproduction
@@ -103,7 +116,7 @@ const H = (t) => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { col
 const cell = (t, fill, bold) => ({ text: t, options: { align: "center", color: HEX.dk1, fill: { color: fill }, bold: !!bold } });
 s.addTable([
   [{ text: "Oxygen error, 14 days (IAE)", options: { bold: true, color: "FFFFFF", fill: { color: HEX.dk2 } } },
-    H("Paper's PID (Table II)"), H("Our PID"), H("MAACC, paper's claim"), H("MAACC as printed, our run")],
+    H("Paper's PID (Table II)"), H("Our PID"), H("MAACC, paper's claim"), H("MAACC, our run")],
   ...[["Dry", "0.0114", "0.0114", "0.00053", "0.0114"], ["Rain", "0.0098", "0.0108", "0.00051", "0.0108"],
       ["Storm", "0.0117", "0.0118", "0.00095", "0.0118"]].map(([w, a, b, c, d]) => [
     { text: w, options: { bold: true, color: HEX.dk1 } }, cell(a, "F1F1EE"), cell(b, "F1F1EE"), cell(c, "F6D9D6"),
@@ -118,59 +131,55 @@ s.addNotes("So the improvement the paper reports does not come from the method a
 // ---------------------------------------------------------------- 5. ours
 pres.addSection({ title: "Our work" });
 s = content("Our controller: what is new", "Our work");
-s.addImage(fit("notitle/d2_ours_crop.png", 0.5, 1.3, 9.0, 5.75));
-const rows5 = [["Tuned PID", "P and I re-tuned per loop on one dry week. Alone: −85 % oxygen error (test week, dry)"],
-  ["Daily ILC", "learns the daily load pattern, no neural network. With the tuned PID: −90 / −89 / −80 %"],
-  ["Oxygen filter", "with gains ×0.5: never failed with the official sensors, but no better than the paper's PID there"]];
-rows5.forEach(([t, d], i) => {
-  const y = 1.55 + i * 1.7;
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 9.85, y, w: 2.98, h: 1.45, fill: { color: "E2F3EA" },
-    line: { color: HEX.accent2, width: 1.5 }, rectRadius: 0.08, objectName: "new item " + (i + 1) });
-  s.addText(t, { x: 10.0, y: y + 0.1, w: 2.7, h: 0.4, fontSize: 16, bold: true, color: "0E3B2A", isTextBox: true, margin: 0 });
-  s.addText(d, { x: 10.0, y: y + 0.5, w: 2.7, h: 0.9, fontSize: 13, color: C.text1, isTextBox: true, margin: 0, valign: "top" });
-});
+under(s, fit("notitle/d2_ours_crop.png", 0.5, 1.3, 12.33, 5.2), "Green: new.  Grey: from paper 1.  Dashed orange: learned options we built and tested.  Nitrate loop (Q_a → S_NO,2 = 1): the paper's PID with tuned gains, no ILC.", { fontSize: 12, color: "5B6B73" });
 s.addNotes("Green is new. The tuned PID and the daily iterative learning control do the work. The learned correction, SAC with imitation learning or the repaired MAACC, was built and tested; on top of the tuned PID with ILC it adds nothing.");
 
 // ---------------------------------------------------------------- 6. ILC
 s = content("The daily ILC: learning the load pattern, one update per night", "Our work");
-s.addImage(fit("notitle/d3_ilc_crop.png", 0.5, 1.4, 12.33, 4.6));
-caption(s, "The load on the plant repeats every day; most of the PID's remaining error repeats with it. The ILC removes that repeating part before it happens.", 6.25);
+under(s, fit("notitle/d3_ilc_crop.png", 0.5, 1.4, 12.33, 4.6), "The load on the plant repeats every day; most of the PID's remaining error repeats with it. The ILC removes that repeating part before it happens.");
 s.addNotes("This is iterative learning control. Each night it takes over part of the correction the PID had to make, and applies it a few minutes earlier the next day. Bumpless transfer removed a jump at midnight; anti-windup stopped it from hurting when the aeration is at its limit.");
 
 // ---------------------------------------------------------------- 7. repaired MAACC
 s = content("A fair baseline: the paper's learner with its training repaired", "Our work");
-s.addImage(fit("notitle/d4_repaired_crop.png", 0.5, 1.35, 12.33, 4.3));
+const img7 = fit("notitle/d4_repaired_crop.png", 0.5, 1.35, 12.33, 4.3);
+s.addImage(img7);
 s.addText([
   { text: "Result: ", options: { bold: true } },
   { text: "it learns. Oxygen error −85 % in dry weather (−52 % rain, −67 % storm), but it moves the aeration 3.7 × as much as the PID." },
-], { x: 0.5, y: 6.0, w: 12.33, h: 0.8, fontSize: 16, color: C.text1, isTextBox: true, margin: 0, valign: "top" });
+], { x: 0.5, y: img7.y + img7.h + 0.3, w: 12.33, h: 0.8, fontSize: 16, color: C.text1, isTextBox: true, margin: 0, valign: "top" });
 s.addNotes("To compare fairly we kept the paper's structure and fixed only the training, with standard fixes. It does learn, so the paper's idea can work; its printed training is what fails.");
 
 // ---------------------------------------------------------------- 8. method
 s = content("How we tested: nothing was tuned on the test data", "Our work");
-s.addImage(fit("notitle/d5_method_crop.png", 0.5, 1.35, 12.33, 4.85));
-caption(s, "Both held-out protocols were pushed to git before their runs, so the order can be checked. The audit re-ran stored runs and recomputed every quoted number.", 6.4);
+under(s, fit("notitle/d5_method_crop.png", 0.5, 1.35, 12.33, 4.85), "Both held-out protocols were pushed to git before their runs, so the order can be checked. The audit re-ran stored runs and recomputed every quoted number.");
 s.addNotes("Tuning and training used one dry week. The second week was the test. Then two held-out tests on new data and real sensor models, each fixed in writing before running.");
 
 // ---------------------------------------------------------------- 9. results chart
 pres.addSection({ title: "Results" });
 s = content("Official test week: tuned PID + ILC is as good as any learner", "Results");
+// a horizontal bar chart draws the first category and the first series at the bottom: list them bottom-up
 const ctrl = [["MAACC as printed", "MAACC"], ["Repaired MAACC", "rMAACC"], ["Ours: PID ×3 + ILC + SAC-IL", "Ours"],
   ["Robust (filter, ×0.5, ILC-AW)", "Robust"], ["Tuned PID + ILC", "PIDtuned+ILC"]];
 const labels = ctrl.map((c) => c[0]);
-const series = [["Dry", "tw_dry"], ["Rain", "tw_rain"], ["Storm", "tw_storm"]].map(([name, k]) => ({
+const WCOL = { Dry: "1C6E8C", Rain: "A07A2C", Storm: "5B6B73" };
+const series = [["Storm", "tw_storm"], ["Rain", "tw_rain"], ["Dry", "tw_dry"]].map(([name, k]) => ({
   name, labels, values: ctrl.map(([, c]) => -N[k][c].pct),
 }));
 s.addChart(pres.charts.BAR, series, {
-  x: 0.5, y: 1.35, w: 8.6, h: 5.6, barDir: "bar", barGrouping: "clustered", barGapWidthPct: 60,
-  chartColors: ["1C6E8C", "A07A2C", "5B6B73"],
+  x: 0.5, y: 1.35, w: 8.6, h: 5.25, barDir: "bar", barGrouping: "clustered", barGapWidthPct: 60,
+  chartColors: [WCOL.Storm, WCOL.Rain, WCOL.Dry],
   showValue: true, dataLabelPosition: "outEnd", dataLabelFontSize: 11, dataLabelColor: "1B2A33", dataLabelFormatCode: "0\"%\"",
   catAxisLabelFontSize: 13, catAxisLabelColor: "1B2A33", catAxisLabelFontFace: "+mn-lt",
   valAxisLabelFontSize: 11, valAxisLabelColor: "5B6B73", valAxisMaxVal: 100, valAxisMinVal: 0, valAxisLabelFormatCode: "0\"%\"",
   valGridLine: { color: "E1E0D9", size: 0.75 }, catGridLine: { style: "none" },
-  showLegend: true, legendPos: "b", legendFontSize: 12, legendColor: "1B2A33", legendFontFace: "+mn-lt",
+  showLegend: false,
   showTitle: true, title: "Reduction of oxygen error against the paper's PID (test week, higher is better)",
   titleFontSize: 13, titleColor: "1B2A33", titleFontFace: "+mn-lt", dataLabelFontFace: "+mn-lt",
+});
+["Dry", "Rain", "Storm"].forEach((w, i) => {
+  s.addShape(pres.shapes.RECTANGLE, { x: 3.0 + i * 1.3, y: 6.72, w: 0.18, h: 0.18, fill: { color: WCOL[w] },
+    line: { color: WCOL[w] }, objectName: "legend " + w });
+  s.addText(w, { x: 3.25 + i * 1.3, y: 6.66, w: 1.0, h: 0.3, fontSize: 12, color: C.text1, isTextBox: true, margin: 0 });
 });
 s.addText([
   { text: "What this shows", options: { bold: true, fontSize: 18, color: C.text2, breakLine: true } },
@@ -212,7 +221,7 @@ s = content("Two fixes, tested on new data: one works, one half-works", "Results
 stat(s, 0.5, 1.5, 3.0, "−39 %", "ILC anti-windup under overload, better in 5 of 6 new windows", HEX.accent2);
 stat(s, 0.5, 3.25, 3.0, "0 %", "its cost in normal operation", HEX.accent2);
 stat(s, 0.5, 5.0, 3.0, "+3 / +24 %", "robust PID vs paper's PID with real sensor noise", HEX.accent4);
-s.addImage({ path: path.join(FIG, "f6_sensor_noise.png"), x: 3.85, y: 1.45, w: 8.98, h: 8.98 * 1240 / 2400 });
+s.addImage({ path: path.join(HERE, "f6_white.png"), x: 3.85, y: 1.45, w: 8.98, h: 8.98 * 1240 / 2400 });
 s.addText("True oxygen with the official sensors (noise 0.25 g/m³): the paper's PID and the robust controller stay in range; our SAC-IL controller fails after 11 h.",
   { x: 3.85, y: 6.2, w: 8.98, h: 0.6, fontSize: 12, color: "5B6B73", isTextBox: true, margin: 0, valign: "top" });
 s.addNotes("Anti-windup fixed the ILC under overload at no cost. The robust version never failed, kept −83 % on new normal influent, and moves the aeration no more than the paper's PID, but under real sensor noise nothing we built beats the paper's PID. That is the open problem.");
