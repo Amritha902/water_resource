@@ -28,6 +28,7 @@ mae2h = lambda pred, s: float(np.abs(flow(pred)[:, -1] - flow(Y[s].numpy())[:, -
 
 
 def mlp(hidden):
+    torch.manual_seed(0)                                        # same starting knobs every run: same numbers for everyone
     layers, n = [nn.Flatten()], 288
     for h in hidden:
         layers += [nn.Linear(n, h), nn.ReLU()]; n = h

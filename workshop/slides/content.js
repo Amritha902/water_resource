@@ -208,7 +208,7 @@ const PLAYERS = {
 {
 "code": "net = mlp()\nhist, be = fit(net)\nplot_curves(hist, be, \"MLP 288 → 64 → 64 → 8\")\nreport(\"MLP 288-64-64-8\", predict(net, \"val\"), count(net))",
 "out": {
-"text": "epoch   0  train 0.9952  val 0.9483\nepoch  10  train 0.0607  val 0.3880\nepoch  20  train 0.0520  val 0.3404\nepoch  30  train 0.0324  val 0.3239\nepoch  40  train 0.0260  val 0.3144\nepoch  50  train 0.0221  val 0.3158\nepoch  59  train 0.0213  val 0.3139\nbest epoch 41, val loss 0.3091  (2 s)\nMLP 288-64-64-8              params    23,176   val MAE: 15 min    2209   2 h    3120  m³/d",
+"text": "epoch   0  train 0.9952  val 0.9483\nepoch  10  train 0.0607  val 0.3880\nepoch  20  train 0.0520  val 0.3404\nepoch  30  train 0.0324  val 0.3239\nepoch  40  train 0.0260  val 0.3144\nepoch  50  train 0.0221  val 0.3158\nepoch  59  train 0.0213  val 0.3139\nbest epoch 41, val loss 0.3091  (1 s)\nMLP 288-64-64-8              params    23,176   val MAE: 15 min    2209   2 h    3120  m³/d",
 "img": [
 "img/train1_0.png"
 ]
