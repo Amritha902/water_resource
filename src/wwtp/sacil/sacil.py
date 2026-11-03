@@ -85,7 +85,8 @@ class Paper1Env:
     W_BALANCED = (1 / 0.004, 1 / 0.002)
 
     def __init__(self, weather, warm_state, u0, days=None, noise=False, seed=0, ilc=None, weights=None,
-                 base_gain=(1.0, 1.0), act_mask=(1.0, 1.0), base_law=None, terms=None, sensors=None):
+                 base_gain=(1.0, 1.0), act_mask=(1.0, 1.0), base_law=None, terms=None, sensors=None,
+                 meas_filter=None):
         self.w = np.array(self.W_DEFAULT if weights is None else weights, float)
         #: gain of the PID kept in the loop, per loop, and which loops the learner may correct
         self.base_gain, self.mask = np.asarray(base_gain, float), np.asarray(act_mask, float)
@@ -96,6 +97,9 @@ class Paper1Env:
         #: official BSM1 sensors (OfficialSensors) with this noise seed; "lag": their
         #: dynamics without noise.  Scores always use the true values.
         self.sensor_seed = sensors
+        #: optional first-order filter on the measurements the controller uses,
+        #: time constants (oxygen, nitrate) in minutes (0: no filter on that loop)
+        self.meas_filter = None if meas_filter is None else np.asarray(meas_filter, float)
         self.fallback_gain = None             # set by a safety layer for one period
         self.weather, self.warm, self.u0 = weather, warm_state, np.asarray(u0, float)
         self.ilc_proto = ilc                  # DailyILC feedforward (copied at every reset)
@@ -119,6 +123,7 @@ class Paper1Env:
         s = self.p.measurement()
         self.sensors = (None if self.sensor_seed is None else OfficialSensors(s, noise=False)
                         if self.sensor_seed == "lag" else OfficialSensors(s, self.sensor_seed))
+        self._filt = s.copy()
         e = s - R
         self.e1, self.e2 = np.zeros(2), np.zeros(2)          # as a freshly started PID
         self.e = e
@@ -147,16 +152,24 @@ class Paper1Env:
             self.fallback_gain = None
         else:
             du = expert_increment(self.e, self.e1, self.e2, self.base_gain, self.terms) + self.mask * a * RES_SCALE
+        aw = self.ilc is not None and self.ilc.antiwindup
+        ff = 0.0 if self.ilc is None else self.ilc.ff(self.k)
+        # anti-windup with ILC: the PID's own limits move with the feedforward, so that
+        # PID + feedforward can reach either actuator limit and the PID never winds up
+        lo, hi = (U_MIN - ff, U_MAX - ff) if aw else (U_MIN, U_MAX)
         if du is not None:
-            self.u = np.clip(self.u + du, U_MIN, U_MAX)
-        u_apply = self.u if self.ilc is None else np.clip(self.u + self.ilc.ff(self.k), U_MIN, U_MAX)
+            self.u = np.clip(self.u + du, lo, hi)
+        elif aw:
+            self.u = np.clip(self.u, lo, hi)
+        u_apply = self.u if self.ilc is None else np.clip(self.u + ff, U_MIN, U_MAX)
+        sat = (self.u <= lo + 1e-9) | (self.u >= hi - 1e-9) if aw else None
         if self.noise:
             u_apply = np.clip(u_apply + self.rng.normal(0.0, NOISE_STD), U_MIN, U_MAX)
         self.q1 = self._qin(self.k)
         s = self.p.step(u_apply)
         if self.ilc is not None:
             ff_before = self.ilc.ff(self.k + 1)
-            self.ilc.record(self.k, R - s, self.u)
+            self.ilc.record(self.k, R - s, self.u, sat)
             if self.ilc.bumpless and (self.k + 1) % ILC_PERIOD == 0:
                 # bumpless transfer: the nightly update moves part of the PID's
                 # work into the feedforward; take the same amount out of the
@@ -164,6 +177,11 @@ class Paper1Env:
                 self.u = np.clip(self.u - (self.ilc.ff(self.k + 1) - ff_before), U_MIN, U_MAX)
         self.k += 1
         meas = s if self.sensors is None else self.sensors(s)
+        if self.meas_filter is not None:
+            dt_min = DT_DAYS * 1440.0
+            a_f = np.where(self.meas_filter > 0, 1.0 - np.exp(-dt_min / np.maximum(self.meas_filter, 1e-9)), 1.0)
+            self._filt = self._filt + a_f * (meas - self._filt)
+            meas = self._filt
         self.e2, self.e1, self.e = self.e1, self.e, meas - R
         r = -float(np.sum(np.abs(self.e) * self.w)) - 0.05 * float(np.sum(a ** 2))
         fail = not (0.3 < s[0] < 4.0) or not np.all(np.isfinite(s))

@@ -44,7 +44,7 @@ class DailyILC:
     Over the days the PID has to correct less and less, and the input arrives
     ahead of the load instead of after it."""
 
-    def __init__(self, beta, lead, smooth=15, forget=1.0, profile=None, bumpless=False):
+    def __init__(self, beta, lead, smooth=15, forget=1.0, profile=None, bumpless=False, antiwindup=False):
         self.beta = np.asarray(beta, float)
         self.lead = np.asarray(lead, int)
         self.w, self.q = int(smooth), float(forget)
@@ -54,12 +54,18 @@ class DailyILC:
         #: the controller moves the same amount out of its PID state at the
         #: nightly update (see Paper1Env.step), so the total input stays continuous
         self.bumpless = bool(bumpless)
+        #: anti-windup: periods in which the actuator was at a limit teach nothing
+        #: (the PID's input there is not what the plant got), and the controller
+        #: keeps the PID's state consistent with the applied input (Paper1Env.step)
+        self.antiwindup = bool(antiwindup)
+        self._ok = np.ones((PERIOD, n), bool)
 
     def ff(self, k):
         return self.f[k % PERIOD]
 
-    def record(self, k, e, u_fb):
+    def record(self, k, e, u_fb, saturated=None):
         self._u[k % PERIOD] = u_fb
+        self._ok[k % PERIOD] = True if saturated is None else ~np.asarray(saturated, bool)
         if (k + 1) % PERIOD == 0:
             self._learn()
 
@@ -67,8 +73,13 @@ class DailyILC:
         new = self.f.copy()
         kern = np.ones(2 * self.w + 1) / (2 * self.w + 1)
         for i in range(len(self.beta)):
-            dev = self._u[:, i] - self._u[:, i].mean()
-            upd = self.f[:, i] + self.beta[i] * np.roll(dev, -self.lead[i])
+            ok = self._ok[:, i] if self.antiwindup else np.ones(PERIOD, bool)
+            if ok.mean() < 0.5:                  # mostly at a limit today: keep yesterday's profile
+                continue
+            dev = np.where(ok, self._u[:, i] - self._u[ok, i].mean(), 0.0)
+            step = self.beta[i] * np.roll(dev, -self.lead[i])
+            step[np.roll(~ok, -self.lead[i])] = 0.0
+            upd = self.f[:, i] + step
             pad = np.concatenate([upd[PERIOD - self.w:], upd, upd[: self.w]])     # the day is periodic
             new[:, i] = self.q * np.convolve(pad, kern, mode="valid")
         self.f = new

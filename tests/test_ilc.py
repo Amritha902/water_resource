@@ -43,3 +43,16 @@ def test_bumpless_transfer_removes_the_midnight_jump():
     assert jump > 20 * typical
     jump, typical = midnight_jump(bumpless=True)
     assert jump < 5 * typical
+
+
+def test_antiwindup_ilc_learns_nothing_at_a_limit():
+    u = np.sin(2 * np.pi * np.arange(PERIOD) / PERIOD)[:, None]
+    ilc = DailyILC(beta=[1.0], lead=[0], smooth=0, antiwindup=True)
+    for k in range(PERIOD):
+        ilc.record(k, np.zeros(1), u[k], saturated=[k < PERIOD // 4])
+    f = ilc.ff(np.arange(PERIOD))
+    assert np.all(f[: PERIOD // 4] == 0.0) and np.any(f[PERIOD // 4:] != 0.0)
+    busy = DailyILC(beta=[1.0], lead=[0], smooth=0, antiwindup=True)
+    for k in range(PERIOD):
+        busy.record(k, np.zeros(1), u[k], saturated=[k < 3 * PERIOD // 4])
+    assert np.all(busy.f == 0.0)                     # a day mostly at a limit keeps the old profile

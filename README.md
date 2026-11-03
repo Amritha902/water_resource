@@ -42,12 +42,12 @@ trained on dry weather, week 1 only (5 training runs per learner).
 | Oxygen IAE vs paper's PID | Test week: dry | rain | storm | Held-out: BSM2 influent | official sensors | sensor delay |
 |---|---|---|---|---|---|---|
 | MAACC as printed | 0 % | 0 % | 0 % | fails | fails | fails |
-| **Repaired MAACC** (paper's PID prior) | −85 % | −52 % | −67 % | −6 % | +2 % | **−86 %** |
+| **Repaired MAACC** (paper's PID prior) | −85 % | −52 % | −67 % | −6 % | +1 % | **−86 %** |
 | PID ×3 + ILC | −85 % | −82 % | −72 % | +52 % | fails | −56 % |
 | Ours: PID ×3 + ILC + SAC-IL + gate | −87 % | −82 % | −74 % | +52 % | fails | −56 % |
 | PID ×3 + ILC + repaired MAACC + gate | −91 % | −87 % | −79 % | +52 % | fails | −56 % |
-| **Tuned PID + ILC** | −90 % | **−89 %** | **−80 %** | +76 % | +48 % | −73 % |
-| Tuned PID + ILC + SAC-IL + gate | −90 % | −88 % | −80 % | +75 % | +48 % | −73 % |
+| **Tuned PID + ILC** | −90 % | **−89 %** | **−80 %** | +76 % | +46 % | −73 % |
+| Tuned PID + ILC + SAC-IL + gate | −90 % | −88 % | −80 % | +75 % | +46 % | −73 % |
 | Paper's claim (14 days, not reproducible) | −95 % | −95 % | −92 % | | | |
 
 In short:
@@ -62,10 +62,24 @@ In short:
     sensor noise.
   - The safety gate switches the learned parts off on new conditions.
 
+**Held-out test 2** (new influent windows and new sensor noise; protocol
+pushed before the runs) tested two fixes:
+- **ILC anti-windup** removes the ILC's harm under overload (−39 %) at no
+  cost in normal operation.
+- **A robust tuned PID + ILC** (oxygen filter, gains ×0.5, anti-windup)
+  never failed. It reaches −83 % on new influent, with the paper's aeration
+  movement, but it is not better than the paper's PID under the official
+  sensor noise (+3 % / +24 %).
+- Nothing we built beats the paper's PID under that noise; that is the open
+  problem.
+
 Details:
 - Our controller, step by step: `docs/PAPER1_STUDY.md`.
 - Baselines and held-out test: `docs/PAPER1_BASELINES_HELDOUT.md`.
 - Protocol, pushed before any held-out run: `docs/PAPER1_HELDOUT_PROTOCOL.md`.
+- Audit of every number (re-runs, independent metric check, paper's settings): `docs/PAPER1_AUDIT.md`, 76 of 76 checks pass.
+- All results in seven figures (each % compares only runs that both controllers finished): `docs/PAPER1_FIGURES.md`.
+- Fixes and held-out test 2: `docs/PAPER1_HELDOUT2.md` (protocol: `docs/PAPER1_HELDOUT2_PROTOCOL.md`).
 
 ## What is in the repository
 
@@ -83,11 +97,11 @@ src/wwtp/               the library
   baselines/              incremental PID used as the prior
   bsm1/, forecast/, twin/, warning/, panda/   earlier work (see below)
 experiments/            numbered scripts; 20, 23–27 produce the reimplementation results,
-                        28 and 32–41 the new paper 1 controller, its study, the stronger baselines and the held-out test
+                        28 and 32–46 the new paper 1 controller, its study, the stronger baselines and the held-out test
 demo/                   live demo (run_demo.py runs it all) and its cached start states
 tools/                  report builders (build_report.py writes docs/REPORT.md)
 workshop/               90-minute hands-on ML/RL training: animated slides and three notebooks (workshop/README.md)
-tests/                  87 tests
+tests/                  88 tests
 results/                every result file behind the report (JSON and CSV)
 docs/
   REPORT.md               the full report: every table, figure notes, appendices
@@ -114,7 +128,7 @@ Python 3.11.
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests -q        # 87 tests, about 1–2 minutes
+python -m pytest tests -q        # 88 tests, about 1–2 minutes
 ```
 
 The official influent files (dry, rain, storm) are downloaded on first use

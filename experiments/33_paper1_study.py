@@ -23,6 +23,9 @@ Controllers (the ablation):
   rMAACC              paper 1's MAACC with repaired training, on the paper's PID (experiments/39)
   PIDx3+ILC+rMAACC    retuned prior + daily ILC + repaired MAACC correction, with the safety gate
   OursT               tuned PID + its daily ILC + SAC-IL correction, with the safety gate
+  PIDtuned+ILC-AW     tuned PID + daily ILC with anti-windup
+  Robust              tuned PID + ILC-AW with a measurement filter and gains chosen with the
+                      official sensors (experiments/42_robust_pid.py)
 
     python experiments/33_paper1_study.py --only PIDtuned PIDtuned+ILC   # add controllers to the results
 
@@ -62,6 +65,8 @@ SAC_SEEDS = {OURS_TAG: (0, 1, 2, 3, 4), "sacil_noilc": (0, 1, 2)}
 _TP = ROOT / "results" / "paper1_tuned_pid.json"
 TP = json.loads(_TP.read_text()) if _TP.exists() else None
 RMAACC_SEEDS = (0, 1, 2, 3, 4)
+_RP = ROOT / "results" / "paper1_robust_pid.json"
+RP = json.loads(_RP.read_text()) if _RP.exists() else None
 
 
 def warm():
@@ -76,6 +81,12 @@ def make_env(weather, ctrl, seed=0, noise=False, noise_seed=0, days=None, sensor
     if ctrl == "OursT":
         return Paper1Env(weather, st, u0, terms=TP["terms"], act_mask=(1.0, 0.0),
                          weights=Paper1Env.W_BALANCED, **{**kw, "ilc": DailyILC(**TP["ilc"])})
+    if ctrl == "PIDtuned+ILC-AW":
+        return Paper1Env(weather, st, u0, terms=TP["terms"], act_mask=(0.0, 0.0),
+                         **{**kw, "ilc": DailyILC(**{**TP["ilc"], "antiwindup": True})})
+    if ctrl == "Robust":
+        return Paper1Env(weather, st, u0, terms=RP["terms"], act_mask=(0.0, 0.0),
+                         meas_filter=(RP["tau"], 0.0), **{**kw, "ilc": DailyILC(**RP["ilc"])})
     if ctrl.startswith("PIDtuned"):
         return Paper1Env(weather, st, u0, terms=TP["terms"], act_mask=(0.0, 0.0), **kw)
     if ctrl == "rMAACC":
@@ -174,7 +185,7 @@ def jobs():
     for c in ("MAACC", "MAACC+ILC"):
         J += [(c, w, s, False, 0, s == 0) for w in ("dry", "rain", "storm") for s in (0, 1, 2)]
         J += [(c, "dry", n, True, n, n == 0) for n in range(NOISE_RUNS)]
-    for c in ("PIDtuned", "PIDtuned+ILC"):
+    for c in ("PIDtuned", "PIDtuned+ILC", "PIDtuned+ILC-AW", "Robust"):
         J += [(c, w, 0, False, 0, True) for w in ("dry", "rain", "storm")]
         J += [(c, "dry", 0, True, n, n == 0) for n in range(NOISE_RUNS)]
     for c in ("rMAACC", "PIDx3+ILC+rMAACC", "OursT"):
