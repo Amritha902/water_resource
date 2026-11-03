@@ -21,6 +21,8 @@ workshop/
 
 ## Published pages
 
+- Teaching guide, the whole lesson slide by slide with every script explained: https://claude.ai/artifact/HqpLrBanoEpinRiffb7Wma (source `workshop/guide/TEACHING_GUIDE.src.md`, built by `python workshop/tools/build_guide.py` into `workshop/TEACHING_GUIDE.md` and `workshop/teaching_guide.html`)
+
 - Slide deck: https://claude.ai/artifact/66EGWBVkQQRAKsHadr5ob5
 - Part 1, collect, clean and prepare: https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq
 - Part 2, choose a model and train it: https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm
@@ -56,24 +58,24 @@ The buttons and sliders on the slides are live: press them during the talk.
 
 ## Timetable: one lesson in seven steps
 
-The deck is one continuous lesson (60 slides). Every step has the same rhythm: a divider with the goal → the idea (animated) → **where is the code?** (the same steps, colour by colour, in the hands-on script, the notebook and the project) → the code running (notebook player or code tour) → **check yourself** (three questions, click to reveal) → hands-on.
+The deck is one continuous lesson (62 slides). Every step has the same rhythm: a divider with the goal → the idea (animated) → **where is the code?** (the same steps, colour by colour, in the hands-on script, the notebook and the project) → the code running (notebook player or code tour) → **check yourself** (three questions, click to reveal) → hands-on.
 
 | Time | Slides | Step | Terminal | Notebook |
 |---|---|---|---|---|
-| 0:00 | 1–5 | Welcome, the plan, glossary of every word, the problem, the project's pipeline | | |
-| 0:04 | 6–9 | **1 · What is a model?** Line fit, four training steps everywhere, quiz | `lesson1_knobs.py` | |
-| 0:12 | 10–19 | **2 · Collect and clean** Data, loading, cleaning, time grid, code map, our loader, notebook running, quiz, hands-on | `lesson2_load_and_clean.py` | NB1 A, B |
-| 0:32 | 20–27 | **3 · Prepare** Scaling, windows, split by time, code map, notebook running, quiz, hands-on | `lesson3_prepare.py` | NB1 C |
-| 0:44 | 28–36 | **4 · Choose the model** Shapes decide, layer by layer, parameters, CNN, GRU, code map, notebook running, quiz | `lesson4_models.py` | NB2 1–6 |
-| 0:54 | 37–45 | **5 · Train and evaluate** Loss, gradient descent, training loop, code map, notebook running, baselines, quiz, hands-on | `lesson5_train_and_evaluate.py` | NB2 5–9 |
-| 1:14 | 46–54 | **6 · Reinforcement learning** RL loop, actor-critic, code map, our RL code, notebook running, SAC-IL, quiz, hands-on | `lesson6_rl.py` | NB3 |
-| 1:27 | 55–60 | **7 · Our project's code** Papers as printed, our controller, quiz, questions learners ask, take-home lessons | | |
+| 0:00 | 1–6 | Welcome, the plan, glossary of every word, the problem, the plant and its two loops, the project's pipeline | | |
+| 0:04 | 7–10 | **1 · What is a model?** Line fit, four training steps everywhere, quiz | `lesson1_knobs.py` | |
+| 0:12 | 11–20 | **2 · Collect and clean** Data, loading, cleaning, time grid, code map, our loader, notebook running, quiz, hands-on | `lesson2_load_and_clean.py` | NB1 A, B |
+| 0:32 | 21–28 | **3 · Prepare** Scaling, windows, split by time, code map, notebook running, quiz, hands-on | `lesson3_prepare.py` | NB1 C |
+| 0:44 | 29–37 | **4 · Choose the model** Shapes decide, layer by layer, parameters, CNN, GRU, code map, notebook running, quiz | `lesson4_models.py` | NB2 1–6 |
+| 0:54 | 38–46 | **5 · Train and evaluate** Loss, gradient descent, training loop, code map, notebook running, baselines, quiz, hands-on | `lesson5_train_and_evaluate.py` | NB2 5–9 |
+| 1:14 | 47–55 | **6 · Reinforcement learning** RL loop, actor-critic, code map, our RL code, notebook running, SAC-IL, quiz, hands-on | `lesson6_rl.py` | NB3 |
+| 1:27 | 56–62 | **7 · Our project's code** Papers as printed, our controller, held-out test 2 (the latest results), quiz, questions learners ask, take-home lessons | | |
 
 Keys: → advances; on interactive slides it first steps inside the slide (next cell, next code block, next step, next answer). ← goes back. R replays an animation; F is full screen.
 
 Every terminal script is in `workshop/examples/` and runs in seconds (lesson 5: about 20 s). Lessons 4 and 5 read `workshop/data/prepared.npz`, written by lesson 3 or notebook 1.
 
-If time runs short: run the hands-on on the projector with the ★ notebook-player slides instead of having everyone run them.
+If time runs short: run the hands-on on the projector with the notebook-player slides instead of having everyone run them.
 
 **After changing a notebook or the project code**, rebuild the players, tours and code maps (runs the notebooks, about 1 minute):
 

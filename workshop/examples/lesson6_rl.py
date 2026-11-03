@@ -102,4 +102,4 @@ Q5 = q_learning(energy_weight=5.0)
 R, err, kla = run(OxygenTank(10, 5.0), greedy(Q5))
 print(f"2 REWARD       air made 50× dearer → the agent sets the air to {kla:.0f} (PID: about 120); oxygen error {err:.2f} mg/L")
 
-# ✏️ Try: energy_weight=2.0, then 3.0. Where does the agent's behaviour flip?
+# Try this: energy_weight=2.0, then 3.0. Where does the agent's behaviour flip?

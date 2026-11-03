@@ -17,6 +17,24 @@ LESSON = {"lesson1": "the four training steps", "lesson2": "download, read, chec
           "lesson5": "train, validate, test once and save", "lesson6": "environment, reward, act and learn"}
 
 
+#: narration written by hand for slides whose text alone does not make a good voice-over
+EXTRA = {
+    "The plant and its two control loops": (
+        "This is the plant as the project drew it. Water flows from left to right. Tanks 1 and 2 get no air, so "
+        "bacteria there remove nitrate. Tanks 3 to 5 are aerated, so other bacteria turn ammonium into nitrate, and the "
+        "internal recycle carries that nitrate back to tank 1. The settler lets the sludge sink, and most of it goes back "
+        "to the start. Our controllers move two things: the air in tank 5, to hold 2 milligrams of oxygen per litre, and "
+        "the recycle pump, to hold 1 milligram of nitrate per litre in tank 2."),
+    "The second held-out test: two fixes, one open problem": (
+        "These are the project's latest results. The first held-out test found two flaws, so two fixes were made: "
+        "anti-windup for the daily learning control, and a robust PID with a filter on the oxygen reading and half the "
+        "gains. They were tested on new influent and new sensor noise, with the plan committed before any run. "
+        "Anti-windup removed the learning control's harm under overload and cost nothing in normal weather. The robust PID "
+        "never failed and was 83 percent better than the paper's PID on new influent. But with the official sensor noise, "
+        "nothing we built beats the paper's own gentle PID. That is the open problem, and it is reported."),
+}
+
+
 def txt(s):
     return re.sub(r"\s+", " ", H.unescape(re.sub(r"<[^>]+>", " ", s))).strip()
 
@@ -69,7 +87,7 @@ def main():
             bul = [f"Goal: {goal}", f"Terminal: {term}", f"Notebook: {nb}"]
             nar = f"{kick.split('·')[0].strip()}: {title} After this lesson you will be able to say: {goal}"
         else:
-            nar = narr.get(title) or (f"{title}. " + (" ".join(lis[:3]) if lis else txt(body)[:300]))
+            nar = EXTRA.get(title) or narr.get(title) or (f"{title}. " + (" ".join(lis[:3]) if lis else txt(body)[:300]))
         if not bul:
             p = re.search(r'<p class="sub"[^>]*>(.*?)</p>', body, re.S)
             bul = [txt(p.group(1))] if p else []

@@ -326,14 +326,15 @@ const TOURS = {
 {
 "file": "src/wwtp/official/plant.py",
 "func": "load_influent",
-"line": 69,
+"line": 79,
 "title": "Official influent, cleaned",
 "code": [
 "def load_influent(weather: str) -> np.ndarray:",
 "    \"\"\"Official influent as a (1345, 22) array: 14 days at 15 min.",
 "",
 "    ``\"bsm2:<start day>\"`` gives a 14-day window of the BSM2 influent instead",
-"    (``bsm2_window``), used only for the held-out test.",
+"    (``bsm2_window``), used only for the held-out tests; ``\"bsm2c:<start day>\"``",
+"    the same after a simple primary clarifier.",
 "",
 "    Columns as ``bsm2-python`` expects: t, 13 ASM1 components, TSS, Q, T and",
 "    five dummy states.  One correction: the spreadsheets keep the inert",
@@ -344,6 +345,8 @@ const TOURS = {
 "    \"\"\"",
 "    if weather.startswith(\"bsm2:\"):",
 "        return bsm2_window(float(weather.split(\":\")[1]))",
+"    if weather.startswith(\"bsm2c:\"):",
+"        return bsm2_window(float(weather.split(\":\")[1]), clarified=True)",
 "    d = _official_table(weather)",
 "    dry = _official_table(\"dry\")",
 "    out = np.zeros((len(d), 22))",
@@ -357,32 +360,32 @@ const TOURS = {
 ],
 "marks": [
 {
-"from": 13,
-"to": 14,
+"from": 14,
+"to": 15,
 "title": "Held-out data",
 "text": "A different influent (BSM2, 609 days) for the pre-registered held-out test. The same function serves both, so the test uses the same cleaning."
 },
 {
-"from": 15,
-"to": 16,
+"from": 18,
+"to": 19,
 "title": "Raw table, cached",
 "text": "_official_table downloads the pinned spreadsheet once, keeps the numeric rows and caches them as .npy."
 },
 {
-"from": 17,
-"to": 19,
+"from": 20,
+"to": 22,
 "title": "The layout the plant expects",
 "text": "bsm2-python wants 22 columns: time, 13 concentrations, TSS, flow, temperature and five dummy states."
 },
 {
-"from": 20,
-"to": 20,
+"from": 23,
+"to": 23,
 "title": "The physics fix",
 "text": "Rain dilutes the inert COD: S_I = 30·Q_dry/Q. It was checked against the official rain file to 0.005 g/m³ and is documented in DATASET.md §3.3."
 },
 {
-"from": 21,
-"to": 23,
+"from": 24,
+"to": 26,
 "title": "Derived and constant columns",
 "text": "TSS from the particulate components; flow; 15 °C, the temperature of BSM1."
 }
@@ -499,7 +502,7 @@ const TOURS = {
 {
 "file": "src/wwtp/sacil/sacil.py",
 "func": "SACIL.update",
-"line": 320,
+"line": 338,
 "title": "SAC-IL: one update",
 "code": [
 "    def update(self):",
@@ -678,15 +681,20 @@ const TOURS = {
 {
 "file": "src/wwtp/sacil/ilc.py",
 "func": "DailyILC._learn",
-"line": 66,
+"line": 72,
 "title": "Daily ILC: the nightly update",
 "code": [
 "    def _learn(self):",
 "        new = self.f.copy()",
 "        kern = np.ones(2 * self.w + 1) / (2 * self.w + 1)",
 "        for i in range(len(self.beta)):",
-"            dev = self._u[:, i] - self._u[:, i].mean()",
-"            upd = self.f[:, i] + self.beta[i] * np.roll(dev, -self.lead[i])",
+"            ok = self._ok[:, i] if self.antiwindup else np.ones(PERIOD, bool)",
+"            if ok.mean() < 0.5:                  # mostly at a limit today: keep yesterday's profile",
+"                continue",
+"            dev = np.where(ok, self._u[:, i] - self._u[ok, i].mean(), 0.0)",
+"            step = self.beta[i] * np.roll(dev, -self.lead[i])",
+"            step[np.roll(~ok, -self.lead[i])] = 0.0",
+"            upd = self.f[:, i] + step",
 "            pad = np.concatenate([upd[PERIOD - self.w:], upd, upd[: self.w]])     # the day is periodic",
 "            new[:, i] = self.q * np.convolve(pad, kern, mode=\"valid\")",
 "        self.f = new"
@@ -700,19 +708,25 @@ const TOURS = {
 },
 {
 "from": 4,
-"to": 4,
+"to": 6,
+"title": "Anti-windup: ignore time spent at a limit",
+"text": "When the blower is flat out (or off), what the PID asked for is not what the plant got, so those periods teach nothing. A day spent mostly at a limit keeps yesterday's profile. Added after held-out test 1, where the ILC made an overloaded plant worse."
+},
+{
+"from": 7,
+"to": 7,
 "title": "What the PID had to do",
-"text": "The PID's daily deviation from its mean: the part of its work that repeats every day."
+"text": "The PID's daily deviation from its mean, only where the actuator was free: the part of its work that repeats every day."
 },
 {
-"from": 5,
-"to": 5,
+"from": 8,
+"to": 10,
 "title": "Take over a share, earlier",
-"text": "The feedforward takes over a share β of it, applied lead steps earlier, ahead of the load peak."
+"text": "The feedforward takes over a share β of it, applied a few steps earlier, ahead of the load peak."
 },
 {
-"from": 6,
-"to": 8,
+"from": 11,
+"to": 13,
 "title": "Smooth over the day",
 "text": "A moving average (the day is periodic) and a forgetting factor keep it robust to odd days."
 }
@@ -721,7 +735,7 @@ const TOURS = {
 {
 "file": "src/wwtp/sacil/sacil.py",
 "func": "Paper1Env.step",
-"line": 137,
+"line": 142,
 "title": "One control period",
 "code": [
 "    def step(self, a):",
@@ -737,16 +751,24 @@ const TOURS = {
 "            self.fallback_gain = None",
 "        else:",
 "            du = expert_increment(self.e, self.e1, self.e2, self.base_gain, self.terms) + self.mask * a * RES_SCALE",
+"        aw = self.ilc is not None and self.ilc.antiwindup",
+"        ff = 0.0 if self.ilc is None else self.ilc.ff(self.k)",
+"        # anti-windup with ILC: the PID's own limits move with the feedforward, so that",
+"        # PID + feedforward can reach either actuator limit and the PID never winds up",
+"        lo, hi = (U_MIN - ff, U_MAX - ff) if aw else (U_MIN, U_MAX)",
 "        if du is not None:",
-"            self.u = np.clip(self.u + du, U_MIN, U_MAX)",
-"        u_apply = self.u if self.ilc is None else np.clip(self.u + self.ilc.ff(self.k), U_MIN, U_MAX)",
+"            self.u = np.clip(self.u + du, lo, hi)",
+"        elif aw:",
+"            self.u = np.clip(self.u, lo, hi)",
+"        u_apply = self.u if self.ilc is None else np.clip(self.u + ff, U_MIN, U_MAX)",
+"        sat = (self.u <= lo + 1e-9) | (self.u >= hi - 1e-9) if aw else None",
 "        if self.noise:",
 "            u_apply = np.clip(u_apply + self.rng.normal(0.0, NOISE_STD), U_MIN, U_MAX)",
 "        self.q1 = self._qin(self.k)",
 "        s = self.p.step(u_apply)",
 "        if self.ilc is not None:",
 "            ff_before = self.ilc.ff(self.k + 1)",
-"            self.ilc.record(self.k, R - s, self.u)",
+"            self.ilc.record(self.k, R - s, self.u, sat)",
 "            if self.ilc.bumpless and (self.k + 1) % ILC_PERIOD == 0:",
 "                # bumpless transfer: the nightly update moves part of the PID's",
 "                # work into the feedforward; take the same amount out of the",
@@ -754,6 +776,11 @@ const TOURS = {
 "                self.u = np.clip(self.u - (self.ilc.ff(self.k + 1) - ff_before), U_MIN, U_MAX)",
 "        self.k += 1",
 "        meas = s if self.sensors is None else self.sensors(s)",
+"        if self.meas_filter is not None:",
+"            dt_min = DT_DAYS * 1440.0",
+"            a_f = np.where(self.meas_filter > 0, 1.0 - np.exp(-dt_min / np.maximum(self.meas_filter, 1e-9)), 1.0)",
+"            self._filt = self._filt + a_f * (meas - self._filt)",
+"            meas = self._filt",
 "        self.e2, self.e1, self.e = self.e1, self.e, meas - R",
 "        r = -float(np.sum(np.abs(self.e) * self.w)) - 0.05 * float(np.sum(a ** 2))",
 "        fail = not (0.3 < s[0] < 4.0) or not np.all(np.isfinite(s))",
@@ -780,20 +807,32 @@ const TOURS = {
 "text": "Paper 1's structure kept: the PID increment plus the learned correction."
 },
 {
-"from": 15,
-"to": 17,
+"from": 13,
+"to": 21,
+"title": "Anti-windup: the PID's limits move",
+"text": "With the ILC adding its feedforward, the PID's own limits are shifted by the same amount, so PID plus feedforward can reach either end of the blower's range and the PID never builds up a hidden excess."
+},
+{
+"from": 22,
+"to": 25,
 "title": "Feedforward and noise",
 "text": "The ILC's daily profile is added; paper 1's actuator-noise test adds noise here."
 },
 {
-"from": 20,
-"to": 27,
+"from": 28,
+"to": 35,
 "title": "Bumpless at midnight",
 "text": "When the new profile takes over, the same amount is taken out of the PID's state, so the total input does not jump."
 },
 {
-"from": 31,
-"to": 34,
+"from": 37,
+"to": 42,
+"title": "Sensors and the oxygen filter",
+"text": "With the official sensor model the reading arrives late and noisy. The robust controller smooths the oxygen reading (0.75-minute filter) before the PID sees it."
+},
+{
+"from": 44,
+"to": 47,
 "title": "Reward and failure",
 "text": "Weighted tracking error plus a small action cost; leaving 0.3–4 mg/L ends the episode with a penalty."
 }
@@ -802,7 +841,7 @@ const TOURS = {
 {
 "file": "experiments/33_paper1_study.py",
 "func": "sac_policy",
-"line": 117,
+"line": 128,
 "title": "The safety gate",
 "code": [
 "def sac_policy(tag, seed, ctrl, gated):",
@@ -1067,6 +1106,15 @@ const PIPELINE = [
 "what": "Paper 1's learner with replay, targets and twin critics: it does learn (−85 % dry)."
 },
 {
+"id": "e42",
+"col": 2,
+"title": "Robust PID",
+"file": "experiments/42_robust_pid.py",
+"cmd": "python experiments/42_robust_pid.py",
+"out": "results/paper1_robust_pid.json",
+"what": "Oxygen filter (0.75 min) and gains ×0.5, chosen on dry week 1 with the official sensor models and spare noise seeds."
+},
+{
 "id": "e33",
 "col": 3,
 "title": "Study: test week",
@@ -1082,7 +1130,25 @@ const PIPELINE = [
 "file": "experiments/40_paper1_heldout.py",
 "cmd": "python experiments/40_paper1_heldout.py",
 "out": "results/summary_paper1_heldout.json",
-"what": "Protocol committed first. New influent, official sensors: high-gain controllers fail under sensor noise."
+"what": "Protocol committed first. New influent, official sensors: high-gain controllers fail under sensor noise; the ILC hurts under overload."
+},
+{
+"id": "e43",
+"col": 3,
+"title": "Held-out test 2",
+"file": "experiments/43_paper1_heldout2.py",
+"cmd": "python experiments/43_paper1_heldout2.py",
+"out": "results/summary_paper1_heldout2.json",
+"what": "432 runs on new influent and new sensor noise. Anti-windup fixes overload (−39 %); under sensor noise nothing beats the paper's PID."
+},
+{
+"id": "e46",
+"col": 4,
+"title": "Audit",
+"file": "experiments/46_paper1_audit.py",
+"cmd": "python experiments/46_paper1_audit.py",
+"out": "results/paper1_audit.json",
+"what": "Every number re-checked: settings, re-runs, an independent metric, the headline percentages. 76 of 76 pass."
 },
 {
 "id": "docs",

@@ -1072,10 +1072,10 @@ A.tour = {
 A.pipeline = {
   start(el) {
     const root = $(".pipe-root", el);
-    const cols = ["Plant + data", "Reproduce the 3 papers", "Build ours + baselines", "Test", "Report"];
+    const cols = ["Plant and data", "Reproduce the 3 papers", "Build ours and baselines", "Test", "Check and report"];
     root.innerHTML = `<div class="pipe-grid">${cols.map((c, j) => `<div class="pipe-col"><div class="tiny pipe-head">${c}</div>${
       PIPELINE.filter(p => p.col === j).map(p => `<button class="pipe-node" data-id="${p.id}">${p.title}<br><span class="mono">${p.file.split("/").pop()}</span></button>`).join("")}</div>`).join("")}</div>
-      <canvas id="cv-pipe" width="1160" height="300"></canvas>
+      <canvas id="cv-pipe" width="1160" height="330"></canvas>
       <div class="card pipe-panel"></div>`;
     this.root = root; this.i = this.i ?? -1;
     $$(".pipe-node", root).forEach(b => b.onclick = () => { this.i = PIPELINE.findIndex(p => p.id === b.dataset.id); this.paint(); });
@@ -1092,7 +1092,7 @@ A.pipeline = {
     const ctx = canvas("cv-pipe"); ctx.clearRect(0, 0, ctx.w, ctx.h);
     const box = $(".pipe-grid", root).getBoundingClientRect(), s = box.width / 1160;
     const rect = id => { const r = $(`.pipe-node[data-id="${id}"]`, root).getBoundingClientRect(); return {x0: (r.left - box.left) / s, x1: (r.right - box.left) / s, y: (r.top + r.bottom) / 2 / s - box.top / s}; };
-    const links = [["data", "e20"], ["data", "e06"], ["data", "e23"], ["e20", "e32"], ["e20", "e39"], ["e32", "e28"], ["e20", "e38"], ["e28", "e33"], ["e38", "e33"], ["e39", "e33"], ["e33", "e40"], ["e33", "docs"], ["e40", "docs"], ["e06", "docs"], ["e23", "docs"]];
+    const links = [["data", "e20"], ["data", "e06"], ["data", "e23"], ["e20", "e32"], ["e20", "e39"], ["e32", "e28"], ["e20", "e38"], ["e28", "e33"], ["e38", "e33"], ["e39", "e33"], ["e33", "e40"], ["e33", "docs"], ["e40", "docs"], ["e38", "e42"], ["e40", "e42"], ["e42", "e43"], ["e43", "e46"], ["e43", "docs"], ["e06", "docs"], ["e23", "docs"]];
     links.forEach(([a, b]) => { const A_ = rect(a), B_ = rect(b);
       const on = p && (p.id === a || p.id === b);
       const x1 = A_.x1 + 2, x2 = B_.x0 - 4, y1 = A_.y, y2 = B_.y;
@@ -1138,6 +1138,8 @@ const GLOSSARY = [
   ["MLP / CNN / GRU", "Plain stacked layers / a filter sliding over time / a network with a memory.", "An assembly line / a magnifying glass moved along / a notepad carried along.", "lesson 4; the forecaster is a CNN, the digital twin a GRU"],
   ["DDPG / SAC", "Two actor-critic RL methods: an actor picks actions, a critic scores them. SAC adds a little planned randomness.", "A player and a coach watching every move.", "paper 2's agent (DDPG); our controller (SAC-IL)"],
   ["ILC", "Iterative learning control: learns a pattern that repeats every day and acts on it ahead of time.", "Leaving earlier because you know rush hour comes at 8 every day.", "our controller, lesson 7"],
+  ["anti-windup", "Stop a controller from piling up correction while the actuator is already at its limit.", "Stop pressing the accelerator once it is on the floor.", "the ILC fix of held-out test 2"],
+  ["held-out test", "A final test on data and conditions nothing was tuned on, with the plan written down before running it.", "An exam set by someone else, sealed until exam day.", "docs/PAPER1_HELDOUT_PROTOCOL.md and PAPER1_HELDOUT2_PROTOCOL.md"],
   ["MAACC / IOQL", "The learning controllers of papers 1 and 3 (adaptive-critic and Q-learning methods).", "Two published recipes we cooked exactly as written.", "lesson 7: neither learned as printed"],
 ];
 A.glossary = {
@@ -1150,7 +1152,7 @@ A.glossary = {
       const g = GLOSSARY[i];
       card.innerHTML = `<div class="tiny">${i + 1} of ${GLOSSARY.length}</div><h3 style="font-size:30px;color:${C.blue};margin:4px 0 10px">${g[0]}</h3>
         <p class="big" style="margin:0 0 14px">${g[1]}</p>
-        <div class="note" style="font-size:18px">🧒 <b>Like:</b> ${g[2]}</div>
+        <div class="note" style="font-size:18px"><b>Think of it as:</b> ${g[2]}</div>
         <p class="small" style="margin-top:14px"><b>In this project:</b> ${g[3]}</p>`;
     };
     $$("button", grid).forEach(b => b.onclick = () => this.pick(+b.dataset.i));
@@ -1253,7 +1255,7 @@ const QUIZ = {
        ["Air made very expensive in the reward: what did the agent do?", "Switched the air almost off and let the oxygen fall. It did exactly what the reward said, not what we meant."]],
   l7: [["MAACC as printed equals its PID in 80 of 80 runs. Why?", "Its learning signal with the printed weights is about 10⁻⁴: the networks hardly move from their zero start."],
        ["What does the safety gate do?", "When an input leaves the range seen in training, the learned part is switched off and the expert PID acts alone."],
-       ["Our learned controller vs a tuned PID + ILC: which won?", "The tuned PID with the daily ILC matched or beat it on the test week. Reported honestly in the README."]],
+       ["What did held-out test 2 show?", "Anti-windup removed the ILC's harm under overload, and the robust PID never failed. But under the official sensor noise nothing beat the paper's own PID. That is the open problem."]],
   faq: [["Do I need a GPU?", "No. Every script and notebook here runs on a laptop CPU in seconds to a minute. GPUs matter for big models on big data, not for this."],
         ["Where does the gradient formula 2·(pred − y)·x in lesson 1 come from?", "It is the slope of the loss (pred − y)² when you nudge w: calculus (the chain rule). In real code loss.backward() computes it for every knob automatically."],
         ["How big should my model be?", "Start small and simple (a baseline, then a linear model). Grow only while the validation error keeps improving. Far more knobs than examples means it can memorise."],
@@ -1261,6 +1263,7 @@ const QUIZ = {
         ["My data has no time order. Do I still split by time?", "No: then a random split is fine. Split by whatever must be new at test time: time, plant, patient, sensor."],
         ["Why not pick the best model on the test set?", "Then the test score is part of your choices and no longer tells you about new data. Choose on validation, test once."],
         ["Can the RL agent run on a real plant?", "Not straight away: early exploration means bad actions. The project starts from the expert (imitation), keeps a safety gate, and tests in simulation first."],
+        ["Did anything fix the sensor-noise problem?", "Not yet. A filter and lower gains stop the failures, but with 0.25 g/m³ of noise on a 2 mg/L set point the paper's gentle PID is still as good. Next ideas: a Kalman filter, or switching gains when noise is high."],
         ["What should I put in my paper?", "The data source and version, every correction, the split, the baselines, several seeds, and the test result, whichever way it went."]],
 };
 const QSTATE = {};

@@ -64,4 +64,4 @@ dry.columns = COLS
 d["S_I"] = 30.0 * dry.Q.astype(float).values / d.Q.values
 print("         S_I after the dilution fix: min", round(d.S_I.min(), 1), " max", round(d.S_I.max(), 1), "g/m3")
 
-# ✏️ Try: change 0.5 * med to 0.05 * med. How many "spikes" now? Are they real?
+# Try this: change 0.5 * med to 0.05 * med. How many "spikes" now? Are they real?

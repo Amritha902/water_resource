@@ -51,4 +51,4 @@ for step in range(201):
     loss.backward()                                   # 3 which way      (notebook 2, cell 9, line 22)
     opt.step()                                        # 4 turn the knobs (notebook 2, cell 9, line 24)
 
-# ✏️ Try:  lr = 0.05 (slow)   lr = 1.2 (too big: watch the loss explode)   then 4.0
+# Try this:  lr = 0.05 (slow)   lr = 1.2 (too big: watch the loss explode)   then 4.0

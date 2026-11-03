@@ -84,7 +84,9 @@ pip install -r workshop/requirements.txt
 
 3. **Notebooks:** `jupyter lab workshop/notebooks`. To read them with every result, without running
    anything, open `workshop/notebooks/html/*.html` in a browser (or `workshop/notebooks/executed/` in Jupyter).
-4. **Presenter guide**, timetable and expected results: `workshop/README.md`. Pictures of every slide:
+4. **Teaching guide**, the whole lesson slide by slide with the physics and every script explained line by line:
+   `workshop/teaching_guide.html` (open in a browser) or `workshop/TEACHING_GUIDE.md`.
+   **Presenter notes**, timetable and expected results: `workshop/README.md`. Pictures of every slide:
    `workshop/slides/stills/`; narration per slide: `workshop/SPEECHIFY_OUTLINE.md`.
 5. **Online copies** (private until the owner shares them): the deck and the three notebook pages are listed
    in `workshop/README.md`, under "Published pages".

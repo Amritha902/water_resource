@@ -83,4 +83,4 @@ np.savez_compressed(DATA / "prepared.npz", **{f"X_{s}": data[s][0] for s in data
                     lookback=LOOKBACK, horizon=HORIZON, source_rev=REV)
 print("          saved", DATA / "prepared.npz", "(windows + the scaler, together)")
 
-# ✏️ Try: change LOOKBACK to 24 (6 hours). How many windows now? Does it matter for a daily cycle?
+# Try this: change LOOKBACK to 24 (6 hours). How many windows now? Does it matter for a daily cycle?

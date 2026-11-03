@@ -87,4 +87,4 @@ for i, when in ((len(d["X_test"]) - 1, "calm, end of test"), (100, "during storm
     print(f"4 SAVE + RELOAD     {when:18s} forecast in 2 h: {out[-1]:6.0f} m³/d   what happened: {flow(d['y_test'][i])[-1]:6.0f} m³/d")
 print("                    (no storm in the training data: the storm is where every model struggles)")
 
-# ✏️ Try: fit(big, 80, n_train=None)  (all ~1 900 examples). Does the validation loss still rise?
+# Try this: fit(big, 80, n_train=None)  (all ~1 900 examples). Does the validation loss still rise?

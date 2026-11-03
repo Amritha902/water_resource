@@ -1,0 +1,1046 @@
+<title>BSM1 Lesson Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* layout: one reading column with a sticky contents rail on wide screens; an engineer's handbook */
+:root{
+  --bg:#f6f8f9; --paper:#ffffff; --ink:#17232b; --ink2:#43525c; --muted:#76838c; --rule:#d9e1e5;
+  --water:#1f6f8b; --water-soft:#e3f0f4; --note:#fff7e3; --note-rule:#d9a441; --code-bg:#0f1d24; --code-fg:#dde8ee;
+  --k:#b9a3ff; --s:#f2cf7a; --c:#7f939e; --n:#72d6c9; --b:#8cc4ff; --f:#cfe3ff;
+  --display:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e171c; --paper:#132027; --ink:#e3ecf0; --ink2:#b3c2ca; --muted:#8597a1; --rule:#24363f;
+  --water:#6cc0dc; --water-soft:#16323d; --note:#2a2414; --note-rule:#b98c32; --code-bg:#0a1216; --code-fg:#dde8ee; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e171c; --paper:#132027; --ink:#e3ecf0; --ink2:#b3c2ca; --muted:#8597a1; --rule:#24363f;
+  --water:#6cc0dc; --water-soft:#16323d; --note:#2a2414; --note-rule:#b98c32; --code-bg:#0a1216; --code-fg:#dde8ee; color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--ink);font:16.5px/1.65 var(--body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:0}
+.wrap{max-width:1180px;margin:0 auto;display:flex;gap:40px;align-items:flex-start}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 16px);flex:0 0 240px;max-height:calc(100vh - 32px);overflow:auto;
+  padding:28px 0 20px;font-size:13.5px;line-height:1.4}
+nav.toc .label{font:600 11.5px/1 var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+nav.toc a{display:block;color:var(--ink2);text-decoration:none;padding:4px 0 4px 10px;border-left:2px solid var(--rule)}
+nav.toc a.h3{padding-left:22px;color:var(--muted);font-size:12.5px}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--water);border-color:var(--water);outline:none}
+main{flex:1;min-width:0;max-width:760px;padding-block:28px 96px}
+header.cover{border-bottom:1px solid var(--rule);padding-bottom:22px;margin-bottom:8px}
+header.cover .eyebrow{font:600 12px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--water)}
+h1{font:600 40px/1.1 var(--display);margin:10px 0 12px;text-wrap:balance;letter-spacing:-.01em}
+h2{font:600 28px/1.2 var(--display);margin:56px 0 10px;padding-top:14px;border-top:3px solid var(--water);text-wrap:balance;scroll-margin-top:16px}
+h3{font:600 19px/1.3 var(--display);margin:34px 0 6px;text-wrap:balance;scroll-margin-top:16px}
+h3 .slide{font:500 12px/1 var(--mono);color:var(--water);background:var(--water-soft);padding:3px 7px;border-radius:4px;margin-right:8px;vertical-align:2px}
+h4{font:600 15px/1.3 var(--body);margin:22px 0 4px;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;font-size:12.5px}
+p,li{max-width:68ch}
+a{color:var(--water)}
+code{font:0.88em var(--mono);background:var(--water-soft);padding:1px 5px;border-radius:3px}
+pre{background:var(--code-bg);color:var(--code-fg);font:13.2px/1.55 var(--mono);padding:14px 16px;border-radius:6px;overflow-x:auto;margin:12px 0 4px}
+pre code{background:none;padding:0;font:inherit;color:inherit}
+pre .k{color:var(--k)}pre .s{color:var(--s)}pre .c{color:var(--c);font-style:italic}pre .n{color:var(--n)}pre .b{color:var(--b)}pre .f{color:var(--f)}
+pre.text{background:var(--paper);color:var(--ink);border:1px solid var(--rule);border-left:4px solid var(--water)}
+p.src{font:12px/1.4 var(--mono);color:var(--muted);margin:2px 0 14px;overflow-wrap:anywhere}
+p code,li code,td code{overflow-wrap:anywhere}
+main p,main li{overflow-wrap:break-word}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--note);border-left:4px solid var(--note-rule);border-radius:0 6px 6px 0}
+blockquote p{margin:4px 0}
+table{border-collapse:collapse;margin:12px 0;font-size:14.5px;font-variant-numeric:tabular-nums;display:block;overflow-x:auto;max-width:100%}
+th,td{border-bottom:1px solid var(--rule);padding:6px 10px;text-align:left;vertical-align:top}
+th{font:600 12.5px/1.3 var(--body);color:var(--ink2)}
+hr{border:none;border-top:1px solid var(--rule);margin:30px 0}
+img{max-width:100%;border:1px solid var(--rule);border-radius:6px;background:#fff}
+@media (max-width:900px){nav.toc{display:none}h1{font-size:31px}h2{font-size:24px}}
+</style>
+<div class="wrap"><nav class="toc" aria-label="Contents"><div class="label">Contents</div><a class="h2" href="#before-the-lessons">Before the lessons</a><a class="h3" href="#slide-1-from-plant-data-to-a-trained-model">Slide 1 · From plant data to a trained model</a><a class="h3" href="#slide-2-one-lesson-seven-steps-90-minutes">Slide 2 · One lesson, seven steps, 90 minutes</a><a class="h3" href="#slide-3-every-word-you-will-hear-today">Slide 3 · Every word you will hear today</a><a class="h3" href="#slide-4-what-the-project-is-about">Slide 4 · What the project is about</a><a class="h3" href="#slide-5-the-plant-and-its-two-control-loops">Slide 5 · The plant and its two control loops</a><a class="h3" href="#slide-6-how-the-project-was-built-one-script-per-s">Slide 6 · How the project was built: one script per step</a><a class="h2" href="#lesson-1-what-is-a-model">Lesson 1. What is a model?</a><a class="h3" href="#slide-7-lesson-1-of-7">Slide 7 · Lesson 1 of 7</a><a class="h3" href="#slide-8-what-is-a-model">Slide 8 · What is a model?</a><a class="h3" href="#slide-9-four-steps-train-every-model">Slide 9 · Four steps train every model</a><a class="h3" href="#slide-10-check-yourself">Slide 10 · Check yourself</a><a class="h2" href="#lesson-2-collect-and-clean-the-data">Lesson 2. Collect and clean the data</a><a class="h3" href="#slide-11-lesson-2-of-7">Slide 11 · Lesson 2 of 7</a><a class="h3" href="#slide-12-where-the-data-comes-from">Slide 12 · Where the data comes from</a><a class="h3" href="#slide-13-load-it-once-record-where-it-came-from-ca">Slide 13 · Load it once, record where it came from, cache it</a><a class="h3" href="#slide-14-cleaning-look-before-you-learn">Slide 14 · Cleaning: look before you learn</a><a class="h3" href="#slide-15-put-everything-on-one-time-grid">Slide 15 · Put everything on one time grid</a><a class="h3" href="#slide-16-download-read-check-fix">Slide 16 · Download, read, check, fix</a><a class="h3" href="#slide-17-how-the-project-loads-and-corrects-the-of">Slide 17 · How the project loads and corrects the official data</a><a class="h3" href="#slide-18-collect-and-clean-cell-by-cell">Slide 18 · Collect and clean, cell by cell</a><a class="h3" href="#slide-19-check-yourself">Slide 19 · Check yourself</a><a class="h3" href="#slide-20-your-turn-notebook-1-parts-a-and-b-12-min">Slide 20 · Your turn: notebook 1, parts A and B (12 minutes)</a><a class="h2" href="#lesson-3-prepare-the-data">Lesson 3. Prepare the data</a><a class="h3" href="#slide-21-lesson-3-of-7">Slide 21 · Lesson 3 of 7</a><a class="h3" href="#slide-22-transform-and-scale-the-inputs">Slide 22 · Transform and scale the inputs</a><a class="h3" href="#slide-23-turn-one-long-series-into-many-examples">Slide 23 · Turn one long series into many examples</a><a class="h3" href="#slide-24-split-by-time-not-at-random">Slide 24 · Split by time, not at random</a><a class="h3" href="#slide-25-choose-split-scale-cut">Slide 25 · Choose, split, scale, cut</a><a class="h3" href="#slide-26-prepare-cell-by-cell">Slide 26 · Prepare, cell by cell</a><a class="h3" href="#slide-27-check-yourself">Slide 27 · Check yourself</a><a class="h3" href="#slide-28-your-turn-notebook-1-part-c-10-minutes">Slide 28 · Your turn: notebook 1, part C (10 minutes)</a><a class="h2" href="#lesson-4-choose-the-model">Lesson 4. Choose the model</a><a class="h3" href="#slide-29-lesson-4-of-7">Slide 29 · Lesson 4 of 7</a><a class="h3" href="#slide-30-the-input-and-output-decide-the-model">Slide 30 · The input and output decide the model</a><a class="h3" href="#slide-31-what-happens-inside-a-neural-network-laye">Slide 31 · What happens inside a neural network, layer by layer</a><a class="h3" href="#slide-32-counting-parameters">Slide 32 · Counting parameters</a><a class="h3" href="#slide-33-a-causal-convolution">Slide 33 · A causal convolution</a><a class="h3" href="#slide-34-a-recurrent-network-carries-a-memory">Slide 34 · A recurrent network carries a memory</a><a class="h3" href="#slide-35-shapes-baselines-linear-mlp-cnn">Slide 35 · Shapes, baselines, linear, MLP, CNN</a><a class="h3" href="#slide-36-shapes-baselines-and-models-cell-by-cell">Slide 36 · Shapes, baselines and models, cell by cell</a><a class="h3" href="#slide-37-check-yourself">Slide 37 · Check yourself</a><a class="h2" href="#lesson-5-train-and-evaluate">Lesson 5. Train and evaluate</a><a class="h3" href="#slide-38-lesson-5-of-7">Slide 38 · Lesson 5 of 7</a><a class="h3" href="#slide-39-the-loss-says-what-wrong-means">Slide 39 · The loss says what &quot;wrong&quot; means</a><a class="h3" href="#slide-40-gradient-descent-walk-downhill-on-the-los">Slide 40 · Gradient descent: walk downhill on the loss</a><a class="h3" href="#slide-41-the-training-loop">Slide 41 · The training loop</a><a class="h3" href="#slide-42-train-validate-test-once-save">Slide 42 · Train, validate, test once, save</a><a class="h3" href="#slide-43-training-overfitting-and-the-test-cell-by">Slide 43 · Training, overfitting and the test, cell by cell</a><a class="h3" href="#slide-44-a-model-is-only-good-compared-with-someth">Slide 44 · A model is only good compared with something simple</a><a class="h3" href="#slide-45-check-yourself">Slide 45 · Check yourself</a><a class="h3" href="#slide-46-your-turn-notebook-2-20-minutes">Slide 46 · Your turn: notebook 2 (20 minutes)</a><a class="h2" href="#lesson-6-reinforcement-learning">Lesson 6. Reinforcement learning</a><a class="h3" href="#slide-47-lesson-6-of-7">Slide 47 · Lesson 6 of 7</a><a class="h3" href="#slide-48-when-there-is-no-correct-answer-to-copy">Slide 48 · When there is no correct answer to copy</a><a class="h3" href="#slide-49-the-parts-of-an-actor-critic-agent">Slide 49 · The parts of an actor-critic agent</a><a class="h3" href="#slide-50-environment-reward-act-learn">Slide 50 · Environment, reward, act, learn</a><a class="h3" href="#slide-51-reward-ddpg-update-and-sac-il-update-in-t">Slide 51 · Reward, DDPG update and SAC-IL update, in the project&#x27;s code</a><a class="h3" href="#slide-52-reinforcement-learning-cell-by-cell">Slide 52 · Reinforcement learning, cell by cell</a><a class="h3" href="#slide-53-start-from-the-expert-then-improve-behind">Slide 53 · Start from the expert, then improve, behind a safety gate</a><a class="h3" href="#slide-54-check-yourself">Slide 54 · Check yourself</a><a class="h3" href="#slide-55-your-turn-notebook-3-12-minutes">Slide 55 · Your turn: notebook 3 (12 minutes)</a><a class="h2" href="#lesson-7-our-project-s-code">Lesson 7. Our project&#x27;s code</a><a class="h3" href="#slide-56-lesson-7-of-7">Slide 56 · Lesson 7 of 7</a><a class="h3" href="#slide-57-papers-1-and-3-exactly-as-printed">Slide 57 · Papers 1 and 3 exactly as printed</a><a class="h3" href="#slide-58-ilc-the-control-step-the-safety-gate-and-">Slide 58 · ILC, the control step, the safety gate and the training script</a><a class="h3" href="#slide-59-the-second-held-out-test-two-fixes-one-op">Slide 59 · The second held-out test: two fixes, one open problem</a><a class="h3" href="#slide-60-check-yourself">Slide 60 · Check yourself</a><a class="h3" href="#slide-61-questions-learners-ask">Slide 61 · Questions learners ask</a><a class="h3" href="#slide-62-what-this-project-teaches-about-doing-ml-">Slide 62 · What this project teaches about doing ML research</a><a class="h2" href="#after-the-session">After the session</a></nav><main><header class="cover"><div class="eyebrow">Teaching guide · the BSM1 workshop</div><h1 id="from-plant-data-to-a-trained-model">From plant data to a trained model</h1></header>
+<p>This is the whole workshop written out as a lesson, in the order of the slides. Read it once from top to bottom and you can teach the session yourself. For each slide you get what is on it, what to say, the plant physics where it matters, and the code, a few lines at a time, with what each line does and why it is there.</p>
+<p>Every code block below is copied from the repository when this guide is built, and every output block comes from running the lesson scripts at that moment. If the code changes, rebuild the guide (<code>python workshop/tools/build_guide.py</code>) and it follows.</p>
+<p>How to use it on the day. Keep the deck (<code>workshop/slides/index.html</code>) on the projector and this guide on your laptop. The right arrow moves on. On the interactive slides it first steps through the slide: the next notebook cell, the next block of code, the next quiz answer. Each lesson ends with the same terminal command the scholars can run, so if a notebook breaks on someone's machine, the script still works.</p>
+<p>The timing is 90 minutes. Lessons 2 and 5 are the long ones because they hold the main hands-on sessions.</p>
+<h2 id="before-the-lessons">Before the lessons</h2>
+<h3 id="slide-1-from-plant-data-to-a-trained-model"><span class="slide">slide 1</span>From plant data to a trained model</h3>
+<p>On the slide is the plant, animated, with a slider for the air blown into the last tank.</p>
+<p>Say: "Today we learn machine learning the way it is used in research, on one real project from start to finish. The project is about a wastewater treatment plant. Bacteria clean the water, and they need oxygen. We supply that oxygen by blowing air. More air gives cleaner water and costs more electricity. Deciding how much air to blow, minute by minute, is the control problem our models try to solve."</p>
+<p>Move the slider while you talk. The oxygen reading changes, and so does the energy figure underneath. That one trade-off is the whole project in miniature.</p>
+<h3 id="slide-2-one-lesson-seven-steps-90-minutes"><span class="slide">slide 2</span>One lesson, seven steps, 90 minutes</h3>
+<p>Read the seven steps out loud once. Then point out the rhythm, because it repeats in every lesson: the idea with an animation, where the code is, the code running, three questions, and the scholars' turn. Tell them now that every step has a one-line terminal command, so nobody gets left behind if their notebook misbehaves.</p>
+<h3 id="slide-3-every-word-you-will-hear-today"><span class="slide">slide 3</span>Every word you will hear today</h3>
+<p>Thirty-two words, each with a plain meaning, a comparison from daily life and where it appears in the project. Do not read them all. Click four: <em>model</em>, <em>loss</em>, <em>overfitting</em> and <em>reinforcement learning</em>. Then tell the room this slide is their dictionary for the day and they can come back to it any time.</p>
+<h3 id="slide-4-what-the-project-is-about"><span class="slide">slide 4</span>What the project is about</h3>
+<p>Go through the five bullets in order. The table on the right matters more than it looks: the project contains four different kinds of machine learning, and the scholars will see all four today.</p>
+<ul>
+<li>Forecasting the inflow two hours ahead is <strong>regression</strong>: the answer is a number.</li>
+<li>Warning before ammonium breaks the legal limit is <strong>classification</strong>: the answer is yes or no.</li>
+<li>Predicting how the plant will respond is a <strong>sequence model</strong>: the answer depends on everything that happened before.</li>
+<li>Deciding how much air to blow is <strong>reinforcement learning</strong>: there is no right answer to copy, only a score afterwards.</li>
+</ul>
+<h3 id="slide-5-the-plant-and-its-two-control-loops"><span class="slide">slide 5</span>The plant and its two control loops</h3>
+<p>This is the project's own drawing of the plant, so spend two minutes on the physics. The scholars do not need chemistry, but they need to know why the two control loops exist.</p>
+<h4 id="the-physics">The physics</h4>
+<p>Wastewater carries two kinds of pollution the plant must remove: organic matter (measured as COD, chemical oxygen demand) and nitrogen, mostly as ammonium.</p>
+<ul>
+<li><strong>Tanks 3, 4 and 5 are aerated.</strong> Air is blown in, so there is dissolved oxygen. Here one group of bacteria (the nitrifiers) turns ammonium into nitrate. This needs oxygen: roughly 4.6 g of oxygen for every gram of ammonium nitrogen.</li>
+<li><strong>Tanks 1 and 2 are not aerated</strong> (anoxic). With no oxygen, a second group of bacteria breathes the oxygen locked in nitrate instead. They turn nitrate into nitrogen gas, which bubbles off harmlessly. They need food to do it, and the incoming COD is that food.</li>
+<li><strong>The internal recycle Q_a</strong> pumps water from tank 5 back to tank 1. That is how the nitrate made in the aerated tanks gets back to the anoxic tanks to be removed.</li>
+<li><strong>The settler</strong> lets the bacteria (the sludge) sink. Clean water leaves over the top. Most of the sludge goes back to tank 1 so the bacteria are not lost, and a little is wasted every day so they do not pile up.</li>
+</ul>
+<p>Some numbers to quote. The tanks hold 1000 + 1000 + 1333 × 3 = 5999 m³, and the average inflow is 18 446 m³ per day. So the water spends 5999 / 18 446 = 0.33 days in the tanks, about 8 hours.</p>
+<p><strong>Loop 1, oxygen.</strong> The controller sets KLa₅, the oxygen transfer coefficient of tank 5. KLa is how fast oxygen from the air dissolves into the water, per day. Its range is 0 to 240 per day. The goal is 2 mg/L of oxygen in tank 5. Why 2? The nitrifiers slow down when oxygen is scarce. The model uses a factor S_O / (K_OA + S_O) with K_OA = 0.4 mg/L. At 2 mg/L that factor is 2 / 2.4 = 0.83, so they run at 83 % of full speed. Going higher buys little and costs a lot of air.</p>
+<p><strong>Loop 2, nitrate.</strong> The controller sets the recycle flow Q_a, 0 to 92 230 m³/d, to hold 1 mg/L of nitrate in tank 2. Too little recycle and nitrate escapes in the effluent. Too much and the pump wastes energy, and it carries oxygen back into the tanks that are meant to be oxygen-free.</p>
+<p>The whole plant is a standard computer model called BSM1, Benchmark Simulation Model no. 1. Everyone in this field tests their controllers on the same simulated plant, so results can be compared. Our project uses the official version (the <code>bsm2-python</code> package), wrapped in <code>src/wwtp/official/plant.py</code>.</p>
+<h3 id="slide-6-how-the-project-was-built-one-script-per-s"><span class="slide">slide 6</span>How the project was built: one script per step</h3>
+<p>Press the right arrow and walk through the boxes in order. Each box is one script in <code>experiments/</code>, and the panel shows the command that runs it and the file it writes. The story to tell:</p>
+<ol>
+<li>Rebuild the official plant and its data.</li>
+<li>Rebuild three published controllers exactly as their papers print them, and check their claims. Two of the three did not work as printed.</li>
+<li>Build our own controller and two strong baselines to compare it with.</li>
+<li>Test everything on data nothing was tuned on, twice, with the test plan committed to git before each test was run.</li>
+<li>Audit every number. 76 of 76 checks pass.</li>
+</ol>
+<p>The point to land: research code is a chain of small scripts, each writing a result file that the next one reads, so every number in the report can be traced back to a command.</p>
+<h2 id="lesson-1-what-is-a-model">Lesson 1. What is a model?</h2>
+<h3 id="slide-7-lesson-1-of-7"><span class="slide">slide 7</span>Lesson 1 of 7</h3>
+<p>Read the goal: "A model is a function with knobs. Training turns the knobs, in four steps that every model uses." Everything else today builds on this.</p>
+<h3 id="slide-8-what-is-a-model"><span class="slide">slide 8</span>What is a model?</h3>
+<p>Press <strong>train</strong> and let the line fit itself while you talk.</p>
+<p>Say: "A model is a function with knobs. Here the function is a straight line, ŷ = w · x + b. The input x is the inflow. The output ŷ is our guess of the ammonium load. The two knobs are w, the slope, and b, the offset. Those two numbers are the model's parameters. Training changes them and nothing else.</p>
+<p>How wrong is the line? Each red line is one mistake. Square each mistake, take the average, and you have one number called the loss. Training means turning each knob a little in the direction that makes the loss smaller, and doing that again and again. A neural network is exactly this with thousands of knobs and a bendier function."</p>
+<h3 id="slide-9-four-steps-train-every-model"><span class="slide">slide 9</span>Four steps train every model</h3>
+<p>This slide shows the same four steps in four places at once: the lesson script, notebook 2, the project's flow forecaster and the project's reinforcement-learning critic. Press the right arrow and each step lights up in all four panels in the same colour. The point: the 2-knob toy and the 171 211-knob forecaster are trained by the same four lines.</p>
+<h4 id="the-code-lesson1-knobs-py">The code: <code>lesson1_knobs.py</code></h4>
+<p>Run it with <code>python workshop/examples/lesson1_knobs.py</code>. First the data.</p>
+
+
+<pre><code>rng = <span class="b">np</span>.random.<span class="f">default_rng</span>(<span class="n">0</span>)
+x = rng.<span class="f">uniform</span>(<span class="n">0</span>, <span class="n">1</span>, <span class="n">20</span>)
+y = <span class="n">0.7</span> * x + <span class="n">0.15</span> + <span class="n">0.05</span> * rng.<span class="f">normal</span>(size=<span class="n">20</span>)     <span class="c"># the &quot;true&quot; rule, hidden from the model</span>
+</code></pre>
+<p class="src">workshop/examples/lesson1_knobs.py, lines 14–16</p>
+
+<ul>
+<li><code>default_rng(0)</code> makes a random number generator with seed 0, so everyone in the room gets the same numbers.</li>
+<li><code>x</code> is 20 inflow values between 0 and 1 (already scaled).</li>
+<li><code>y</code> is the true load. We make it ourselves with a hidden rule, slope 0.7 and offset 0.15, plus a little noise. The model is never told 0.7 or 0.15. It has to find them. That is why we invent the data here: we know the right answer, so we can check the model got it.</li>
+</ul>
+<p>Now training by hand, in plain numpy.</p>
+
+
+<pre><code>w, b = <span class="n">0.0</span>, <span class="n">0.0</span>          <span class="c"># THE KNOBS (parameters). Training changes only these two numbers.</span>
+lr = <span class="n">0.5</span>                 <span class="c"># LEARNING RATE: how far we turn the knobs each step</span>
+
+<span class="b">print</span>(<span class="s">&quot;Part A: by hand&quot;</span>)
+<span class="k">for</span> step <span class="k">in</span> <span class="b">range</span>(<span class="n">201</span>):
+    pred = w * x + b                          <span class="c"># 1 GUESS: run the model on the data (forward)</span>
+    loss = <span class="b">np</span>.<span class="f">mean</span>((pred - y) ** <span class="n">2</span>)           <span class="c"># 2 HOW WRONG: one number, the mean squared error</span>
+    <span class="k">if</span> step <span class="k">in</span> (<span class="n">0</span>, <span class="n">1</span>, <span class="n">2</span>, <span class="n">5</span>, <span class="n">10</span>, <span class="n">50</span>, <span class="n">200</span>):
+        <span class="b">print</span>(<span class="s">f&quot;  step {step:3d}   w = {w:6.3f}   b = {b:6.3f}   loss = {loss:.5f}&quot;</span>)
+    <span class="c"># 3 WHICH WAY: the gradient = how the loss changes when a knob is nudged.</span>
+    <span class="c">#   loss = mean((w·x + b − y)²); by the chain rule  d loss/dw = mean(2·(pred − y)·x),  d loss/db = mean(2·(pred − y)).</span>
+    <span class="c">#   PyTorch computes this for you with loss.backward() (Part B).</span>
+    grad_w = <span class="b">np</span>.<span class="f">mean</span>(<span class="n">2</span> * (pred - y) * x)      <span class="c"># 3 WHICH WAY: the gradient, for each knob</span>
+    grad_b = <span class="b">np</span>.<span class="f">mean</span>(<span class="n">2</span> * (pred - y))
+    w = w - lr * grad_w                       <span class="c"># 4 TURN THE KNOBS a little, downhill</span>
+    b = b - lr * grad_b
+<span class="b">print</span>(<span class="s">&quot;  the hidden rule was w = 0.7, b = 0.15\n&quot;</span>)
+</code></pre>
+<p class="src">workshop/examples/lesson1_knobs.py, lines 19–35</p>
+
+<ul>
+<li><code>w, b = 0.0, 0.0</code>: the knobs start at zero. The model knows nothing yet.</li>
+<li><code>lr = 0.5</code> is the learning rate, the size of each turn of the knobs.</li>
+<li><code>for step in range(201)</code> repeats the four steps 201 times.</li>
+<li><strong>Step 1, guess.</strong> <code>pred = w * x + b</code> runs the model on all 20 inputs at once.</li>
+<li><strong>Step 2, how wrong.</strong> <code>loss = np.mean((pred - y) ** 2)</code> is the mean squared error, the average of the squared mistakes.</li>
+<li><strong>Step 3, which way.</strong> The gradient says how the loss changes when you nudge each knob. For this loss, calculus gives <code>mean(2·(pred − y)·x)</code> for w and <code>mean(2·(pred − y))</code> for b. If the gradient for w is positive, turning w up makes things worse, so we turn it down.</li>
+<li><strong>Step 4, turn the knobs.</strong> <code>w = w - lr * grad_w</code> steps against the gradient, downhill.</li>
+</ul>
+<p>Part B does exactly the same with PyTorch, the way the project's code does it.</p>
+
+
+<pre><code>xt = <span class="b">torch</span>.<span class="f">tensor</span>(x, dtype=<span class="b">torch</span>.float32)[:, <span class="k">None</span>]
+yt = <span class="b">torch</span>.<span class="f">tensor</span>(y, dtype=<span class="b">torch</span>.float32)[:, <span class="k">None</span>]
+<span class="b">torch</span>.<span class="f">manual_seed</span>(<span class="n">0</span>)
+model = <span class="b">torch</span>.<span class="b">nn</span>.<span class="f">Linear</span>(<span class="n">1</span>, <span class="n">1</span>)                 <span class="c"># THE KNOBS: model.weight (= w) and model.bias (= b)</span>
+opt = <span class="b">torch</span>.optim.<span class="f">SGD</span>(model.<span class="f">parameters</span>(), lr=<span class="n">0.5</span>)
+
+<span class="b">print</span>(<span class="s">&quot;Part B: PyTorch&quot;</span>)
+<span class="k">for</span> step <span class="k">in</span> <span class="b">range</span>(<span class="n">201</span>):
+    pred = <span class="f">model</span>(xt)                                  <span class="c"># 1 guess          (notebook 2, cell 9, line 19)</span>
+    loss = <span class="b">torch</span>.<span class="b">nn</span>.functional.<span class="f">mse_loss</span>(pred, yt)     <span class="c"># 2 how wrong      (notebook 2, cell 9, line 20)</span>
+    <span class="k">if</span> step <span class="k">in</span> (<span class="n">0</span>, <span class="n">50</span>, <span class="n">200</span>):
+        <span class="b">print</span>(<span class="s">f&quot;  step {step:3d}   w = {model.weight.item():6.3f}   b = {model.bias.item():6.3f}   loss = {loss.item():.5f}&quot;</span>)
+    opt.<span class="f">zero_grad</span>()
+    loss.<span class="f">backward</span>()                                   <span class="c"># 3 which way      (notebook 2, cell 9, line 22)</span>
+    opt.<span class="f">step</span>()                                        <span class="c"># 4 turn the knobs (notebook 2, cell 9, line 24)</span>
+</code></pre>
+<p class="src">workshop/examples/lesson1_knobs.py, lines 38–52</p>
+
+<ul>
+<li><code>torch.nn.Linear(1, 1)</code> is a layer with one input and one output: one weight (our w) and one bias (our b).</li>
+<li><code>torch.optim.SGD(model.parameters(), lr=0.5)</code> hands the knobs to an optimiser. SGD is plain gradient descent, the same rule as Part A.</li>
+<li><code>opt.zero_grad()</code> clears the gradients from the last step. PyTorch adds gradients up by default, so forgetting this line is a classic bug.</li>
+<li><code>loss.backward()</code> computes every gradient automatically. This replaces the two hand-written lines of Part A, and it works for a network of any size.</li>
+<li><code>opt.step()</code> turns every knob.</li>
+</ul>
+<p>The output, from the run that built this guide:</p>
+<pre class="text"><code>Part A: by hand
+  step   0   w =  0.000   b =  0.000   loss = 0.30951
+  step   1   w =  0.332   b =  0.512   loss = 0.04186
+  step   2   w =  0.280   b =  0.342   loss = 0.01765
+  step   5   w =  0.382   b =  0.330   loss = 0.00996
+  step  10   w =  0.480   b =  0.274   loss = 0.00495
+  step  50   w =  0.664   b =  0.172   loss = 0.00113
+  step 200   w =  0.671   b =  0.168   loss = 0.00112
+  the hidden rule was w = 0.7, b = 0.15
+
+Part B: PyTorch
+  step   0   w = -0.007   b =  0.536   loss = 0.04909
+  step  50   w =  0.661   b =  0.174   loss = 0.00113
+  step 200   w =  0.671   b =  0.168   loss = 0.00112
+</code></pre>
+<p class="src">Output of <code>python workshop/examples/lesson1_knobs.py</code>, from the run that built this guide</p>
+
+<p>Read it with the room. The loss falls from 0.31 to 0.0011, and w and b end near 0.67 and 0.17. They do not land exactly on 0.7 and 0.15 because of the noise we added: with 20 noisy points, this is the best line. PyTorch arrives at the same answer.</p>
+<blockquote>
+<p>Try this with the room: change <code>lr = 0.5</code> to <code>1.2</code> and run again. The loss grows instead of shrinking, because each step jumps over the bottom of the valley and lands higher on the other side. This prepares question 3 of the quiz.</p>
+</blockquote>
+<h3 id="slide-10-check-yourself"><span class="slide">slide 10</span>Check yourself</h3>
+<p>Ask each question to the room before you reveal the answer.</p>
+<ol>
+<li>Which parts does training change? Only w and b. The data and the shape of the function stay fixed.</li>
+<li>What does a large loss mean? The guesses are far from the truth: the knobs are not good yet, or a straight line cannot fit this data.</li>
+<li>What happens with a learning rate that is too big? The steps overshoot and the loss explodes.</li>
+</ol>
+<h2 id="lesson-2-collect-and-clean-the-data">Lesson 2. Collect and clean the data</h2>
+<h3 id="slide-11-lesson-2-of-7"><span class="slide">slide 11</span>Lesson 2 of 7</h3>
+<p>Goal: download data so anyone can get the same file again, read it without falling into traps, check it, and fix what is wrong, including the physics. This lesson takes 20 minutes with its hands-on session.</p>
+<h3 id="slide-12-where-the-data-comes-from"><span class="slide">slide 12</span>Where the data comes from</h3>
+<p>The curves draw themselves as if a sensor were logging them, and rows appear in the table on the right.</p>
+<p>Say: "Our data is what flows into the plant: the flow rate and 13 concentrations, every 15 minutes, for 14 days. That is 1345 rows. There are three files, one per weather: dry, rain and storm. Look at the first week. It is the same in all three files. Keep that in mind, because if we split carelessly we will test on data we trained on."</p>
+<p>The rain file has one long rain period around days 8.4 to 10.4. The storm file has two short storms, around day 8.8 and day 11, with flows up to 60 000 m³/d, more than three times the dry average.</p>
+<h3 id="slide-13-load-it-once-record-where-it-came-from-ca"><span class="slide">slide 13</span>Load it once, record where it came from, cache it</h3>
+<p>This is the project's loading code. Four habits, one per bullet.</p>
+<ul>
+<li><strong>Pin the version.</strong> The download address contains a commit hash. A file behind a hash never changes, so anyone can rebuild the same dataset years later.</li>
+<li><strong>Keep only the data rows.</strong> Spreadsheets have titles and units in them. The project keeps a row only if its first cell is a number.</li>
+<li><strong>Cache it.</strong> Reading Excel is slow. The project saves the numbers as <code>.npy</code>, which loads in milliseconds.</li>
+<li><strong>Respect the licence.</strong> These files are under the GPL, so the repository downloads them when needed instead of storing copies.</li>
+</ul>
+<h3 id="slide-14-cleaning-look-before-you-learn"><span class="slide">slide 14</span>Cleaning: look before you learn</h3>
+<p>The table on the left is invented to show the usual problems. Each right-arrow press highlights one problem and its fix.</p>
+<ol>
+<li>Text rows: drop them, but write the units down somewhere.</li>
+<li>Missing values: short gaps can be filled by drawing a straight line between the neighbours (interpolation). Long gaps should be left empty, because filling them would invent data.</li>
+<li>Duplicate timestamps: keep one, then check the time step is a steady 15 minutes.</li>
+<li>Spikes: a value ten times too big is usually a unit or typing error. Compare each value with the median of its neighbours, and flag it if it is far away.</li>
+<li>The physics check. This is the one the project actually needed. More below.</li>
+<li>Missing columns the plant model needs, such as total suspended solids.</li>
+</ol>
+<h4 id="the-physics-of-the-s-i-fix">The physics of the S_I fix</h4>
+<p>S_I is inert soluble COD: organic matter the bacteria cannot eat, so it passes straight through. In the spreadsheets it is 30 g/m³ in every row of every file, even when rain doubles the flow. Rain water is clean, so it must dilute the sewage. If the flow doubles because of rain, the concentration of anything already in the sewage should halve. The official rain file shipped with the <code>bsm2-python</code> package follows exactly this rule, S_I = 30 · Q_dry / Q. The project applies it to the rain and storm files (<code>plant.py</code>, line 89) and writes it down in <code>docs/DATASET.md</code>.</p>
+<p>No statistical check finds this. There are no missing values, no duplicates and nothing negative. Only someone who knows what the numbers mean can see it is impossible.</p>
+<h3 id="slide-15-put-everything-on-one-time-grid"><span class="slide">slide 15</span>Put everything on one time grid</h3>
+<p>The sensors give a value every 15 minutes, but the controller acts every 45 seconds. Between two samples we keep using the last one, a zero-order hold. That is 20 control steps per sample. The animation shows the held values filling in step by step.</p>
+<h3 id="slide-16-download-read-check-fix"><span class="slide">slide 16</span>Download, read, check, fix</h3>
+<p>The same four steps in the lesson script, notebook 1 and the project. Press through them.</p>
+<h4 id="the-code-lesson2-load-and-clean-py">The code: <code>lesson2_load_and_clean.py</code></h4>
+<p>Run it with <code>python workshop/examples/lesson2_load_and_clean.py</code>.</p>
+
+
+<pre><code><span class="c"># ── 1 DOWNLOAD: pinned to one commit, so it is the same file for everyone, forever</span>
+path = DATA / <span class="s">&quot;Inf_rain_2006.xlsx&quot;</span>
+<span class="k">if</span> <span class="k">not</span> path.<span class="f">exists</span>():
+    urllib.request.<span class="f">urlretrieve</span>(URL + path.name, path)
+dry_path = DATA / <span class="s">&quot;Inf_dry_2006.xlsx&quot;</span>
+<span class="k">if</span> <span class="k">not</span> dry_path.<span class="f">exists</span>():
+    urllib.request.<span class="f">urlretrieve</span>(URL + dry_path.name, dry_path)
+</code></pre>
+<p class="src">workshop/examples/lesson2_load_and_clean.py, lines 24–30</p>
+
+<ul>
+<li><code>DATA / "Inf_rain_2006.xlsx"</code> builds a path to the data folder. <code>Path</code> objects join folders with <code>/</code>, which also works on Windows.</li>
+<li><code>if not path.exists():</code> downloads only the first time. After that the file on disk is used.</li>
+<li><code>urlretrieve</code> fetches the file from the pinned address in <code>URL</code>.</li>
+</ul>
+
+
+<pre><code><span class="c"># ── 2 READ: first, carelessly</span>
+raw = <span class="b">pd</span>.<span class="f">read_excel</span>(path, header=<span class="k">None</span>)
+<span class="b">print</span>(<span class="s">&quot;2 READ   raw shape&quot;</span>, raw.shape, <span class="s">&quot;  first row:&quot;</span>, <span class="b">list</span>(raw.iloc[<span class="n">0</span>, :<span class="n">4</span>]), <span class="s">&quot;...&quot;</span>)
+<span class="b">print</span>(<span class="s">&quot;         column types:&quot;</span>, {<span class="b">str</span>(k): v <span class="k">for</span> k, v <span class="k">in</span> raw.dtypes.<span class="f">value_counts</span>().<span class="f">items</span>()}, <span class="s">&quot; ← all text, because row 0 is names&quot;</span>)
+<span class="c">#    then properly: row 0 is the header; give the columns our names; make them numbers</span>
+d = <span class="b">pd</span>.<span class="f">read_excel</span>(path, header=<span class="n">0</span>)
+d.columns = COLS
+d = d.<span class="f">astype</span>(<span class="b">float</span>)
+<span class="b">print</span>(<span class="s">&quot;         after reading properly:&quot;</span>, d.shape, <span class="s">&quot; types:&quot;</span>, {<span class="b">str</span>(k): v <span class="k">for</span> k, v <span class="k">in</span> d.dtypes.<span class="f">value_counts</span>().<span class="f">items</span>()})
+</code></pre>
+<p class="src">workshop/examples/lesson2_load_and_clean.py, lines 32–40</p>
+
+<ul>
+<li><code>pd.read_excel(path, header=None)</code> reads the sheet without saying which row holds the column names. The first row of this file holds names like <code>t</code>, <code>Si</code>, <code>Ss</code>. Because one row is text, pandas treats every column as text (type <code>object</code>). Nothing crashes, which is what makes this trap dangerous.</li>
+<li><code>header=0</code> says row 0 is the header. Now the 1345 rows below it are data.</li>
+<li><code>d.columns = COLS</code> gives the columns names we choose and understand.</li>
+<li><code>d.astype(float)</code> makes every column a number, and fails loudly if something is not a number. Loud failures are good.</li>
+</ul>
+
+
+<pre><code><span class="c"># ── 3 CHECK: the standard questions, every dataset, every time</span>
+step_min = <span class="b">np</span>.<span class="f">unique</span>(<span class="b">np</span>.<span class="f">round</span>(<span class="b">np</span>.<span class="f">diff</span>(d.t) * <span class="n">1440</span>, <span class="n">3</span>))
+<span class="b">print</span>(<span class="s">&quot;3 CHECK  time step [min]:&quot;</span>, step_min,
+      <span class="s">&quot;  missing values:&quot;</span>, <span class="b">int</span>(d.<span class="f">isna</span>().<span class="b">sum</span>().<span class="b">sum</span>()),
+      <span class="s">&quot;  duplicate times:&quot;</span>, <span class="b">int</span>(d.t.<span class="f">duplicated</span>().<span class="b">sum</span>()),
+      <span class="s">&quot;  negative values:&quot;</span>, <span class="b">int</span>((d.<span class="f">drop</span>(columns=<span class="s">&quot;t&quot;</span>) &lt; <span class="n">0</span>).<span class="b">sum</span>().<span class="b">sum</span>()))
+<span class="b">print</span>(<span class="s">&quot;         S_I values in the whole file:&quot;</span>, d.S_I.<span class="f">unique</span>(), <span class="s">&quot; ← constant, even when rain doubles the flow?&quot;</span>)
+</code></pre>
+<p class="src">workshop/examples/lesson2_load_and_clean.py, lines 42–48</p>
+
+<ul>
+<li><code>np.diff(d.t) * 1440</code> is the gap between consecutive times, converted from days to minutes (1440 minutes per day). We expect exactly one value, 15.</li>
+<li><code>d.isna().sum().sum()</code> counts missing values in the whole table.</li>
+<li><code>d.t.duplicated().sum()</code> counts repeated timestamps.</li>
+<li><code>(d.drop(columns="t") &lt; 0).sum().sum()</code> counts negative values. Concentrations and flows cannot be negative.</li>
+<li>The last line prints every distinct value of S_I. There is only one, 30, which is the physics problem.</li>
+</ul>
+
+
+<pre><code><span class="c"># ── 4 FIX (a) a broken sensor: damage a copy, then repair it</span>
+x = d.<span class="f">copy</span>()
+x.loc[<span class="n">100</span>:<span class="n">102</span>, <span class="s">&quot;S_NH&quot;</span>] = <span class="b">np</span>.nan                          <span class="c"># a 45-min gap</span>
+x.loc[<span class="n">300</span>, <span class="s">&quot;S_NH&quot;</span>] *= <span class="n">10</span>                                 <span class="c"># a spike</span>
+med = x.S_NH.<span class="f">rolling</span>(<span class="n">9</span>, center=<span class="k">True</span>, min_periods=<span class="n">3</span>).<span class="f">median</span>()
+spike = (x.S_NH - med).<span class="b">abs</span>() &gt; <span class="n">0.5</span> * med                 <span class="c"># far from its neighbours → wrong</span>
+x.loc[spike, <span class="s">&quot;S_NH&quot;</span>] = <span class="b">np</span>.nan
+x[<span class="s">&quot;S_NH&quot;</span>] = x.S_NH.<span class="f">interpolate</span>(limit_area=<span class="s">&quot;inside&quot;</span>)      <span class="c"># fill short gaps with a straight line</span>
+<span class="b">print</span>(<span class="s">&quot;4 FIX    spikes found:&quot;</span>, <span class="b">int</span>(spike.<span class="b">sum</span>()), <span class="s">&quot;  largest error after repair:&quot;</span>,
+      <span class="f">round</span>(<span class="b">float</span>((x.S_NH - d.S_NH).<span class="b">abs</span>().<span class="b">max</span>()), <span class="n">3</span>), <span class="s">&quot;g/m3&quot;</span>)
+</code></pre>
+<p class="src">workshop/examples/lesson2_load_and_clean.py, lines 50–59</p>
+
+<ul>
+<li><code>x = d.copy()</code> works on a copy, so we can compare the repair with the original.</li>
+<li>We damage the copy on purpose: three readings go missing and one becomes ten times too big.</li>
+<li><code>rolling(9, center=True).median()</code> is the median of each reading and its 8 neighbours, 4 on each side. One spike cannot move a median, so the median shows what the value should be.</li>
+<li><code>spike = (x.S_NH - med).abs() &gt; 0.5 * med</code> flags a reading more than 50 % away from its neighbourhood.</li>
+<li><code>interpolate(limit_area="inside")</code> fills the holes with straight lines between the values on both sides.</li>
+</ul>
+<p>One caution for the room: <code>center=True</code> uses readings from after the moment being checked. That is fine for cleaning a stored file. A controller running live cannot see the future and must use only past values.</p>
+
+
+<pre><code><span class="c"># ── 4 FIX (b) the physics fix of the project: rain dilutes the inert COD   (plant.py, line 89)</span>
+dry = <span class="b">pd</span>.<span class="f">read_excel</span>(dry_path, header=<span class="n">0</span>)
+dry.columns = COLS
+d[<span class="s">&quot;S_I&quot;</span>] = <span class="n">30.0</span> * dry.Q.<span class="f">astype</span>(<span class="b">float</span>).values / d.Q.values
+<span class="b">print</span>(<span class="s">&quot;         S_I after the dilution fix: min&quot;</span>, <span class="f">round</span>(d.S_I.<span class="b">min</span>(), <span class="n">1</span>), <span class="s">&quot; max&quot;</span>, <span class="f">round</span>(d.S_I.<span class="b">max</span>(), <span class="n">1</span>), <span class="s">&quot;g/m3&quot;</span>)
+</code></pre>
+<p class="src">workshop/examples/lesson2_load_and_clean.py, lines 61–65</p>
+
+<p><code>30.0 * dry.Q / d.Q</code> is the dilution rule: when the flow is twice the dry-weather flow, S_I is half of 30.</p>
+<pre class="text"><code>2 READ   raw shape (1346, 15)   first row: [&#x27;t&#x27;, &#x27;Si&#x27;, &#x27;Ss&#x27;, &#x27;Xi&#x27;] ...
+         column types: {&#x27;object&#x27;: 15}  ← all text, because row 0 is names
+         after reading properly: (1345, 15)  types: {&#x27;float64&#x27;: 15}
+3 CHECK  time step [min]: [15.]   missing values: 0   duplicate times: 0   negative values: 0
+         S_I values in the whole file: [30.]  ← constant, even when rain doubles the flow?
+4 FIX    spikes found: 1   largest error after repair: 1.548 g/m3
+         S_I after the dilution fix: min 10.0  max 30.0 g/m3
+</code></pre>
+<p class="src">Output of <code>python workshop/examples/lesson2_load_and_clean.py</code>, from the run that built this guide</p>
+
+<p>The repair finds the one spike, and the largest remaining error is 1.5 g/m³ against values around 30. After the fix S_I goes down to 10 g/m³ at the peak of the rain, when the flow is three times the dry flow.</p>
+<h3 id="slide-17-how-the-project-loads-and-corrects-the-of"><span class="slide">slide 17</span>How the project loads and corrects the official data</h3>
+<p>A code tour of <code>load_influent</code> in <code>src/wwtp/official/plant.py</code>. Press through five blocks:</p>
+<ol>
+<li>A second data source, the BSM2 influent, used only for the held-out tests. It now has a version run through a simple primary clarifier, added for held-out test 2.</li>
+<li>The raw table, from the cache.</li>
+<li>The 22-column layout the plant simulator expects.</li>
+<li>The S_I fix, one line.</li>
+<li>The derived and constant columns: suspended solids, the flow, and the temperature of 15 °C.</li>
+</ol>
+<h3 id="slide-18-collect-and-clean-cell-by-cell"><span class="slide">slide 18</span>Collect and clean, cell by cell</h3>
+<p>Notebook 1 running inside the slide. Each press runs one cell and shows its real output. The panel on the right explains the idea behind the cell. Use this slide if the room is slow to get started: they can watch the first cells run before trying themselves.</p>
+<h3 id="slide-19-check-yourself"><span class="slide">slide 19</span>Check yourself</h3>
+<ol>
+<li>Why did every column come out as text? One row of names makes pandas read the whole column as text.</li>
+<li>All the checks passed. Can the data still be wrong? Yes. S_I stays at 30 while rain doubles the flow. Only physics catches it.</li>
+<li>When may you fill a gap by interpolation? Only when it is short, here up to one hour.</li>
+</ol>
+<h3 id="slide-20-your-turn-notebook-1-parts-a-and-b-12-min"><span class="slide">slide 20</span>Your turn: notebook 1, parts A and B (12 minutes)</h3>
+<p>Scholars open <code>workshop/notebooks/01_data_collect_clean_prepare.ipynb</code>. Walk around the room. The usual problems: they skip a cell, or their kernel was started in the wrong folder. The menu item <em>Kernel, Restart Kernel and Run All Cells</em> fixes most of it. Anyone stuck can run the lesson 2 script instead.</p>
+<h2 id="lesson-3-prepare-the-data">Lesson 3. Prepare the data</h2>
+<h3 id="slide-21-lesson-3-of-7"><span class="slide">slide 21</span>Lesson 3 of 7</h3>
+<p>Goal: choose inputs and a target, split by time, scale with numbers from the training data only, and cut the series into examples.</p>
+<h3 id="slide-22-transform-and-scale-the-inputs"><span class="slide">slide 22</span>Transform and scale the inputs</h3>
+<p>Click the three buttons: raw flow, log of flow, standardised.</p>
+<p>Say: "Flow is about 20 000; ammonium is about 30. Inside a model, every input is multiplied by a weight and the results are added. The big number would drown out the small one. So we bring every input to the same scale, around zero with a spread of one.</p>
+<p>First the log. Flows and loads change by factors: a storm multiplies the flow by three. Taking the log turns multiplication into addition, so the storm no longer stretches the whole scale. Then we standardise: subtract the mean, divide by the standard deviation.</p>
+<p>Now the most important rule of the lesson. The mean and the standard deviation must come from the training data only. We then reuse exactly those two numbers for the validation data, the test data and the real plant. If you compute them from all the data, the test set has leaked into training."</p>
+<h3 id="slide-23-turn-one-long-series-into-many-examples"><span class="slide">slide 23</span>Turn one long series into many examples</h3>
+<p>The animation slides a window along the flow curve. The blue part is the input, the last 24 hours. The orange part is the target, the next 2 hours. Each position of the window is one example. Stack them and you get an array of shape (examples, 96 time steps, 3 channels).</p>
+<p>The input always ends exactly where the target begins. The model only ever sees the past, as it will on the real plant.</p>
+<h3 id="slide-24-split-by-time-not-at-random"><span class="slide">slide 24</span>Split by time, not at random</h3>
+<p>Click <em>random split</em>. Red outlines appear on test windows that overlap a training window.</p>
+<p>Say: "Two neighbouring windows share 95 of their 96 samples. Split them at random and almost every test window has a near-copy in the training set. The score looks wonderful and means nothing. So we split by time: learn on the past, check on later data, test on data nothing was tuned on."</p>
+<p>How the project does it: paper 2 learns on week 1 and tests on week 2. The warning model uses separate simulated plants for training, validation and test. Paper 1 got two held-out tests with their plans committed before running them.</p>
+<h3 id="slide-25-choose-split-scale-cut"><span class="slide">slide 25</span>Choose, split, scale, cut</h3>
+<p>The four steps in the lesson script, notebook 1 and the project's own dataset code. Press through them.</p>
+<h4 id="the-code-lesson3-prepare-py">The code: <code>lesson3_prepare.py</code></h4>
+<p>Run it with <code>python workshop/examples/lesson3_prepare.py</code>. It writes the file that lessons 4 and 5 read.</p>
+
+
+<pre><code><span class="c"># ── 1 CHOOSE: inputs a real plant measures at the inlet; target = the flow in the next 2 hours</span>
+CHANNELS = [<span class="s">&quot;Q&quot;</span>, <span class="s">&quot;S_NH&quot;</span>, <span class="s">&quot;S_S&quot;</span>]                             <span class="c"># as forecast/dataset.py: CHANNELS</span>
+LOOKBACK, HORIZON = <span class="n">96</span>, <span class="n">8</span>                                   <span class="c"># 24 h in, 2 h out (15-min samples)</span>
+</code></pre>
+<p class="src">workshop/examples/lesson3_prepare.py, lines 33–35</p>
+
+<ul>
+<li><code>CHANNELS</code> lists the inputs: flow, ammonium and readily biodegradable COD. These are things a real plant can measure at the inlet. We do not give the model anything a plant could not know.</li>
+<li><code>LOOKBACK = 96</code>: 96 samples of 15 minutes is 24 hours of history. One whole day, so the model can see the daily pattern.</li>
+<li><code>HORIZON = 8</code>: 8 samples is 2 hours ahead.</li>
+</ul>
+
+
+<pre><code><span class="c"># ── 2 SPLIT by the time of the TARGET: train = past and calm, val = storm 1, test = storm 2</span>
+SPLITS = {<span class="s">&quot;train&quot;</span>: [(<span class="s">&quot;dry&quot;</span>, <span class="n">1.0</span>, <span class="n">14.0</span>), (<span class="s">&quot;rain&quot;</span>, <span class="n">7.0</span>, <span class="n">14.0</span>)],
+          <span class="s">&quot;val&quot;</span>: [(<span class="s">&quot;storm&quot;</span>, <span class="n">7.0</span>, <span class="n">10.25</span>)],
+          <span class="s">&quot;test&quot;</span>: [(<span class="s">&quot;storm&quot;</span>, <span class="n">10.25</span>, <span class="n">14.0</span>)]}
+</code></pre>
+<p class="src">workshop/examples/lesson3_prepare.py, lines 38–41</p>
+
+<p>The split is by the time of the target, in days. Training uses the dry file from day 1 (day 0 only serves as history) and the rain file's second week. Validation is storm 1, test is storm 2. The model never sees a storm while it trains. That is on purpose: the test asks whether it can cope with something new.</p>
+
+
+<pre><code><span class="c"># ── 3 SCALE: log, then (x − mean) / std, with mean and std from the training rows only</span>
+train_rows = <span class="b">np</span>.<span class="f">concatenate</span>([df[w][(df[w].t &gt;= lo - <span class="n">1</span>) &amp; (df[w].t &lt; hi)][CHANNELS].values <span class="k">for</span> w, lo, hi <span class="k">in</span> SPLITS[<span class="s">&quot;train&quot;</span>]])
+MEAN, STD = <span class="b">np</span>.<span class="f">log</span>(train_rows).<span class="f">mean</span>(<span class="n">0</span>), <span class="b">np</span>.<span class="f">log</span>(train_rows).<span class="f">std</span>(<span class="n">0</span>)
+leaky = <span class="b">np</span>.<span class="f">log</span>(<span class="b">np</span>.<span class="f">concatenate</span>([df[w][CHANNELS].values <span class="k">for</span> w <span class="k">in</span> FILES])).<span class="f">mean</span>(<span class="n">0</span>)
+<span class="b">print</span>(<span class="s">&quot;3 SCALE   mean of log, training rows only:&quot;</span>, MEAN.<span class="f">round</span>(<span class="n">3</span>), <span class="s">&quot;  with the test leaking in:&quot;</span>, leaky.<span class="f">round</span>(<span class="n">3</span>))
+
+
+<span class="k">def</span> <span class="f">scale</span>(x):
+    <span class="k">return</span> (<span class="b">np</span>.<span class="f">log</span>(x) - MEAN) / STD
+</code></pre>
+<p class="src">workshop/examples/lesson3_prepare.py, lines 44–52</p>
+
+<ul>
+<li><code>train_rows</code> gathers every raw sample the training windows touch, including their 24 hours of history (<code>lo - 1</code>).</li>
+<li><code>MEAN, STD</code> are computed from the log of those rows only.</li>
+<li><code>leaky</code> is what the mean would be if the test data were included. We print it only to show the difference. The numbers move by about 0.02, which looks small, but it is information from the future that should not be there.</li>
+<li><code>scale(x)</code> applies the same transform anywhere: log, minus the training mean, divided by the training standard deviation.</li>
+</ul>
+
+
+<pre><code><span class="c"># ── 4 WINDOWS: past 96 steps → next 8 flows; the input always ends before the target starts</span>
+<span class="k">def</span> <span class="f">windows</span>(weather, t_lo, t_hi):
+    z, t = <span class="f">scale</span>(df[weather][CHANNELS].values).<span class="f">astype</span>(<span class="b">np</span>.float32), df[weather].t.values
+    X, Y, T = [], [], []
+    <span class="k">for</span> s <span class="k">in</span> <span class="b">range</span>(<span class="b">len</span>(z) - LOOKBACK - HORIZON + <span class="n">1</span>):
+        first = s + LOOKBACK                                <span class="c"># first target row</span>
+        <span class="k">if</span> t[first] &lt; t_lo - <span class="n">1e-9</span> <span class="k">or</span> t[first + HORIZON - <span class="n">1</span>] &gt;= t_hi - <span class="n">1e-9</span>:
+            <span class="k">continue</span>
+        X.<span class="f">append</span>(z[s:first]); Y.<span class="f">append</span>(z[first:first + HORIZON, <span class="n">0</span>]); T.<span class="f">append</span>(t[first])
+    <span class="k">return</span> <span class="b">np</span>.<span class="f">array</span>(X), <span class="b">np</span>.<span class="f">array</span>(Y), <span class="b">np</span>.<span class="f">array</span>(T)
+</code></pre>
+<p class="src">workshop/examples/lesson3_prepare.py, lines 55–64</p>
+
+<ul>
+<li>For each start position <code>s</code>, <code>first = s + LOOKBACK</code> is the row where the target begins.</li>
+<li>The <code>if</code> skips windows whose target lies outside this split, so no window crosses from training into test.</li>
+<li><code>z[s:first]</code> is the input: 96 rows, 3 channels. <code>z[first:first + HORIZON, 0]</code> is the target: the next 8 values of channel 0, the flow.</li>
+</ul>
+<pre class="text"><code>1 CHOOSE  inputs: [&#x27;Q&#x27;, &#x27;S_NH&#x27;, &#x27;S_S&#x27;]   one example: (96, 3) → (8,)
+2 SPLIT    {&#x27;train&#x27;: [(&#x27;dry&#x27;, 1.0, 14.0), (&#x27;rain&#x27;, 7.0, 14.0)], &#x27;val&#x27;: [(&#x27;storm&#x27;, 7.0, 10.25)], &#x27;test&#x27;: [(&#x27;storm&#x27;, 10.25, 14.0)]}
+3 SCALE   mean of log, training rows only: [9.846 3.312 4.071]   with the test leaking in: [9.834 3.329 4.089]
+4 WINDOWS train X (1906, 96, 3)  y (1906, 8)
+4 WINDOWS val   X (305, 96, 3)  y (305, 8)
+4 WINDOWS test  X (353, 96, 3)  y (353, 8)
+          a random split would put 98% of test windows right next to a training window (sharing 95 of 96 samples)
+          saved workshop/data/prepared.npz (windows + the scaler, together)
+</code></pre>
+<p class="src">Output of <code>python workshop/examples/lesson3_prepare.py</code>, from the run that built this guide</p>
+
+<p>Read the shapes out loud: 1906 training examples, each 96 steps by 3 channels, each with 8 numbers to predict. The script also measures the leak a random split would cause: 98 % of test windows would sit right next to a training window.</p>
+<h3 id="slide-26-prepare-cell-by-cell"><span class="slide">slide 26</span>Prepare, cell by cell</h3>
+<p>Notebook 1, part C, running cell by cell.</p>
+<h3 id="slide-27-check-yourself"><span class="slide">slide 27</span>Check yourself</h3>
+<ol>
+<li>Why not split at random? Neighbouring windows share 95 of 96 samples, so the test would contain near-copies of training examples.</li>
+<li>Where do the mean and standard deviation come from? The training data only.</li>
+<li>Read the shape (1906, 96, 3). 1906 examples, 96 time steps each, 3 measurements per step.</li>
+</ol>
+<h3 id="slide-28-your-turn-notebook-1-part-c-10-minutes"><span class="slide">slide 28</span>Your turn: notebook 1, part C (10 minutes)</h3>
+<p>Ask them to think about the question on the slide while it runs: training has no storm, the test is a storm. What will happen?</p>
+<h2 id="lesson-4-choose-the-model">Lesson 4. Choose the model</h2>
+<h3 id="slide-29-lesson-4-of-7"><span class="slide">slide 29</span>Lesson 4 of 7</h3>
+<p>Goal: let the shape of the input and output choose the kind of model, look inside a network layer by layer, and count its knobs.</p>
+<h3 id="slide-30-the-input-and-output-decide-the-model"><span class="slide">slide 30</span>The input and output decide the model</h3>
+<p>Say: "Start from the shapes, not from the fashionable model. If your input is a table, start with a linear model or gradient-boosted trees. If it is a sequence, use a model that knows about time order. If your output is a number, the last layer is linear and the loss is squared or absolute error. If it is a yes-or-no probability, use a sigmoid and cross-entropy."</p>
+<p>Then click through the project's six models on the right. Each card gives the shapes, the model, the loss and the reason. The last one is the published MAACC controller, which has only 10 to 14 knobs that learn. Remember that for lesson 7.</p>
+<h3 id="slide-31-what-happens-inside-a-neural-network-laye"><span class="slide">slide 31</span>What happens inside a neural network, layer by layer</h3>
+<p>Press <em>next step</em> by hand, slowly. This slide is where most people finally understand what a network is.</p>
+<p>Say: "Three inputs come in: flow, ammonium and COD. Each neuron in the first layer multiplies every input by its own weight, adds them, adds its bias, and gets one number z. Then it applies ReLU: if z is negative it becomes zero, otherwise it stays. The next layer does the same with these results. The last neuron gives the forecast. Blue lines are positive weights, red are negative, and thicker lines are bigger weights. Training only changes those numbers."</p>
+<p>A whole layer at once is h = ReLU(W·x + b), one matrix multiplication. That is why networks run fast on hardware built for matrices.</p>
+<h3 id="slide-32-counting-parameters"><span class="slide">slide 32</span>Counting parameters</h3>
+<p>Type layer sizes or click the presets. A dense layer from n inputs to m outputs has n × m weights and m biases.</p>
+<p>Our small network, 288 → 64 → 64 → 8, has (288·64 + 64) + (64·64 + 64) + (64·8 + 8) = 23 176 knobs for 1906 training examples. That is about 12 knobs per example, common for a network, but it means we must watch the validation curve. Click <em>too big</em> to show 1.3 million knobs: far more than examples, so it can memorise.</p>
+<h3 id="slide-33-a-causal-convolution"><span class="slide">slide 33</span>A causal convolution</h3>
+<p>A small filter of 3 weights slides along time. Each output looks at 3 inputs, and only from the past: padding is added on the left so nothing from the future gets in. With dilations 1, 2, 4, each layer looks twice as far back, so a few layers cover a whole day with very few weights. The project's forecaster sees 253 steps back, more than its 96-step input.</p>
+<h3 id="slide-34-a-recurrent-network-carries-a-memory"><span class="slide">slide 34</span>A recurrent network carries a memory</h3>
+<p>The same cell runs at every time step. It reads the new input and the memory from the previous step, and writes a new memory. The project's digital twin uses one. The memory stands in for things no sensor measures, such as how many bacteria are in the tanks.</p>
+<h3 id="slide-35-shapes-baselines-linear-mlp-cnn"><span class="slide">slide 35</span>Shapes, baselines, linear, MLP, CNN</h3>
+<p>The five steps of the lesson in four panels. Press through them.</p>
+<h4 id="the-code-lesson4-models-py">The code: <code>lesson4_models.py</code></h4>
+<p>Run it with <code>python workshop/examples/lesson4_models.py</code>. It reads the file lesson 3 wrote.</p>
+
+
+<pre><code>d = <span class="b">np</span>.<span class="f">load</span>(<span class="f">Path</span>(__file__).<span class="f">resolve</span>().parents[<span class="n">1</span>] / <span class="s">&quot;data&quot;</span> / <span class="s">&quot;prepared.npz&quot;</span>)
+X = {s: d[<span class="s">f&quot;X_{s}&quot;</span>] <span class="k">for</span> s <span class="k">in</span> (<span class="s">&quot;train&quot;</span>, <span class="s">&quot;val&quot;</span>)}
+Y = {s: d[<span class="s">f&quot;y_{s}&quot;</span>] <span class="k">for</span> s <span class="k">in</span> (<span class="s">&quot;train&quot;</span>, <span class="s">&quot;val&quot;</span>)}
+MEAN, STD = d[<span class="s">&quot;mean&quot;</span>], d[<span class="s">&quot;std&quot;</span>]
+flow = <span class="k">lambda</span> z: <span class="b">np</span>.<span class="f">exp</span>(<span class="b">np</span>.<span class="f">asarray</span>(z) * STD[<span class="n">0</span>] + MEAN[<span class="n">0</span>])                 <span class="c"># back to m³/d</span>
+mae = <span class="k">lambda</span> p: <span class="b">np</span>.<span class="b">abs</span>(<span class="f">flow</span>(p) - <span class="f">flow</span>(Y[<span class="s">&quot;val&quot;</span>])).<span class="f">mean</span>(<span class="n">0</span>)                 <span class="c"># error per horizon, m³/d</span>
+count = <span class="k">lambda</span> m: <span class="b">sum</span>(p.<span class="f">numel</span>() <span class="k">for</span> p <span class="k">in</span> m.<span class="f">parameters</span>())
+</code></pre>
+<p class="src">workshop/examples/lesson4_models.py, lines 20–26</p>
+
+<ul>
+<li><code>np.load</code> opens the prepared file. <code>X</code> and <code>Y</code> hold the training and validation arrays.</li>
+<li><code>flow(z)</code> undoes the scaling: multiply by the standard deviation, add the mean, then <code>exp</code> undoes the log. We always report errors in m³/d, the units an engineer understands.</li>
+<li><code>mae(p)</code> is the mean absolute error for each of the 8 horizons.</li>
+<li><code>count(m)</code> adds up the size of every parameter tensor: the number of knobs.</li>
+</ul>
+
+
+<pre><code><span class="c"># ── 2 BASELINES: no learning at all</span>
+<span class="k">for</span> name, pred <span class="k">in</span> ((<span class="s">&quot;persistence (= now)&quot;</span>, <span class="b">np</span>.<span class="f">repeat</span>(X[<span class="s">&quot;val&quot;</span>][:, -<span class="n">1</span>:, <span class="n">0</span>], <span class="n">8</span>, <span class="n">1</span>)),
+                   (<span class="s">&quot;same time yesterday&quot;</span>, X[<span class="s">&quot;val&quot;</span>][:, :<span class="n">8</span>, <span class="n">0</span>])):
+    e = <span class="f">mae</span>(pred)
+    <span class="b">print</span>(<span class="s">f&quot;2 BASELINE   {name:22s} error 15 min {e[0]:6.0f}   2 h {e[-1]:6.0f} m³/d   knobs: 0&quot;</span>)
+</code></pre>
+<p class="src">workshop/examples/lesson4_models.py, lines 31–35</p>
+
+<p>Two rules with no learning. <em>Persistence</em> says the next 2 hours equal the last value: <code>X["val"][:, -1:, 0]</code> is the last flow of each window, repeated 8 times. <em>Same time yesterday</em> uses the fact that the input is exactly one day long, so the value 24 hours before each target is <code>X["val"][:, :8, 0]</code>.</p>
+
+
+<pre><code><span class="c"># ── 3 LINEAR: flatten the window into 288 numbers; ŷ = W·x + b</span>
+lin = <span class="f">Ridge</span>(alpha=<span class="n">1.0</span>).<span class="f">fit</span>(X[<span class="s">&quot;train&quot;</span>].<span class="f">reshape</span>(<span class="b">len</span>(X[<span class="s">&quot;train&quot;</span>]), -<span class="n">1</span>), Y[<span class="s">&quot;train&quot;</span>])
+e = <span class="f">mae</span>(lin.<span class="f">predict</span>(X[<span class="s">&quot;val&quot;</span>].<span class="f">reshape</span>(<span class="b">len</span>(X[<span class="s">&quot;val&quot;</span>]), -<span class="n">1</span>)))
+<span class="b">print</span>(<span class="s">f&quot;3 LINEAR     knobs {lin.coef_.size + lin.intercept_.size}  (= 288 × 8 + 8)   error 15 min {e[0]:6.0f}   2 h {e[-1]:6.0f} m³/d&quot;</span>)
+</code></pre>
+<p class="src">workshop/examples/lesson4_models.py, lines 37–40</p>
+
+<p><code>reshape(len(...), -1)</code> flattens each 96 × 3 window into one row of 288 numbers, a table. <code>Ridge</code> is linear regression with a small penalty on large weights, which keeps it stable. It has 288 × 8 weights and 8 biases.</p>
+
+
+<pre><code><span class="c"># ── 4 MLP: the same, with two hidden layers and ReLU in between</span>
+<span class="b">torch</span>.<span class="f">manual_seed</span>(<span class="n">0</span>)
+mlp = <span class="b">nn</span>.<span class="f">Sequential</span>(<span class="b">nn</span>.<span class="f">Flatten</span>(), <span class="b">nn</span>.<span class="f">Linear</span>(<span class="n">288</span>, <span class="n">64</span>), <span class="b">nn</span>.<span class="f">ReLU</span>(), <span class="b">nn</span>.<span class="f">Linear</span>(<span class="n">64</span>, <span class="n">64</span>), <span class="b">nn</span>.<span class="f">ReLU</span>(), <span class="b">nn</span>.<span class="f">Linear</span>(<span class="n">64</span>, <span class="n">8</span>))
+<span class="b">print</span>(<span class="s">f&quot;4 MLP        knobs {count(mlp)}  = (288·64 + 64) + (64·64 + 64) + (64·8 + 8)&quot;</span>)
+h = <span class="b">torch</span>.<span class="f">from_numpy</span>(X[<span class="s">&quot;val&quot;</span>][:<span class="n">1</span>])
+<span class="b">print</span>(<span class="s">f&quot;             {&#x27;input&#x27;:26s} {tuple(h.shape)}&quot;</span>)
+<span class="k">for</span> layer <span class="k">in</span> mlp:
+    h = <span class="f">layer</span>(h)
+    extra = <span class="s">f&quot;   {(h == 0).float().mean():.0%} switched off by ReLU&quot;</span> <span class="k">if</span> <span class="b">isinstance</span>(layer, <span class="b">nn</span>.ReLU) <span class="k">else</span> <span class="s">&quot;&quot;</span>
+    <span class="b">print</span>(<span class="s">f&quot;             {str(layer)[:26]:26s} {tuple(h.shape)}{extra}&quot;</span>)
+</code></pre>
+<p class="src">workshop/examples/lesson4_models.py, lines 42–51</p>
+
+<ul>
+<li><code>nn.Sequential</code> stacks layers in order: flatten, a linear layer to 64, ReLU, another to 64, ReLU, and a final linear layer to 8 outputs.</li>
+<li>The loop passes one example through the layers one at a time and prints the shape after each. It also counts how many values ReLU set to zero. With random starting weights about half are switched off.</li>
+</ul>
+
+
+<pre><code><span class="c"># ── 5 CNN: a small filter slides along time; padding only on the left = causal</span>
+<span class="k">class</span> <span class="f">CausalBlock</span>(<span class="b">nn</span>.Module):
+    <span class="k">def</span> <span class="f">__init__</span>(<span class="b">self</span>, ch, dilation):
+        <span class="b">super</span>().<span class="f">__init__</span>()
+        <span class="b">self</span>.pad, <span class="b">self</span>.conv = <span class="n">2</span> * dilation, <span class="b">nn</span>.<span class="f">Conv1d</span>(ch, ch, <span class="n">3</span>, dilation=dilation)
+
+    <span class="k">def</span> <span class="f">forward</span>(<span class="b">self</span>, x):
+        <span class="k">return</span> x + <span class="b">F</span>.<span class="f">gelu</span>(<span class="b">self</span>.<span class="f">conv</span>(<span class="b">F</span>.<span class="f">pad</span>(x, (<span class="b">self</span>.pad, <span class="n">0</span>))))           <span class="c"># pad LEFT only: no future</span>
+
+
+cnn = <span class="b">nn</span>.<span class="f">Sequential</span>(<span class="b">nn</span>.<span class="f">Conv1d</span>(<span class="n">3</span>, <span class="n">24</span>, <span class="n">1</span>), *[<span class="f">CausalBlock</span>(<span class="n">24</span>, d) <span class="k">for</span> d <span class="k">in</span> (<span class="n">1</span>, <span class="n">2</span>, <span class="n">4</span>, <span class="n">8</span>, <span class="n">16</span>, <span class="n">32</span>)])
+head = <span class="b">nn</span>.<span class="f">Linear</span>(<span class="n">24</span>, <span class="n">8</span>)
+<span class="b">print</span>(<span class="s">f&quot;5 CNN        knobs {count(cnn) + count(head)}  (fewer than the MLP, for the same input)&quot;</span>)
+x = <span class="b">torch</span>.<span class="f">from_numpy</span>(X[<span class="s">&quot;val&quot;</span>][:<span class="n">1</span>]).<span class="f">transpose</span>(<span class="n">1</span>, <span class="n">2</span>)                      <span class="c"># (batch, channels, time)</span>
+out = <span class="f">cnn</span>(x)
+<span class="b">print</span>(<span class="s">f&quot;             (1, 3, 96) → convolutions → {tuple(out.shape)} → last step {tuple(out[:, :, -1].shape)} → head {tuple(head(out[:, :, -1]).shape)}&quot;</span>)
+x2 = x.<span class="f">clone</span>(); x2[:, :, <span class="n">50</span>] += <span class="n">5.0</span>                                     <span class="c"># change one moment in the middle</span>
+changed = (<span class="f">cnn</span>(x2) - out).<span class="b">abs</span>().<span class="b">sum</span>(<span class="n">1</span>)[<span class="n">0</span>] &gt; <span class="n">1e-6</span>
+<span class="b">print</span>(<span class="s">f&quot;             change time step 50 → outputs change from step {int(changed.nonzero()[0])} on, never before it (causal)&quot;</span>)
+</code></pre>
+<p class="src">workshop/examples/lesson4_models.py, lines 54–72</p>
+
+<ul>
+<li><code>CausalBlock</code>: <code>F.pad(x, (self.pad, 0))</code> adds <code>pad</code> zeros at the start of the time axis and none at the end. That is what makes it causal. <code>x + ...</code> adds the input back (a residual connection), which helps deep stacks train.</li>
+<li>The network is a 1 × 1 convolution from 3 to 24 channels, then six blocks with dilations 1 to 32.</li>
+<li>The test at the end changes one moment, time step 50, and checks which outputs change. Only outputs from step 50 onwards change. That proves no output looked into the future.</li>
+</ul>
+<pre class="text"><code>1 SHAPES     X (1906, 96, 3) → y (1906, 8)   (examples, time steps, channels) → (examples, 8 future flows)
+2 BASELINE   persistence (= now)    error 15 min   1515   2 h   5749 m³/d   knobs: 0
+2 BASELINE   same time yesterday    error 15 min   4148   2 h   4128 m³/d   knobs: 0
+3 LINEAR     knobs 2312  (= 288 × 8 + 8)   error 15 min   1078   2 h   2929 m³/d
+4 MLP        knobs 23176  = (288·64 + 64) + (64·64 + 64) + (64·8 + 8)
+             input                      (1, 96, 3)
+             Flatten(start_dim=1, end_d (1, 288)
+             Linear(in_features=288, ou (1, 64)
+             ReLU()                     (1, 64)   52% switched off by ReLU
+             Linear(in_features=64, out (1, 64)
+             ReLU()                     (1, 64)   52% switched off by ReLU
+             Linear(in_features=64, out (1, 8)
+5 CNN        knobs 10808  (fewer than the MLP, for the same input)
+             (1, 3, 96) → convolutions → (1, 24, 96) → last step (1, 24) → head (1, 8)
+             change time step 50 → outputs change from step 50 on, never before it (causal)
+</code></pre>
+<p class="src">Output of <code>python workshop/examples/lesson4_models.py</code>, from the run that built this guide</p>
+
+<p>The numbers to point at: persistence is good at 15 minutes and poor at 2 hours. Yesterday is the same at every horizon. The linear model beats both at every horizon. The CNN has fewer knobs than the MLP (10 808 against 23 176) for the same input, because one small filter is reused at every time step.</p>
+<h3 id="slide-36-shapes-baselines-and-models-cell-by-cell"><span class="slide">slide 36</span>Shapes, baselines and models, cell by cell</h3>
+<p>Notebook 2, sections 1 to 6, running. The layer-by-layer cell is worth showing even if you ran the script.</p>
+<h3 id="slide-37-check-yourself"><span class="slide">slide 37</span>Check yourself</h3>
+<ol>
+<li>How many knobs has a layer from 64 to 8 units? 64 × 8 + 8 = 520.</li>
+<li>What does ReLU do? Keeps positive numbers, sets negative ones to zero. That bend lets a network learn curved patterns.</li>
+<li>Why is the convolution causal? Padding goes on the left only, so each output sees only the present and the past.</li>
+</ol>
+<h2 id="lesson-5-train-and-evaluate">Lesson 5. Train and evaluate</h2>
+<h3 id="slide-38-lesson-5-of-7"><span class="slide">slide 38</span>Lesson 5 of 7</h3>
+<p>Goal: train with a validation set, recognise overfitting, beat the baselines, test once, and save the model with its scaler.</p>
+<h3 id="slide-39-the-loss-says-what-wrong-means"><span class="slide">slide 39</span>The loss says what "wrong" means</h3>
+<p>Toggle the curves. Squared error (MSE) punishes big mistakes hard and aims at the mean. Absolute error (MAE) is calmer about outliers and aims at the median. The pinball loss is lopsided: at τ = 0.9, guessing too low costs 9 times more than guessing too high, so the best answer is the value exceeded only 10 % of the time. Train three of these and you get a band, which is what the project's forecaster outputs. Cross-entropy is the loss for classes and yes-or-no questions.</p>
+<h3 id="slide-40-gradient-descent-walk-downhill-on-the-los"><span class="slide">slide 40</span>Gradient descent: walk downhill on the loss</h3>
+<p>Try the three learning rates. At 0.02 the ball barely moves. At 0.15 it walks to the bottom. At 0.5 it bounces from side to side and flies off. This is the explosion from lesson 1, drawn. In practice the project uses AdamW, which adapts the step size for each knob, plus a learning-rate schedule and gradient clipping.</p>
+<h3 id="slide-41-the-training-loop"><span class="slide">slide 41</span>The training loop</h3>
+<p>The circle animates the five stages: a batch, forward, loss, backward, update. Below it the two loss curves are drawn epoch by epoch. Training loss keeps falling. Validation loss falls, then starts to rise. That turning point is where the model starts to memorise, and that epoch is the one we keep.</p>
+<h3 id="slide-42-train-validate-test-once-save"><span class="slide">slide 42</span>Train, validate, test once, save</h3>
+<p>The four steps in the lesson script, notebook 2, the project's early-warning training code and the project's forecaster loader.</p>
+<h4 id="the-code-lesson5-train-and-evaluate-py">The code: <code>lesson5_train_and_evaluate.py</code></h4>
+<p>Run it with <code>python workshop/examples/lesson5_train_and_evaluate.py</code>. It takes about 5 seconds.</p>
+
+
+<pre><code><span class="k">def</span> <span class="f">mlp</span>(hidden):
+    <span class="b">torch</span>.<span class="f">manual_seed</span>(<span class="n">0</span>)                                        <span class="c"># same starting knobs every run: same numbers for everyone</span>
+    layers, n = [<span class="b">nn</span>.<span class="f">Flatten</span>()], <span class="n">288</span>
+    <span class="k">for</span> h <span class="k">in</span> hidden:
+        layers += [<span class="b">nn</span>.<span class="f">Linear</span>(n, h), <span class="b">nn</span>.<span class="f">ReLU</span>()]; n = h
+    <span class="k">return</span> <span class="b">nn</span>.<span class="f">Sequential</span>(*layers, <span class="b">nn</span>.<span class="f">Linear</span>(n, <span class="n">8</span>))
+</code></pre>
+<p class="src">workshop/examples/lesson5_train_and_evaluate.py, lines 30–35</p>
+
+<p><code>torch.manual_seed(0)</code> fixes the random starting weights. Without it every run starts from different knobs and ends with slightly different numbers, and scholars ask why theirs do not match the slide. With it, everyone gets the same result.</p>
+
+
+<pre><code><span class="k">def</span> <span class="f">fit</span>(model, epochs, n_train=<span class="k">None</span>, wd=<span class="n">1e-4</span>, lr=<span class="n">3e-3</span>):
+    <span class="b">torch</span>.<span class="f">manual_seed</span>(<span class="n">0</span>)
+    xt, yt = X[<span class="s">&quot;train&quot;</span>][:n_train], Y[<span class="s">&quot;train&quot;</span>][:n_train]
+    loader = <span class="f">DataLoader</span>(<span class="f">TensorDataset</span>(xt, yt), batch_size=<span class="n">128</span>, shuffle=<span class="k">True</span>)
+    opt = <span class="b">torch</span>.optim.<span class="f">AdamW</span>(model.<span class="f">parameters</span>(), lr=lr, weight_decay=wd)
+    best, best_state, curve = <span class="b">np</span>.inf, <span class="k">None</span>, []
+    <span class="k">for</span> epoch <span class="k">in</span> <span class="b">range</span>(epochs):
+        model.<span class="f">train</span>()
+        <span class="k">for</span> xb, yb <span class="k">in</span> loader:                                   <span class="c"># ── 1 TRAIN: the four steps, batch by batch</span>
+            loss = <span class="b">F</span>.<span class="f">mse_loss</span>(<span class="f">model</span>(xb), yb)
+            opt.<span class="f">zero_grad</span>(); loss.<span class="f">backward</span>(); opt.<span class="f">step</span>()
+        model.<span class="f">eval</span>()
+        <span class="k">with</span> <span class="b">torch</span>.<span class="f">no_grad</span>():                                   <span class="c"># ── 2 VALIDATE: no learning here</span>
+            tr = <span class="b">F</span>.<span class="f">mse_loss</span>(<span class="f">model</span>(xt), yt).<span class="f">item</span>()
+            va = <span class="b">F</span>.<span class="f">mse_loss</span>(<span class="f">model</span>(X[<span class="s">&quot;val&quot;</span>]), Y[<span class="s">&quot;val&quot;</span>]).<span class="f">item</span>()
+        curve.<span class="f">append</span>((tr, va))
+        <span class="k">if</span> va &lt; best:                                           <span class="c">#    keep the best epoch</span>
+            best, best_state, best_epoch = va, copy.<span class="f">deepcopy</span>(model.<span class="f">state_dict</span>()), epoch
+    model.<span class="f">load_state_dict</span>(best_state)
+    <span class="k">return</span> <span class="b">np</span>.<span class="f">array</span>(curve), best_epoch
+</code></pre>
+<p class="src">workshop/examples/lesson5_train_and_evaluate.py, lines 38–57</p>
+
+<ul>
+<li><code>DataLoader(..., batch_size=128, shuffle=True)</code> serves the training examples in shuffled batches of 128. One pass through all of them is an epoch.</li>
+<li><code>AdamW</code> is the optimiser. <code>weight_decay</code> gently pulls every weight towards zero, a mild brake on memorising.</li>
+<li>Inside the batch loop are lesson 1's four steps in two lines: guess and loss in one, then <code>zero_grad</code>, <code>backward</code>, <code>step</code>.</li>
+<li><code>model.eval()</code> and <code>torch.no_grad()</code> switch learning off while we measure. We measure both the training and the validation loss after every epoch.</li>
+<li><code>if va &lt; best:</code> keeps a copy of the weights from the epoch with the lowest validation loss. <code>copy.deepcopy</code> matters: without it we would keep a reference to weights that go on changing.</li>
+<li>At the end <code>load_state_dict(best_state)</code> puts the best epoch back.</li>
+</ul>
+
+
+<pre><code>big = <span class="f">mlp</span>((<span class="n">512</span>, <span class="n">512</span>))
+curve_big, be_big = <span class="f">fit</span>(big, <span class="n">80</span>, n_train=<span class="n">200</span>, wd=<span class="n">0.0</span>, lr=<span class="n">1e-3</span>)
+<span class="b">print</span>(<span class="s">f&quot;    OVERFITTING     415k knobs on 200 examples: train loss {curve_big[0, 0]:.3f} → {curve_big[-1, 0]:.4f}, &quot;</span>
+      <span class="s">f&quot;validation {curve_big[be_big, 1]:.3f} at epoch {be_big} → {curve_big[-1, 1]:.3f} at the end  (it memorised)&quot;</span>)
+</code></pre>
+<p class="src">workshop/examples/lesson5_train_and_evaluate.py, lines 64–67</p>
+
+<p>The overfitting experiment: a network with 415 000 knobs trained on only 200 examples, with no weight decay.</p>
+
+
+<pre><code><span class="c"># ── 3 TEST: once. Persistence, linear, MLP on storm 2</span>
+lin = <span class="f">Ridge</span>(alpha=<span class="n">1.0</span>).<span class="f">fit</span>(X[<span class="s">&quot;train&quot;</span>].<span class="f">reshape</span>(<span class="b">len</span>(X[<span class="s">&quot;train&quot;</span>]), -<span class="n">1</span>).<span class="f">numpy</span>(), Y[<span class="s">&quot;train&quot;</span>].<span class="f">numpy</span>())
+<span class="k">with</span> <span class="b">torch</span>.<span class="f">no_grad</span>():
+    tests = {<span class="s">&quot;persistence&quot;</span>: X[<span class="s">&quot;test&quot;</span>][:, -<span class="n">1</span>:, <span class="n">0</span>].<span class="f">repeat</span>(<span class="n">1</span>, <span class="n">8</span>).<span class="f">numpy</span>(),
+             <span class="s">&quot;linear&quot;</span>: lin.<span class="f">predict</span>(X[<span class="s">&quot;test&quot;</span>].<span class="f">reshape</span>(<span class="b">len</span>(X[<span class="s">&quot;test&quot;</span>]), -<span class="n">1</span>).<span class="f">numpy</span>()),
+             <span class="s">&quot;MLP&quot;</span>: <span class="f">net</span>(X[<span class="s">&quot;test&quot;</span>]).<span class="f">numpy</span>()}
+<span class="b">print</span>(<span class="s">&quot;3 TEST (once)       error 2 h ahead on storm 2: &quot;</span> + <span class="s">&quot;   &quot;</span>.<span class="f">join</span>(<span class="s">f&quot;{k} {mae2h(v, &#x27;test&#x27;):.0f}&quot;</span> <span class="k">for</span> k, v <span class="k">in</span> tests.<span class="f">items</span>()) + <span class="s">&quot;  m³/d&quot;</span>)
+</code></pre>
+<p class="src">workshop/examples/lesson5_train_and_evaluate.py, lines 69–75</p>
+
+<p>The test set, used once, at the end, for all three models. Nothing about the models is changed after this line.</p>
+
+
+<pre><code><span class="c"># ── 4 SAVE everything the model needs; then use it like the plant would</span>
+<span class="b">torch</span>.<span class="f">save</span>({<span class="s">&quot;state_dict&quot;</span>: net.<span class="f">state_dict</span>(), <span class="s">&quot;mean&quot;</span>: MEAN, <span class="s">&quot;std&quot;</span>: STD, <span class="s">&quot;hidden&quot;</span>: (<span class="n">64</span>, <span class="n">64</span>),
+            <span class="s">&quot;channels&quot;</span>: [<span class="s">&quot;Q&quot;</span>, <span class="s">&quot;S_NH&quot;</span>, <span class="s">&quot;S_S&quot;</span>]}, DATA / <span class="s">&quot;lesson5_mlp.pt&quot;</span>)
+blob = <span class="b">torch</span>.<span class="f">load</span>(DATA / <span class="s">&quot;lesson5_mlp.pt&quot;</span>, weights_only=<span class="k">False</span>)
+model = <span class="f">mlp</span>(blob[<span class="s">&quot;hidden&quot;</span>]); model.<span class="f">load_state_dict</span>(blob[<span class="s">&quot;state_dict&quot;</span>]); model.<span class="f">eval</span>()
+<span class="k">for</span> i, when <span class="k">in</span> ((<span class="b">len</span>(d[<span class="s">&quot;X_test&quot;</span>]) - <span class="n">1</span>, <span class="s">&quot;calm, end of test&quot;</span>), (<span class="n">100</span>, <span class="s">&quot;during storm 2&quot;</span>)):
+    raw = <span class="b">np</span>.<span class="f">exp</span>(d[<span class="s">&quot;X_test&quot;</span>][i] * STD + MEAN)                           <span class="c"># 24 h of raw sensor values</span>
+    z = (<span class="b">np</span>.<span class="f">log</span>(raw) - blob[<span class="s">&quot;mean&quot;</span>]) / blob[<span class="s">&quot;std&quot;</span>]                      <span class="c"># the SAVED scaler, not a new one</span>
+    <span class="k">with</span> <span class="b">torch</span>.<span class="f">no_grad</span>():
+        out = <span class="f">flow</span>(<span class="f">model</span>(<span class="b">torch</span>.<span class="f">from_numpy</span>(z[<span class="k">None</span>].<span class="f">astype</span>(<span class="b">np</span>.float32)))[<span class="n">0</span>].<span class="f">numpy</span>())
+    <span class="b">print</span>(<span class="s">f&quot;4 SAVE + RELOAD     {when:18s} forecast in 2 h: {out[-1]:6.0f} m³/d   what happened: {flow(d[&#x27;y_test&#x27;][i])[-1]:6.0f} m³/d&quot;</span>)
+<span class="b">print</span>(<span class="s">&quot;                    (no storm in the training data: the storm is where every model struggles)&quot;</span>)
+</code></pre>
+<p class="src">workshop/examples/lesson5_train_and_evaluate.py, lines 77–88</p>
+
+<ul>
+<li><code>torch.save</code> writes the weights together with the mean and standard deviation and the layer sizes. A model saved without its scaler cannot be used on new raw measurements.</li>
+<li>The reload builds the same network from the saved sizes and loads the weights.</li>
+<li><code>z = (np.log(raw) - blob["mean"]) / blob["std"]</code> scales raw readings with the saved numbers, never with numbers computed from new data.</li>
+</ul>
+<pre class="text"><code>1-2 TRAIN+VALIDATE  MLP: best epoch 38; train loss 0.021, validation loss 0.308
+    OVERFITTING     415k knobs on 200 examples: train loss 0.349 → 0.0075, validation 0.251 at epoch 9 → 0.381 at the end  (it memorised)
+3 TEST (once)       error 2 h ahead on storm 2: persistence 4392   linear 2702   MLP 2747  m³/d
+4 SAVE + RELOAD     calm, end of test  forecast in 2 h:  18556 m³/d   what happened:  18409 m³/d
+4 SAVE + RELOAD     during storm 2     forecast in 2 h:  42122 m³/d   what happened:  28843 m³/d
+                    (no storm in the training data: the storm is where every model struggles)
+</code></pre>
+<p class="src">Output of <code>python workshop/examples/lesson5_train_and_evaluate.py</code>, from the run that built this guide</p>
+
+<p>What to say about these numbers:</p>
+<ul>
+<li>The small MLP's best epoch is late, and its validation loss stays well above its training loss. The validation data is a storm the model never saw.</li>
+<li>The big network shows overfitting clearly. Training loss falls from about 0.35 to under 0.01. Validation loss is best early and is worse at the end. It learned the 200 examples by heart.</li>
+<li>On the test storm, the linear model and the MLP are close, both far better than persistence. With about 1900 examples, a model with 2312 knobs is as good as one with 23 176.</li>
+<li>The reloaded model forecasts the calm period almost exactly and overshoots the storm. No storm was in the training data. More varied data would help more than a bigger model.</li>
+</ul>
+<h3 id="slide-43-training-overfitting-and-the-test-cell-by"><span class="slide">slide 43</span>Training, overfitting and the test, cell by cell</h3>
+<p>Notebook 2, sections 5 to 9, running. The overfitting cell draws both curves side by side.</p>
+<h3 id="slide-44-a-model-is-only-good-compared-with-someth"><span class="slide">slide 44</span>A model is only good compared with something simple</h3>
+<p>The left side lists the baselines. The bar chart on the right shows the project's own lesson. Read the bars from the README: a published learning controller, rebuilt exactly, did nothing beyond its PID, and our own learned controller was matched by a carefully tuned PID with the daily ILC. That is a result, not a failure, and it belongs in the report.</p>
+<h3 id="slide-45-check-yourself"><span class="slide">slide 45</span>Check yourself</h3>
+<ol>
+<li>Training loss falls and validation loss rises. Overfitting: the model memorises. Keep the best epoch, regularise, use a smaller model or more data.</li>
+<li>Why use the test set only once? Any choice made after looking at it turns it into training data.</li>
+<li>What must be saved with the weights? The scaler and the settings.</li>
+</ol>
+<h3 id="slide-46-your-turn-notebook-2-20-minutes"><span class="slide">slide 46</span>Your turn: notebook 2 (20 minutes)</h3>
+<p>The longest hands-on session. Ask everyone to fill in the table on the slide: parameters and test error at 2 hours for each model. When most have finished, ask who had the best model, and point out that the linear model is usually at or near the top.</p>
+<h2 id="lesson-6-reinforcement-learning">Lesson 6. Reinforcement learning</h2>
+<h3 id="slide-47-lesson-6-of-7"><span class="slide">slide 47</span>Lesson 6 of 7</h3>
+<p>Goal: learn from a reward instead of right answers, then see the project's agents.</p>
+<h3 id="slide-48-when-there-is-no-correct-answer-to-copy"><span class="slide">slide 48</span>When there is no correct answer to copy</h3>
+<p>The loop animates: the agent sees the state, picks an action, the tank responds, a reward comes back.</p>
+<p>Say: "For control there is no right answer to copy. Nobody can tell us the perfect amount of air for every minute. So the agent tries actions, the plant responds, and a reward scores what happened. The reward is where you write down what you want. Paper 2's reward is on the slide: pay for the air you use, and pay for ammonium above the limit of 4. That agent saved 9 % energy, and it broke the ammonium limit far more often than the PID. It did exactly what the reward allowed."</p>
+<h3 id="slide-49-the-parts-of-an-actor-critic-agent"><span class="slide">slide 49</span>The parts of an actor-critic agent</h3>
+<p>The table lists the parts: the environment, an actor network that picks actions, a critic network that estimates the future reward of an action, a replay buffer of past experience, slow target copies of the networks, and exploration noise. The code on the right is one DDPG update. Point at the critic's loss: it is a squared error against a target, the same kind of regression as lesson 5.</p>
+<h3 id="slide-50-environment-reward-act-learn"><span class="slide">slide 50</span>Environment, reward, act, learn</h3>
+<p>The four steps in the lesson script, notebook 3, the project's environment and reward, and the project's RL training loop.</p>
+<h4 id="the-physics-of-the-toy-tank">The physics of the toy tank</h4>
+<p>Lesson 6 uses one aerated tank, small enough to train in seconds. Its oxygen follows a mass balance:</p>
+<p>change of oxygen per day = KLa × (8 − S) − OUR</p>
+<ul>
+<li>KLa × (8 − S) is oxygen dissolving from the air. 8 g/m³ is the saturation level at 15 °C, the most the water can hold. The further the oxygen S is below saturation, the faster it dissolves.</li>
+<li>OUR is the oxygen uptake rate, what the bacteria consume. It follows the incoming load, which we take from the real dry-weather file: flow × (ammonium + a fifth of the COD), scaled so its average is 700 g/m³ per day.</li>
+</ul>
+<p>If nothing changed, S would settle where the two terms balance: S_eq = 8 − OUR / KLa. With the average load, KLa = 117 per day holds 2 mg/L, because 8 − 700/117 = 2.0. The tank approaches S_eq with a time constant of 1/KLa. At KLa = 120 per day that is 1/120 of a day, 12 minutes. Each step of the toy is 5 minutes, so the tank answers quickly.</p>
+<h4 id="the-code-lesson6-rl-py">The code: <code>lesson6_rl.py</code></h4>
+<p>Run it with <code>python workshop/examples/lesson6_rl.py</code>. It takes about 15 seconds.</p>
+
+
+<pre><code>d = <span class="b">pd</span>.<span class="f">read_excel</span>(DATA / <span class="s">&quot;Inf_dry_2006.xlsx&quot;</span>).<span class="f">astype</span>(<span class="b">float</span>).values[:-<span class="n">1</span>]
+load = d[:, <span class="n">14</span>] * (d[:, <span class="n">10</span>] + <span class="n">0.2</span> * d[:, <span class="n">2</span>])                            <span class="c"># flow × (ammonium + some COD)</span>
+LOAD = <span class="b">np</span>.<span class="f">repeat</span>(load / load.<span class="f">mean</span>(), <span class="n">3</span>)                                  <span class="c"># 15 min → 5 min steps</span>
+</code></pre>
+<p class="src">workshop/examples/lesson6_rl.py, lines 22–24</p>
+
+<p><code>d[:, 14]</code> is the flow, <code>d[:, 10]</code> ammonium and <code>d[:, 2]</code> the readily biodegradable COD. Dividing by the mean makes the load a factor around 1. <code>np.repeat(..., 3)</code> turns 15-minute samples into 5-minute steps by holding each value three times.</p>
+
+
+<pre><code><span class="k">class</span> OxygenTank:
+    ACTIONS = <span class="b">np</span>.<span class="f">array</span>([-<span class="n">20.0</span>, -<span class="n">5.0</span>, <span class="n">0.0</span>, <span class="n">5.0</span>, <span class="n">20.0</span>])                    <span class="c"># change of the air (KLa)</span>
+
+    <span class="k">def</span> <span class="f">__init__</span>(<span class="b">self</span>, day, energy_weight=<span class="n">0.1</span>, seed=<span class="n">0</span>):
+        <span class="b">self</span>.day, <span class="b">self</span>.w, <span class="b">self</span>.rng = day, energy_weight, <span class="b">np</span>.random.<span class="f">default_rng</span>(seed)
+
+    <span class="k">def</span> <span class="f">reset</span>(<span class="b">self</span>):
+        <span class="b">self</span>.k0, <span class="b">self</span>.k, <span class="b">self</span>.kla, <span class="b">self</span>.S, <span class="b">self</span>.e1 = <span class="b">int</span>(<span class="b">self</span>.day * <span class="n">288</span>), <span class="n">0</span>, <span class="n">120.0</span>, <span class="n">2.0</span>, <span class="n">0.0</span>
+        <span class="k">return</span> <span class="b">self</span>.<span class="f">state</span>()
+
+    <span class="k">def</span> <span class="f">state</span>(<span class="b">self</span>):
+        <span class="k">return</span> <span class="b">np</span>.<span class="f">array</span>([<span class="b">self</span>.S - <span class="n">2.0</span>, <span class="b">self</span>.e1, <span class="b">self</span>.kla / <span class="n">240.0</span>, LOAD[<span class="b">self</span>.k0 + <span class="b">min</span>(<span class="b">self</span>.k, <span class="n">287</span>)]])
+
+    <span class="k">def</span> <span class="f">step</span>(<span class="b">self</span>, dkla):
+        <span class="b">self</span>.e1 = <span class="b">self</span>.S - <span class="n">2.0</span>
+        <span class="b">self</span>.kla = <span class="b">float</span>(<span class="b">np</span>.<span class="f">clip</span>(<span class="b">self</span>.kla + dkla, <span class="n">0.0</span>, <span class="n">240.0</span>))
+        our = <span class="n">700.0</span> * LOAD[<span class="b">self</span>.k0 + <span class="b">self</span>.k] * (<span class="n">1</span> + <span class="n">0.05</span> * <span class="b">self</span>.rng.<span class="f">normal</span>())
+        s_eq = <span class="n">8.0</span> - our / <span class="b">max</span>(<span class="b">self</span>.kla, <span class="n">1e-6</span>)
+        <span class="b">self</span>.S = <span class="b">max</span>(<span class="n">0.0</span>, s_eq + (<span class="b">self</span>.S - s_eq) * <span class="b">np</span>.<span class="f">exp</span>(-<span class="b">self</span>.kla * <span class="n">5</span> / <span class="n">1440</span>))
+        <span class="b">self</span>.k += <span class="n">1</span>
+        <span class="c"># ── 2 REWARD: be at 2 mg/L, don&#x27;t waste air</span>
+        reward = -<span class="b">abs</span>(<span class="b">self</span>.S - <span class="n">2.0</span>) - <span class="b">self</span>.w * <span class="b">self</span>.kla / <span class="n">240.0</span>
+        <span class="k">return</span> <span class="b">self</span>.<span class="f">state</span>(), reward, <span class="b">self</span>.k &gt;= <span class="n">288</span>
+</code></pre>
+<p class="src">workshop/examples/lesson6_rl.py, lines 28–50</p>
+
+<ul>
+<li><code>ACTIONS</code> are the five moves allowed: lower the air by 20 or 5, hold, raise by 5 or 20.</li>
+<li><code>reset()</code> starts a day: step 0, air at 120, oxygen at 2 mg/L.</li>
+<li><code>state()</code> is what the agent sees: the oxygen error (S − 2), the previous error, the air setting as a fraction of 240, and the current load.</li>
+<li><code>step()</code> applies the move, clipped to 0 to 240. <code>our</code> is the bacteria's demand with 5 % random noise. Then the oxygen is moved towards S_eq with the exact solution of the mass balance over 5 minutes: <code>S_eq + (S − S_eq) · e^(−KLa · Δt)</code>, where Δt = 5/1440 of a day. Using the exact solution keeps the simulation stable at any step size.</li>
+<li>The reward is minus the oxygen error, minus the cost of air. One day is 288 steps of 5 minutes.</li>
+</ul>
+
+
+<pre><code>pid = <span class="k">lambda</span> s: <span class="b">float</span>(<span class="b">np</span>.<span class="f">clip</span>(<span class="n">80</span> * (-s[<span class="n">0</span>] + s[<span class="n">1</span>]) + <span class="n">25</span> * -s[<span class="n">0</span>], -<span class="n">20</span>, <span class="n">20</span>))   <span class="c"># the expert: a PID, no learning</span>
+<span class="b">print</span>(<span class="s">f&quot;1 ENVIRONMENT  PID on an unseen day: error {run(OxygenTank(10), pid)[1]:.3f} mg/L&quot;</span>)
+</code></pre>
+<p class="src">workshop/examples/lesson6_rl.py, lines 60–61</p>
+
+<p>The expert, an incremental PID. The error is e = 2 − S, which is <code>-s[0]</code>, and the previous error is <code>-s[1]</code>. The change of air is 80 × (e − e_previous) + 25 × e. The first term reacts to how fast the error changes, the second pushes steadily until the error is gone. No data, no training.</p>
+
+
+<pre><code>E, K, L = <span class="b">np</span>.<span class="f">array</span>([-.<span class="n">5</span>, -.<span class="n">25</span>, -.<span class="n">1</span>, .<span class="n">1</span>, .<span class="n">25</span>, .<span class="n">5</span>]), <span class="b">np</span>.<span class="f">linspace</span>(<span class="n">0</span>, <span class="n">1</span>, <span class="n">17</span>)[<span class="n">1</span>:-<span class="n">1</span>], <span class="b">np</span>.<span class="f">array</span>([.<span class="n">6</span>, .<span class="n">8</span>, <span class="n">1</span>., <span class="n">1.2</span>, <span class="n">1.4</span>])
+cell = <span class="k">lambda</span> s: (<span class="b">np</span>.<span class="f">digitize</span>(s[<span class="n">0</span>], E), <span class="b">np</span>.<span class="f">digitize</span>(s[<span class="n">2</span>], K), <span class="b">np</span>.<span class="f">digitize</span>(s[<span class="n">3</span>], L))
+greedy = <span class="k">lambda</span> Q: (<span class="k">lambda</span> s: OxygenTank.ACTIONS[<span class="b">int</span>(<span class="b">np</span>.<span class="f">argmax</span>(Q[<span class="f">cell</span>(s)]))])
+</code></pre>
+<p class="src">workshop/examples/lesson6_rl.py, lines 64–66</p>
+
+<p>Q-learning keeps a table. To use a table the state must be a cell, so <code>cell(s)</code> sorts the error into 7 bins, the air setting into 16 and the load into 6. <code>greedy(Q)</code> is the policy that picks the action with the highest value in the current cell.</p>
+
+
+<pre><code><span class="k">def</span> <span class="f">q_learning</span>(energy_weight=<span class="n">0.1</span>, episodes=<span class="n">1500</span>, seed=<span class="n">0</span>):
+    rng = <span class="b">np</span>.random.<span class="f">default_rng</span>(seed)
+    Q = <span class="b">np</span>.<span class="f">zeros</span>((<span class="n">7</span>, <span class="n">16</span>, <span class="n">6</span>, <span class="n">5</span>))
+    best = (-<span class="b">np</span>.inf, <span class="k">None</span>)
+    <span class="k">for</span> ep <span class="k">in</span> <span class="b">range</span>(episodes):
+        eps = <span class="b">max</span>(<span class="n">0.05</span>, <span class="n">1</span> - ep / (<span class="n">0.6</span> * episodes))                      <span class="c"># explore a lot at first, then less</span>
+        env = <span class="f">OxygenTank</span>(<span class="b">int</span>(rng.<span class="f">integers</span>(<span class="n">0</span>, <span class="n">7</span>)), energy_weight, seed=ep)
+        s, done = env.<span class="f">reset</span>(), <span class="k">False</span>
+        <span class="k">while</span> <span class="k">not</span> done:
+            c = <span class="f">cell</span>(s)
+            a = <span class="b">int</span>(rng.<span class="f">integers</span>(<span class="n">5</span>)) <span class="k">if</span> rng.<span class="f">random</span>() &lt; eps <span class="k">else</span> <span class="b">int</span>(<span class="b">np</span>.<span class="f">argmax</span>(Q[c]))   <span class="c"># ── 3 ACT</span>
+            s, r, done = env.<span class="f">step</span>(OxygenTank.ACTIONS[a])
+            target = r + (<span class="n">0.0</span> <span class="k">if</span> done <span class="k">else</span> <span class="n">0.9</span> * Q[<span class="f">cell</span>(s)].<span class="b">max</span>())
+            Q[c + (a,)] += <span class="n">0.2</span> * (target - Q[c + (a,)])                  <span class="c"># ── 4 LEARN (Bellman update)</span>
+        <span class="k">if</span> ep % <span class="n">100</span> == <span class="n">99</span>:
+            v = <span class="f">run</span>(<span class="f">OxygenTank</span>(<span class="n">6</span>, energy_weight), <span class="f">greedy</span>(Q))[<span class="n">0</span>]
+            <span class="k">if</span> v &gt; best[<span class="n">0</span>]:
+                best = (v, Q.<span class="f">copy</span>())
+    <span class="k">return</span> best[<span class="n">1</span>]
+</code></pre>
+<p class="src">workshop/examples/lesson6_rl.py, lines 69–87</p>
+
+<ul>
+<li><code>Q = np.zeros((7, 16, 6, 5))</code>: one value for every cell and every action, all starting at zero.</li>
+<li><code>eps</code> is the exploration rate. It starts at 1 (every move random) and falls to 0.05 over the first 60 % of training.</li>
+<li>Each episode is one random day from week 1.</li>
+<li><strong>Act.</strong> With probability <code>eps</code> the agent tries a random move, otherwise the best one it knows.</li>
+<li><strong>Learn.</strong> <code>target = r + 0.9 × best value of the next cell</code> is the Bellman target: the reward now plus the discounted value of where we landed. The table entry moves 20 % of the way towards it.</li>
+<li>Every 100 episodes the greedy policy is tested on day 6 and the best table is kept, the same idea as keeping the best epoch.</li>
+</ul>
+<p>{{code:workshop/examples/lesson6_rl.py|ff = {"last": None}|print(f"    BASELINE}}</p>
+<p>The fair baseline. The agent sees the load, so we give the PID the same information the engineer's way. From the mass balance, holding 2 mg/L needs KLa = OUR / (8 − 2) = 700 × load / 6. The feedforward adds the change of that value to the PID's move.</p>
+<pre class="text"><code>1 ENVIRONMENT  PID on an unseen day: error 0.304 mg/L
+3-4 Q-LEARNING trained on days 0-6; on unseen day 10: error 0.235 mg/L
+    BASELINE   PID + physics feedforward, no training: error 0.230 mg/L
+2 REWARD       air made 50× dearer → the agent sets the air to 0 (PID: about 120); oxygen error 1.53 mg/L
+</code></pre>
+<p class="src">Output of <code>python workshop/examples/lesson6_rl.py</code>, from the run that built this guide</p>
+
+<p>What to say:</p>
+<ul>
+<li>Q-learning beats the plain PID on a day it never trained on (0.235 against 0.304 mg/L average error).</li>
+<li>The PID with one line of physics does as well (0.230), with no training and no bad days of exploration.</li>
+<li>With air made 50 times more expensive in the reward, the agent switches the air off and the oxygen collapses. Nothing in the reward said the oxygen must stay up.</li>
+</ul>
+<h3 id="slide-51-reward-ddpg-update-and-sac-il-update-in-t"><span class="slide">slide 51</span>Reward, DDPG update and SAC-IL update, in the project's code</h3>
+<p>A code tour in three tabs. The paper 2 reward, two lines. One DDPG update: replay batch, Bellman target, critic regression, actor step, soft target update. One SAC-IL update: a quarter of each batch comes from the expert's demonstrations, and the imitation term never fades below a floor.</p>
+
+
+<pre><code>            <span class="c"># eq. (9): y = r + gamma Q&#x27;(s&#x27;, mu&#x27;(s&#x27;))</span>
+            <span class="k">with</span> <span class="b">torch</span>.<span class="f">no_grad</span>():
+                y = r + c.gamma * (<span class="n">1.0</span> - d) * <span class="b">self</span>.<span class="f">critic_target</span>(
+                    <span class="b">torch</span>.<span class="f">cat</span>([o2, <span class="b">self</span>.<span class="f">actor_target</span>(o2)], dim=-<span class="n">1</span>))
+            q = <span class="b">self</span>.<span class="f">critic</span>(<span class="b">torch</span>.<span class="f">cat</span>([o, a], dim=-<span class="n">1</span>))
+            loss_c = ((q - y) ** <span class="n">2</span>).<span class="f">mean</span>()                      <span class="c"># eq. (8)</span>
+            <span class="b">self</span>.opt_critic.<span class="f">zero_grad</span>(set_to_none=<span class="k">True</span>)
+            loss_c.<span class="f">backward</span>()
+            <span class="b">nn</span>.utils.<span class="f">clip_grad_norm_</span>(<span class="b">self</span>.critic.<span class="f">parameters</span>(), c.grad_clip)
+            <span class="b">self</span>.opt_critic.<span class="f">step</span>()
+
+            <span class="c"># eq. (10): maximise Q(s, mu(s)), plus the pre-activation penalty</span>
+            pre = <span class="b">self</span>.actor.<span class="f">pre_activation</span>(o)
+            loss_a = (-<span class="b">self</span>.<span class="f">critic</span>(<span class="b">torch</span>.<span class="f">cat</span>([o, <span class="b">torch</span>.<span class="f">tanh</span>(pre)], dim=-<span class="n">1</span>)).<span class="f">mean</span>()
+                      + c.pre_act_penalty * (pre ** <span class="n">2</span>).<span class="f">mean</span>())
+            <span class="b">self</span>.opt_actor.<span class="f">zero_grad</span>(set_to_none=<span class="k">True</span>)
+            loss_a.<span class="f">backward</span>()
+            <span class="b">nn</span>.utils.<span class="f">clip_grad_norm_</span>(<span class="b">self</span>.actor.<span class="f">parameters</span>(), c.grad_clip)
+            <span class="b">self</span>.opt_actor.<span class="f">step</span>()
+</code></pre>
+<p class="src">src/wwtp/rl/ddpg.py, lines 222–240</p>
+
+<ul>
+<li><code>y = r + γ · (1 − d) · Q_target(s′, μ_target(s′))</code> is the Bellman target, made with the slow target networks so it does not jump every step. <code>(1 − d)</code> drops the future at the end of an episode.</li>
+<li><code>loss_c</code> is the squared error between the critic's estimate and that target. This is lesson 5's regression.</li>
+<li><code>loss_a</code> is minus the critic's value of the actor's action. Minimising it means the actor climbs the critic. The small penalty on <code>pre</code> keeps the <code>tanh</code> output from getting stuck at a limit.</li>
+</ul>
+<h3 id="slide-52-reinforcement-learning-cell-by-cell"><span class="slide">slide 52</span>Reinforcement learning, cell by cell</h3>
+<p>Notebook 3 running, including the learning curve and the comparison on the unseen rain day.</p>
+<h3 id="slide-53-start-from-the-expert-then-improve-behind"><span class="slide">slide 53</span>Start from the expert, then improve, behind a safety gate</h3>
+<p>The project's controller in four boxes. The expert PID is run on dry week 1 and its moves recorded. A network copies it (behaviour cloning, which is supervised learning). Soft actor-critic improves on that copy using the reward. A safety gate switches the learned part off whenever the inputs leave the range seen in training. The code on the left is the copying step, a plain regression.</p>
+<h3 id="slide-54-check-yourself"><span class="slide">slide 54</span>Check yourself</h3>
+<ol>
+<li>What is the difference between a reward and a label? A label is the right answer. A reward only scores what happened.</li>
+<li>Why does the agent sometimes act at random? To explore. Without trying new moves it can never find a better one.</li>
+<li>What did the agent do when air was made very expensive? It switched the air off.</li>
+</ol>
+<h3 id="slide-55-your-turn-notebook-3-12-minutes"><span class="slide">slide 55</span>Your turn: notebook 3 (12 minutes)</h3>
+<p>The question on the slide is the best discussion of the day: change the energy weight in the reward and watch the oxygen. Ask where the behaviour flips. In our runs the agent still holds the oxygen at a weight of 3, starts cutting the air at 4, and gives up on the oxygen at 5.</p>
+<h2 id="lesson-7-our-project-s-code">Lesson 7. Our project's code</h2>
+<h3 id="slide-56-lesson-7-of-7"><span class="slide">slide 56</span>Lesson 7 of 7</h3>
+<p>Goal: read the published methods and our controller in the project's own code, and see what the latest tests found.</p>
+<h3 id="slide-57-papers-1-and-3-exactly-as-printed"><span class="slide">slide 57</span>Papers 1 and 3 exactly as printed</h3>
+<p>Two code tours. Paper 1's MAACC is a small adaptive-critic controller added on top of a PID.</p>
+
+
+<pre><code>    <span class="k">def</span> <span class="f">step</span>(<span class="b">self</span>, z: <span class="b">np</span>.ndarray) -&gt; <span class="b">float</span>:
+        <span class="s">&quot;&quot;&quot;One period of Algorithm 1 for this agent; returns ``a_k``.&quot;&quot;&quot;</span>
+        zi = z[<span class="b">self</span>.i]
+        delta = <span class="f">bipolar</span>(<span class="b">self</span>.eta * zi)
+        da = <span class="b">float</span>(<span class="b">self</span>.alpha @ delta)                   <span class="c"># eq. (14)</span>
+        a = <span class="b">self</span>.a + da                                  <span class="c"># eq. (8)</span>
+        x = <span class="b">np</span>.<span class="f">array</span>([zi, da, a])
+        vt = <span class="f">bipolar</span>(<span class="b">self</span>.theta @ x)
+        q = <span class="b">float</span>(<span class="b">self</span>.beta @ vt)                        <span class="c"># eq. (13)</span>
+        u_k = <span class="b">self</span>.<span class="f">utility</span>(z, da, a)
+        <span class="k">if</span> <span class="b">self</span>.prev <span class="k">is</span> <span class="k">not</span> <span class="k">None</span>:                        <span class="c"># eqs. (15), (16), (18)</span>
+            vt_prev, q_prev = <span class="b">self</span>.prev
+            e = u_k + LAMBDA * q - q_prev
+            <span class="k">if</span> <span class="b">self</span>.critic == <span class="s">&quot;paper&quot;</span>:
+                g = e * LAMBDA * vt
+            <span class="k">elif</span> <span class="b">self</span>.critic == <span class="s">&quot;td0&quot;</span>:
+                g = -e * vt_prev
+            <span class="k">else</span>:                                        <span class="c"># residual gradient</span>
+                g = e * (LAMBDA * vt - vt_prev)
+            <span class="b">self</span>.beta = <span class="b">self</span>.beta - LC * g
+            q = <span class="b">float</span>(<span class="b">self</span>.beta @ vt)
+        <span class="c"># eqs. (17), (19), (27): dL_a/dalpha = Q * (beta^T C) * delta</span>
+        dq_da = <span class="b">float</span>(<span class="b">self</span>.beta @ (<span class="n">0.5</span> * (<span class="n">1.0</span> - vt ** <span class="n">2</span>) * <span class="b">self</span>.theta[:, <span class="n">2</span>]))
+        <span class="b">self</span>.alpha = <span class="b">self</span>.alpha - LA * q * dq_da * delta
+        <span class="b">self</span>.prev = (vt, q)
+        <span class="b">self</span>.a = a
+        <span class="k">return</span> a
+</code></pre>
+<p class="src">src/wwtp/maacc/exact.py, lines 67–93</p>
+
+<ul>
+<li>The action network <code>alpha @ bipolar(eta * zi)</code> gives a change of input, which is added up into <code>a</code>. Because <code>alpha</code> starts at zero, the controller starts exactly as its PID.</li>
+<li>The critic estimates the value <code>q</code> and the utility <code>U</code> scores the moment, with the weights printed in the paper's Table I.</li>
+<li>The update of <code>alpha</code> is the learning rate times <code>q</code> times the slope of the critic. With the printed weights that product is about 10⁻⁴, so <code>alpha</code> hardly moves. In 80 of 80 runs, MAACC equals its PID to within 1 %. The code is correct. The method, as printed, cannot learn on this plant.</li>
+</ul>
+<p>Paper 3's IOQL repeats 50 critic updates and 60 actor updates on each single sample. That many steps on one point makes it unstable: it either stays at its PID or the oxygen collapses.</p>
+<h3 id="slide-58-ilc-the-control-step-the-safety-gate-and-"><span class="slide">slide 58</span>ILC, the control step, the safety gate and the training script</h3>
+<p>Our controller in four files. The first is the daily ILC, iterative learning control. Each night it looks at what the PID had to do during the day, and the next day it does part of that in advance.</p>
+
+
+<pre><code>    <span class="k">def</span> <span class="f">_learn</span>(<span class="b">self</span>):
+        new = <span class="b">self</span>.f.<span class="f">copy</span>()
+        kern = <span class="b">np</span>.<span class="f">ones</span>(<span class="n">2</span> * <span class="b">self</span>.w + <span class="n">1</span>) / (<span class="n">2</span> * <span class="b">self</span>.w + <span class="n">1</span>)
+        <span class="k">for</span> i <span class="k">in</span> <span class="b">range</span>(<span class="b">len</span>(<span class="b">self</span>.beta)):
+            ok = <span class="b">self</span>._ok[:, i] <span class="k">if</span> <span class="b">self</span>.antiwindup <span class="k">else</span> <span class="b">np</span>.<span class="f">ones</span>(PERIOD, bool)
+            <span class="k">if</span> ok.<span class="f">mean</span>() &lt; <span class="n">0.5</span>:                  <span class="c"># mostly at a limit today: keep yesterday&#x27;s profile</span>
+                <span class="k">continue</span>
+            dev = <span class="b">np</span>.<span class="f">where</span>(ok, <span class="b">self</span>._u[:, i] - <span class="b">self</span>._u[ok, i].<span class="f">mean</span>(), <span class="n">0.0</span>)
+            step = <span class="b">self</span>.beta[i] * <span class="b">np</span>.<span class="f">roll</span>(dev, -<span class="b">self</span>.lead[i])
+            step[<span class="b">np</span>.<span class="f">roll</span>(~ok, -<span class="b">self</span>.lead[i])] = <span class="n">0.0</span>
+            upd = <span class="b">self</span>.f[:, i] + step
+            pad = <span class="b">np</span>.<span class="f">concatenate</span>([upd[PERIOD - <span class="b">self</span>.w:], upd, upd[: <span class="b">self</span>.w]])     <span class="c"># the day is periodic</span>
+            new[:, i] = <span class="b">self</span>.q * <span class="b">np</span>.<span class="f">convolve</span>(pad, kern, mode=<span class="s">&quot;valid&quot;</span>)
+        <span class="b">self</span>.f = new
+</code></pre>
+<p class="src">src/wwtp/sacil/ilc.py, lines 72–85</p>
+
+<ul>
+<li><code>_learn</code> runs once a day, at midnight.</li>
+<li><code>ok</code> marks the moments when the blower was free. When the blower is flat out or off, what the PID asked for is not what the plant got, so those moments teach nothing. If more than half the day was spent at a limit, the ILC keeps yesterday's profile (<code>continue</code>). This is the anti-windup, added after held-out test 1.</li>
+<li><code>dev</code> is the PID's deviation from its daily mean: the part of its work that repeats every day.</li>
+<li><code>step</code> takes a share <code>beta</code> of that and moves it a few steps earlier (<code>np.roll</code>), so the air arrives just ahead of the load peak instead of just after it.</li>
+<li>The moving average smooths the profile over the day, treating midnight as joined to the next morning.</li>
+</ul>
+<p>The control step adds the other half of the anti-windup.</p>
+
+
+<pre><code>        aw = <span class="b">self</span>.ilc <span class="k">is</span> <span class="k">not</span> <span class="k">None</span> <span class="k">and</span> <span class="b">self</span>.ilc.antiwindup
+        ff = <span class="n">0.0</span> <span class="k">if</span> <span class="b">self</span>.ilc <span class="k">is</span> <span class="k">None</span> <span class="k">else</span> <span class="b">self</span>.ilc.<span class="f">ff</span>(<span class="b">self</span>.k)
+        <span class="c"># anti-windup with ILC: the PID&#x27;s own limits move with the feedforward, so that</span>
+        <span class="c"># PID + feedforward can reach either actuator limit and the PID never winds up</span>
+        lo, hi = (U_MIN - ff, U_MAX - ff) <span class="k">if</span> aw <span class="k">else</span> (U_MIN, U_MAX)
+        <span class="k">if</span> du <span class="k">is</span> <span class="k">not</span> <span class="k">None</span>:
+            <span class="b">self</span>.u = <span class="b">np</span>.<span class="f">clip</span>(<span class="b">self</span>.u + du, lo, hi)
+        <span class="k">elif</span> aw:
+            <span class="b">self</span>.u = <span class="b">np</span>.<span class="f">clip</span>(<span class="b">self</span>.u, lo, hi)
+        u_apply = <span class="b">self</span>.u <span class="k">if</span> <span class="b">self</span>.ilc <span class="k">is</span> <span class="k">None</span> <span class="k">else</span> <span class="b">np</span>.<span class="f">clip</span>(<span class="b">self</span>.u + ff, U_MIN, U_MAX)
+        sat = (<span class="b">self</span>.u &lt;= lo + <span class="n">1e-9</span>) | (<span class="b">self</span>.u &gt;= hi - <span class="n">1e-9</span>) <span class="k">if</span> aw <span class="k">else</span> <span class="k">None</span>
+</code></pre>
+<p class="src">src/wwtp/sacil/sacil.py, lines 155–165</p>
+
+<p>The PID's own limits are shifted by the feedforward <code>ff</code>, so PID plus feedforward together can reach either end of the blower's range and no more. Without this the PID keeps adding correction while the blower is already at its limit (it winds up), and then needs a long time to unwind.</p>
+<p>The third tab is the safety gate.</p>
+
+
+<pre><code>    <span class="k">def</span> <span class="f">act</span>(o, e):
+        stats[<span class="s">&quot;n&quot;</span>] += <span class="n">1</span>
+        <span class="k">if</span> gated:
+            ood = <span class="b">np</span>.<span class="f">any</span>((o &lt; lo - MARGIN * width) | (o &gt; hi + MARGIN * width))
+            need = <span class="b">abs</span>(<span class="f">expert_increment</span>(e.e, e.e1, e.e2, <span class="f">demo_gap</span>(e))[<span class="n">0</span>]) &gt; RES_SCALE[<span class="n">0</span>]
+            <span class="k">if</span> ood <span class="k">or</span> need:
+                stats[<span class="s">&quot;gated&quot;</span>] += <span class="n">1</span>
+                e.fallback_gain = GAIN <span class="k">if</span> e.terms <span class="k">is</span> <span class="k">None</span> <span class="k">else</span> <span class="n">1.0</span>
+                <span class="k">return</span> <span class="b">np</span>.<span class="f">zeros</span>(<span class="n">2</span>)
+            o = <span class="b">np</span>.<span class="f">clip</span>(o, lo, hi)
+        <span class="k">return</span> <span class="f">net</span>(<span class="b">np</span>.<span class="f">asarray</span>(o, <span class="b">np</span>.float32))
+</code></pre>
+<p class="src">experiments/33_paper1_study.py, lines 145–155</p>
+
+<p>If any input is more than 10 % outside the range seen in training, or the PID needs a bigger move than the learned part may make, the learned part is switched off for this step and the PID acts alone.</p>
+<h3 id="slide-59-the-second-held-out-test-two-fixes-one-op"><span class="slide">slide 59</span>The second held-out test: two fixes, one open problem</h3>
+<p>This slide holds the project's latest results (<code>docs/PAPER1_HELDOUT2.md</code>). The plan for this test was committed to git before any of its 432 runs.</p>
+<p>Held-out test 1 had found two flaws. Under overload the ILC made things worse, and every high-gain controller failed with the official sensor noise. Two fixes were made:</p>
+<ol>
+<li><strong>ILC anti-windup</strong>, the code above.</li>
+<li><strong>A robust PID</strong>: a 0.75-minute filter on the oxygen reading and half the gains, chosen on dry week 1 with spare noise seeds that no test uses.</li>
+</ol>
+<p>They were then tested on new BSM2 influent windows, with and without a primary clarifier, and with new sensor-noise seeds. Read the table on the slide:</p>
+<ul>
+<li>Anti-windup works on new data. Under overload it removes the ILC's harm, 39 % better, and costs nothing in normal operation.</li>
+<li>The robust PID never failed and is 83 % better than the paper's PID on new influent, with about the same blower movement as the paper's PID (522 against 501).</li>
+<li>With the official sensor noise, 0.25 g/m³ on a set point of 2 mg/L, nothing built in the project beats the paper's own gentle PID. That is the open problem. Next ideas are a Kalman filter on the oxygen reading, or switching to lower gains when the noise is high.</li>
+</ul>
+<p>Say: "This is what honest research looks like. Two fixes worked and are reported. One problem is still open and is reported too. A test that only uses clean data, as paper 1 did, would have hidden all of this."</p>
+<h3 id="slide-60-check-yourself"><span class="slide">slide 60</span>Check yourself</h3>
+<ol>
+<li>Why does MAACC as printed equal its PID? Its learning signal is about 10⁻⁴, so its networks hardly move.</li>
+<li>What does the safety gate do? Switches the learned part off on inputs outside the training range.</li>
+<li>What did held-out test 2 show? Anti-windup fixed overload, the robust PID never failed, and under sensor noise nothing beat the paper's PID.</li>
+</ol>
+<h3 id="slide-61-questions-learners-ask"><span class="slide">slide 61</span>Questions learners ask</h3>
+<p>Eight questions with short answers, collected by going through the lesson as a beginner. Open the ones the room cares about.</p>
+<h3 id="slide-62-what-this-project-teaches-about-doing-ml-"><span class="slide">slide 62</span>What this project teaches about doing ML research</h3>
+<p>End on the eight habits. Look at the data first. Let the shapes choose the model. Split honestly. Beat simple baselines. Reproduce published work before claiming to improve it. Use several seeds. Write the test down before you run it. Save the model with everything it needs. Then take questions.</p>
+<h2 id="after-the-session">After the session</h2>
+<p>Everything is in the repository and in the zip bundle. The scholars can rerun any lesson with one command from <code>workshop/examples/</code>. The notebooks are also web pages with every output. The project's own documents (<code>docs/PAPER1_STUDY.md</code>, <code>docs/PAPER1_HELDOUT2.md</code>, <code>docs/PAPER1_AUDIT.md</code>) take them as deep as they want to go.</p></main></div>

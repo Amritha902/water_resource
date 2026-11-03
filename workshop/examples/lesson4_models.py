@@ -71,4 +71,4 @@ x2 = x.clone(); x2[:, :, 50] += 5.0                                     # change
 changed = (cnn(x2) - out).abs().sum(1)[0] > 1e-6
 print(f"             change time step 50 → outputs change from step {int(changed.nonzero()[0])} on, never before it (causal)")
 
-# ✏️ Try: hidden layers of 512 instead of 64. How many knobs? Compare with ~1 900 training examples.
+# Try this: hidden layers of 512 instead of 64. How many knobs? Compare with ~1 900 training examples.

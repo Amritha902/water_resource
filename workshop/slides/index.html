@@ -113,10 +113,10 @@ pre.nb-text{background:#fff;color:#111827;font-size:12px;line-height:1.4;max-hei
 .tour-text{font-size:17px;line-height:1.45;margin:0 0 10px}
 /* pipeline */
 .pipe-root{position:relative;margin-top:8px}
-.pipe-grid{display:flex;gap:46px;position:relative;z-index:1;height:300px;width:1160px}
-.pipe-col{flex:1;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.pipe-grid{display:flex;gap:46px;position:relative;z-index:1;height:330px;width:1160px}
+.pipe-col{flex:1;display:flex;flex-direction:column;justify-content:center;gap:7px}
 .pipe-head{text-align:center;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:1px}
-.pipe-node{font-size:14px;text-align:left;padding:7px 10px;line-height:1.3}
+.pipe-node{font-size:13.5px;text-align:left;padding:5px 10px;line-height:1.25}
 .pipe-node span{font-size:11.5px;color:var(--muted)}
 .pipe-node.on{background:var(--orange);color:#fff;border-color:var(--orange)}.pipe-node.on span{color:#ffedd5}
 .pipe-node.seen{border-color:#fdba74}
@@ -186,13 +186,13 @@ pre.nb-text{background:#fff;color:#111827;font-size:12px;line-height:1.4;max-hei
         <p class="small" style="margin:0 0 8px">Open a terminal in the repository folder:</p>
         <pre>pip install -r workshop/requirements.txt
 jupyter lab workshop/notebooks</pre>
-        <p class="small" style="margin:10px 0 0">The notebooks are also web pages with every result: <a href="https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq">part 1</a>, <a href="https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm">part 2</a>, <a href="https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5">part 3</a>. Notebook 1 downloads three small files (≈150 kB each) the first time. No GPU needed; everything runs on a laptop CPU in seconds to a few minutes.</p>
+        <p class="small" style="margin:10px 0 0">The whole lesson is written out, slide by slide, in the <a href="https://claude.ai/artifact/HqpLrBanoEpinRiffb7Wma">teaching guide</a>. The notebooks are also web pages with every result: <a href="https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq">part 1</a>, <a href="https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm">part 2</a>, <a href="https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5">part 3</a>. Notebook 1 downloads three small files (≈150 kB each) the first time. No GPU needed; everything runs on a laptop CPU in seconds to a few minutes.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ★ glossary -->
+<!-- glossary -->
 <section class="slide" data-anim="glossary">
   <div class="kicker">Before we start · words in plain language</div>
   <h2>Every word you will hear today, explained simply</h2>
@@ -233,7 +233,15 @@ jupyter lab workshop/notebooks</pre>
   </div>
 </section>
 
-<!-- ★ pipeline map -->
+<!-- the plant, as the project drew it -->
+<section class="slide">
+  <div class="kicker">The problem · the plant</div>
+  <h2>The plant and its two control loops</h2>
+  <img src="diagrams/d0_plant.png" alt="BSM1 plant: five tanks, a settler, two recycles, two sensors and two actuators" style="display:block;margin:4px auto 0;max-height:470px;max-width:100%;border:1px solid var(--line);border-radius:10px;background:#fff">
+  <p class="small" style="margin:10px 0 0">Water flows left to right. Tanks 1 and 2 get no air, so bacteria there remove nitrate. Tanks 3 to 5 are aerated, so bacteria there turn ammonium into nitrate. The internal recycle Q<sub>a</sub> carries that nitrate back to tank 1. The settler lets the sludge sink, and most of it goes back to the start. Our controllers move two things: the air in tank 5 (KLa<sub>5</sub>) and the recycle pump (Q<sub>a</sub>). Diagram: <code>docs/diagrams/d0_plant.drawio</code>.</p>
+</section>
+
+<!-- pipeline map -->
 <section class="slide" data-anim="pipeline">
   <div class="kicker">Our code, end to end</div>
   <h2>How the project was built: one script per step</h2>
@@ -276,7 +284,7 @@ jupyter lab workshop/notebooks</pre>
   </div>
 </section>
 
-<!-- ★ code map: lesson1 -->
+<!-- code map: lesson1 -->
 <section class="slide" data-anim="codemap" data-key="lesson1">
   <div class="kicker">Lesson 1 · where is the code?</div>
   <h2>Four steps train every model</h2>
@@ -403,7 +411,7 @@ idx = np.minimum(np.searchsorted(d[:, 0], t, side=<span class="s">"right"</span>
 flow = d[idx, 15]</pre>
 </section>
 
-<!-- ★ code map: lesson2 -->
+<!-- code map: lesson2 -->
 <section class="slide" data-anim="codemap" data-key="lesson2">
   <div class="kicker">Lesson 2 · where is the code?</div>
   <h2>Download, read, check, fix</h2>
@@ -411,14 +419,14 @@ flow = d[idx, 15]</pre>
   <div class="cm-root"></div>
 </section>
 
-<!-- ★ code tour: data -->
+<!-- code tour: data -->
 <section class="slide" data-anim="tour" data-key="data">
   <div class="kicker">Lesson 2 · our code</div>
   <h2>How the project loads and corrects the official data</h2>
   <div class="tour-root"></div>
 </section>
 
-<!-- ★ player: collect -->
+<!-- player: collect -->
 <section class="slide" data-anim="player" data-key="collect">
   <div class="kicker">Lesson 2 · the notebook running</div>
   <h2>Collect and clean, cell by cell</h2>
@@ -448,7 +456,7 @@ flow = d[idx, 15]</pre>
       <ul><li>Run the checks: NaN, duplicates, negative values, ranges</li><li>Find and fix the problems in a damaged copy</li><li>Apply the S_I dilution fix and add TSS</li><li>Resample to 45 s with a zero-order hold</li></ul>
     </div>
   </div>
-  <p style="margin-top:22px"><code>workshop/notebooks/01_data_collect_clean_prepare.ipynb</code> · <a href="https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq" style="color:#fff;font-weight:600">open it as a web page, with all results ↗</a></p>
+  <p style="margin-top:22px"><code>workshop/notebooks/01_data_collect_clean_prepare.ipynb</code> · <a href="https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq" style="color:#fff;font-weight:600">or read it as a web page with all the results</a></p>
 </section>
 
 <!-- lesson 3 divider -->
@@ -545,7 +553,7 @@ flow = d[idx, 15]</pre>
   <div class="cm-root"></div>
 </section>
 
-<!-- ★ player: prepare -->
+<!-- player: prepare -->
 <section class="slide" data-anim="player" data-key="prepare">
   <div class="kicker">Lesson 3 · the notebook running</div>
   <h2>Prepare, cell by cell</h2>
@@ -707,12 +715,12 @@ flow = d[idx, 15]</pre>
 <!-- code map: lesson4 -->
 <section class="slide" data-anim="codemap" data-key="lesson4">
   <div class="kicker">Lesson 4 · where is the code?</div>
-  <h2>Shapes → baselines → linear → MLP → CNN</h2>
+  <h2>Shapes, baselines, linear, MLP, CNN</h2>
   <p class="small" style="margin:2px 0 0">The same steps in the hands-on script, the notebook and the project. Run it yourself: <code>python workshop/examples/lesson4_models.py</code></p>
   <div class="cm-root"></div>
 </section>
 
-<!-- ★ player: model -->
+<!-- player: model -->
 <section class="slide" data-anim="player" data-key="model">
   <div class="kicker">Lesson 4 · the notebook running</div>
   <h2>Shapes, baselines and models, cell by cell</h2>
@@ -821,7 +829,7 @@ flow = d[idx, 15]</pre>
   <div class="cm-root"></div>
 </section>
 
-<!-- ★ player: train -->
+<!-- player: train -->
 <section class="slide" data-anim="player" data-key="train">
   <div class="kicker">Lesson 5 · the notebook running</div>
   <h2>Training, overfitting and the test, cell by cell</h2>
@@ -880,7 +888,7 @@ flow = d[idx, 15]</pre>
       <tr><td>persistence</td><td>0</td><td>…</td></tr><tr><td>yesterday</td><td>0</td><td>…</td></tr><tr><td>linear</td><td>…</td><td>…</td></tr><tr><td>MLP</td><td>…</td><td>…</td></tr><tr><td>causal CNN</td><td>…</td><td>…</td></tr></table>
     </div>
   </div>
-  <p style="margin-top:14px"><code>workshop/notebooks/02_choose_and_train_a_model.ipynb</code> · <a href="https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm" style="color:#fff;font-weight:600">open it as a web page, with all results ↗</a></p>
+  <p style="margin-top:14px"><code>workshop/notebooks/02_choose_and_train_a_model.ipynb</code> · <a href="https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm" style="color:#fff;font-weight:600">or read it as a web page with all the results</a></p>
 </section>
 
 <!-- lesson 6 divider -->
@@ -958,14 +966,14 @@ soft_update(actor, actor_target, tau=0.001)</pre>
   <div class="cm-root"></div>
 </section>
 
-<!-- ★ tour: rl code -->
+<!-- tour: rl code -->
 <section class="slide" data-anim="tour" data-key="rlcode">
   <div class="kicker">Lesson 6 · our code</div>
   <h2>Reward, DDPG update and SAC-IL update, in the project's code</h2>
   <div class="tour-root"></div>
 </section>
 
-<!-- ★ player: rl -->
+<!-- player: rl -->
 <section class="slide" data-anim="player" data-key="rl">
   <div class="kicker">Lesson 6 · the notebook running</div>
   <h2>Reinforcement learning, cell by cell</h2>
@@ -995,7 +1003,7 @@ soft_update(actor, actor_target, tau=0.001)</pre>
     <div class="col">
       <ul style="font-size:17px">
         <li>Learning from scratch on a plant means weeks of bad actions. Starting from the expert removes that.</li>
-        <li class="frag">Result: −74 to −87 % oxygen error against the paper's PID. But a PID tuned term by term with the ILC did as well, and on new sensors with noise every high-gain controller failed. That honest result is in the README.</li>
+        <li class="frag">Result: −74 to −87 % oxygen error against the paper's PID. But a PID tuned term by term with the ILC did as well, and on new sensors with noise every high-gain controller failed. Held-out test 2, at the end of the lesson, shows what fixed part of that and what is still open.</li>
       </ul>
     </div>
   </div>
@@ -1029,7 +1037,7 @@ soft_update(actor, actor_target, tau=0.001)</pre>
       <p>Change the energy weight in the reward. What does the agent do with the oxygen? Is it still doing what you wanted?</p>
     </div>
   </div>
-  <p style="margin-top:20px"><code>workshop/notebooks/03_reinforcement_learning_in_brief.ipynb</code> · <a href="https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5" style="color:#fff;font-weight:600">open it as a web page, with all results ↗</a></p>
+  <p style="margin-top:20px"><code>workshop/notebooks/03_reinforcement_learning_in_brief.ipynb</code> · <a href="https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5" style="color:#fff;font-weight:600">or read it as a web page with all the results</a></p>
 </section>
 
 <!-- lesson 7 divider -->
@@ -1043,18 +1051,47 @@ soft_update(actor, actor_target, tau=0.001)</pre>
   </div>
 </section>
 
-<!-- ★ tour: papers -->
+<!-- tour: papers -->
 <section class="slide" data-anim="tour" data-key="papers">
   <div class="kicker">Lesson 7 · reproducing the papers</div>
   <h2>Papers 1 and 3 exactly as printed, and why they don't learn</h2>
   <div class="tour-root"></div>
 </section>
 
-<!-- ★ tour: ours -->
+<!-- tour: ours -->
 <section class="slide" data-anim="tour" data-key="ours">
   <div class="kicker">Lesson 7 · our controller</div>
   <h2>ILC, the control step, the safety gate and the training script</h2>
   <div class="tour-root"></div>
+</section>
+
+<!-- held-out test 2 -->
+<section class="slide">
+  <div class="kicker">Lesson 7 · the latest results</div>
+  <h2>The second held-out test: two fixes, one open problem</h2>
+  <div class="cols" style="margin-top:6px;gap:22px">
+    <div class="col" style="flex:1.05">
+      <img src="diagrams/d2_ours.png" alt="Our controller: tuned PID, daily ILC with anti-windup, optional learned correction, oxygen filter" style="width:100%;border:1px solid var(--line);border-radius:10px;background:#fff">
+      <p class="tiny" style="margin:6px 0 0">Our controller as it stands now (<code>docs/diagrams/d2_ours.drawio</code>). Green boxes were added after held-out test 1.</p>
+      <ul style="font-size:15.5px;margin-top:8px">
+        <li><b>Fix 1, ILC anti-windup:</b> time spent at a blower limit teaches the ILC nothing, and the PID's limits move with the feedforward.</li>
+        <li><b>Fix 2, robust PID:</b> a 0.75-minute filter on the oxygen reading and half the gains.</li>
+        <li>Protocol pushed before any run; new influent windows and new noise seeds (<code>docs/PAPER1_HELDOUT2.md</code>).</li>
+      </ul>
+    </div>
+    <div class="col">
+      <table style="font-size:14px">
+        <tr><th>Oxygen error, days 7–14 (lower is better)</th><th>new influent</th><th>overload</th><th>official sensors</th><th>both</th></tr>
+        <tr><td>Paper's PID</td><td>0.0105</td><td>0.0815</td><td><b>0.261</b></td><td><b>0.178</b></td></tr>
+        <tr><td>Tuned PID + ILC</td><td>0.00115</td><td>0.120</td><td>0.382</td><td>0.267</td></tr>
+        <tr><td>… with anti-windup</td><td><b>0.00115</b></td><td><b>0.0732</b></td><td>all failed</td><td>5 of 6 failed</td></tr>
+        <tr><td>Robust (filter, ×0.5, anti-windup)</td><td>0.0018</td><td>0.0737</td><td>0.269</td><td>0.220</td></tr>
+        <tr><td>Ours, round 2 (with SAC-IL)</td><td>0.0024</td><td>0.108</td><td>all failed</td><td>25 of 30 failed</td></tr>
+      </table>
+      <div class="note green" style="margin-top:12px;font-size:16px">Anti-windup works on new data: under overload it removes the ILC's harm (−39 %) and costs nothing in normal weather. The robust PID never failed and is −83 % on new influent.</div>
+      <div class="note red" style="margin-top:10px;font-size:16px">With the official sensor noise (0.25 g/m³ on a 2 mg/L set point), nothing we built beats the paper's own PID. That is the open problem, and it is reported, not hidden.</div>
+    </div>
+  </div>
 </section>
 
 <!-- lesson 7 quiz -->
