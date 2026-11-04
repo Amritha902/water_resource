@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Part 1 · Collect, clean and prepare the data</title><style>
+<title>Notebook 1 · Collect, clean and prepare the plant data</title><style>
 :root{--bg:#fbfaf7;--ink:#1d2433;--ink2:#4b5563;--muted:#8a919c;--line:#e3e1db;--blue:#2563eb;--orange:#ea580c;--soft:#f1efe9}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif}
@@ -42,7 +42,7 @@ pre.code .k{color:#c4b5fd}pre.code .s{color:#fcd34d}pre.code .c{color:#7d8ba1;fo
 @media (max-width:900px){nav.toc{display:none}h1{font-size:28px}}
 </style></head>
 <body>
-<header><div class="bar"><span class="k">Workshop notebook</span><span class="t">Part 1 · Collect, clean and prepare the data</span><span class="sp"></span>
+<header><div class="bar"><span class="k">Workshop notebook</span><span class="t">Notebook 1 · Collect, clean and prepare the plant data</span><span class="sp"></span>
 <a class="navlink" href="https://claude.ai/artifact/66EGWBVkQQRAKsHadr5ob5">The slide deck</a><button id="m-code" class="on">Show code</button><button id="m-ideas">Explanations only</button></div></header>
 <div class="wrap"><nav class="toc"><a class="h2" href="#a-collect">A. Collect</a><a class="h3" href="#a1-download-with-the-source-pinned">A1. Download, with the source pinned</a><a class="h3" href="#a2-open-the-raw-file-and-look-at-it-before-doing">A2. Open the raw file and look at it before doing anything</a><a class="h3" href="#a3-first-checks-size-time-step-missing-values-du">A3. First checks: size, time step, missing values, duplicates</a><a class="h3" href="#a4-plot-the-data">A4. Plot the data</a><a class="h2" href="#b-clean">B. Clean</a><a class="h3" href="#b1-detect">B1. Detect</a><a class="h3" href="#b2-repair-step-by-step">B2. Repair, step by step</a><a class="h3" href="#b3-physics-checks-and-corrections">B3. Physics checks and corrections</a><a class="h3" href="#b4-one-time-grid">B4. One time grid</a><a class="h2" href="#c-prepare">C. Prepare</a><a class="h3" href="#c1-inputs-and-target">C1. Inputs and target</a><a class="h3" href="#c2-split-by-time">C2. Split by time</a><a class="h3" href="#c3-transform-and-scale-with-training-statistics-">C3. Transform and scale, with training statistics only</a><a class="h3" href="#c4-cut-windows">C4. Cut windows</a><a class="h3" href="#c5-save-with-everything-needed-to-use-the-data-a">C5. Save, with everything needed to use the data again</a><a class="h3" href="#checklist-what-you-just-did">Checklist: what you just did</a></nav>
 <main>
@@ -1017,7 +1017,7 @@ ax.<span class="f">set_xlabel</span>(<span class="s">&quot;hours from now&quot;<
 <li>[x] saved data + scaler together</li>
 </ul>
 <p><strong>Next:</strong> notebook 2, choose and train a model.</p></div>
-<div class="endnav"><a class="navlink" href="https://claude.ai/artifact/66EGWBVkQQRAKsHadr5ob5">The slide deck</a><a class="navlink" href="https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm">Part 2 · Choose a model and train it →</a><a class="navlink" href="https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5">Part 3 · Reinforcement learning in brief →</a></div>
+<div class="endnav"><a class="navlink" href="https://claude.ai/artifact/66EGWBVkQQRAKsHadr5ob5">The slide deck</a><a class="navlink" href="https://claude.ai/artifact/NMc3LiA6MuhKAa6gjGvWHr">← Notebook 0 · The skeleton of every ML notebook</a><a class="navlink" href="https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm">Notebook 2 · Choose a model and train it →</a><a class="navlink" href="https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5">Notebook 3 · Reinforcement learning in brief →</a></div>
 </main></div>
 <script>
 const root=document.documentElement;

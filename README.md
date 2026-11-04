@@ -100,7 +100,7 @@ experiments/            numbered scripts; 20, 23–27 produce the reimplementati
                         28 and 32–46 the new paper 1 controller, its study, the stronger baselines and the held-out test
 demo/                   live demo (run_demo.py runs it all) and its cached start states
 tools/                  report builders (build_report.py writes docs/REPORT.md)
-workshop/               90-minute hands-on ML/RL training: animated slides and three notebooks (workshop/README.md)
+workshop/               90-minute hands-on ML/RL training: the basics, then this project; animated slides and four notebooks (workshop/README.md)
 tests/                  88 tests
 results/                every result file behind the report (JSON and CSV)
 docs/

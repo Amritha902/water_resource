@@ -157,7 +157,7 @@ pre.nb-text{background:#fff;color:#111827;font-size:12px;line-height:1.4;max-hei
 <body>
 <div id="stage">
 
-<!-- 1 ─────────────────────────────── TITLE -->
+<!-- 1 · title -->
 <section class="slide" data-anim="plant" style="background:linear-gradient(180deg,#fbfaf7 0,#eef3fb 100%)">
   <div class="kicker">Hands-on workshop · about 90 minutes</div>
   <h1>From plant data to a trained model</h1>
@@ -171,28 +171,33 @@ pre.nb-text{background:#fff;color:#111827;font-size:12px;line-height:1.4;max-hei
   </div>
 </section>
 
-<!-- 2 ─────────────────────────────── AGENDA -->
+<!-- 2 · plan -->
 <section class="slide">
   <div class="kicker">Plan</div>
-  <h2>One lesson, seven steps, 90 minutes</h2>
-  <p class="sub">Every step has the same rhythm: the idea (animated) → where the code is → the code running → three questions → your turn. Every step points to the file in the repository that does it for real.</p>
+  <h2>First the basics, then our project</h2>
+  <p class="sub">Part 1 explains how any machine-learning project goes, one step per slide, on a simple example. Parts 2 and 3 do the same steps on our research project, with its real files and code.</p>
   <div class="cols">
     <div class="col">
-      <table class="agenda"><tr><td>1</td><td><b>What is a model?</b> <span class="small">· 8 min · A model is a function with knobs. Training turns the knobs, in four steps that every model uses.</span></td></tr><tr><td>2</td><td><b>Collect and clean the data</b> <span class="small">· 20 min · Download data reproducibly, read it without traps, check it, and fix what is wrong, including the physics.</span></td></tr><tr><td>3</td><td><b>Prepare the data</b> <span class="small">· 12 min · Choose inputs and target, split by time, scale with training numbers only, cut examples.</span></td></tr><tr><td>4</td><td><b>Choose the model</b> <span class="small">· 10 min · Let the input and output shapes pick the model family; look inside a network layer by layer; count its knobs.</span></td></tr><tr><td>5</td><td><b>Train and evaluate</b> <span class="small">· 20 min · Train with a validation set, spot overfitting, beat the baselines, test once, save the model with its scaler.</span></td></tr><tr><td>6</td><td><b>Reinforcement learning</b> <span class="small">· 13 min · Learn from a reward instead of right answers: environment, reward, exploring, learning. Then the project's agents.</span></td></tr><tr><td>7</td><td><b>Our project's code</b> <span class="small">· 5 min · Read the published methods and our controller in the project's own code, and the lessons they taught us.</span></td></tr></table>
+      <table class="agenda">
+        <tr><td>Part 1</td><td><b>The basics</b> <span class="small">· 40 min · Collect, clean, inputs and target, split, scale, feed the data in, what a model is, kinds of learning and of models, training code, testing code, how many parameters, choosing the settings, the whole skeleton notebook.</span></td></tr>
+        <tr><td>Part 2</td><td><b>Our project: plant data to a forecaster</b> <span class="small">· 30 min · The BSM1 plant, its Excel files, how we cleaned them (including a physics fix), cut them into examples, chose a model and trained it.</span></td></tr>
+        <tr><td>Part 3</td><td><b>Reinforcement learning and our controller</b> <span class="small">· 20 min · Learning from a reward instead of right answers, then the project's agents, the published methods we rebuilt, and our latest results.</span></td></tr>
+      </table>
+      <p class="small" style="margin-top:14px">Each part ends with a few questions and a notebook you run yourself.</p>
     </div>
     <div class="col" style="flex:.8">
       <div class="card">
         <h3>Before we start</h3>
-        <p class="small" style="margin:0 0 8px">Open a terminal in the repository folder:</p>
+        <p class="small" style="margin:0 0 8px">Open a terminal in the workshop folder:</p>
         <pre>pip install -r workshop/requirements.txt
 jupyter lab workshop/notebooks</pre>
-        <p class="small" style="margin:10px 0 0">The whole lesson is written out, slide by slide, in the <a href="https://claude.ai/artifact/HqpLrBanoEpinRiffb7Wma">teaching guide</a>. The notebooks are also web pages with every result: <a href="https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq">part 1</a>, <a href="https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm">part 2</a>, <a href="https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5">part 3</a>. Notebook 1 downloads three small files (≈150 kB each) the first time. No GPU needed; everything runs on a laptop CPU in seconds to a few minutes.</p>
+        <p class="small" style="margin:10px 0 0">The whole lesson is written out, slide by slide, in the <a href="https://claude.ai/artifact/HqpLrBanoEpinRiffb7Wma">teaching guide</a>. The notebooks are also web pages with every result: <a href="https://claude.ai/artifact/NMc3LiA6MuhKAa6gjGvWHr">notebook 0</a>, <a href="https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq">notebook 1</a>, <a href="https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm">notebook 2</a>, <a href="https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5">notebook 3</a>. No GPU needed; everything runs on a laptop CPU in seconds to a few minutes.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- glossary -->
+<!-- 3 · glossary -->
 <section class="slide" data-anim="glossary">
   <div class="kicker">Before we start · words in plain language</div>
   <h2>Every word you will hear today, explained simply</h2>
@@ -203,9 +208,584 @@ jupyter lab workshop/notebooks</pre>
   </div>
 </section>
 
-<!-- 3 ─────────────────────────────── THE PROBLEM -->
+<!-- 4 · part 1 divider -->
+<section class="slide divider">
+  <div class="ltrack"><span class="on">1. The basics</span><span class="">2. Our project: plant data to a forecaster</span><span class="">3. Reinforcement learning and our controller</span></div>
+  <div class="kicker">Part 1 of 3 · 40 min</div>
+  <h1 style="font-size:58px;margin:6px 0 18px">The basics</h1>
+  <div class="cols" style="margin-top:10px">
+    <div class="col"><div class="card"><h3>In this part</h3><p style="margin:0">How any machine-learning project goes, one step per slide: from a raw file to a tested, saved model. The example is deliberately simple: predict tomorrow's water demand of a town from the weather.</p></div></div>
+    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Notebook 0: <code>00_ml_skeleton.ipynb</code>, every step on the slides, runs in about 10 s.</p><p style="margin:0">Terminal: <code>python workshop/examples/lesson1_knobs.py</code> (a model with two knobs)</p></div></div>
+  </div>
+</section>
+
+<!-- 5 · the recipe -->
 <section class="slide">
-  <div class="kicker">The problem</div>
+  <div class="kicker">The basics · the whole recipe</div>
+  <h2>Every machine-learning project follows the same steps</h2>
+  <p class="sub">We take them one per slide. The example: a town wants to know <b>tomorrow's water demand</b>, and it has three years of daily records of temperature, rainfall and demand.</p>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:6px">
+    <div class="card frag" style="border-top:4px solid var(--ink2)"><b>1 · Collect</b><br><span class="small">read the raw file</span></div>
+    <div class="card frag" style="border-top:4px solid var(--ink2)"><b>2 · Clean</b><br><span class="small">look at it; fix gaps, duplicates, impossible values</span></div>
+    <div class="card frag" style="border-top:4px solid var(--ink2)"><b>3 · Inputs and target</b><br><span class="small">what goes in (X), what comes out (y)</span></div>
+    <div class="card frag" style="border-top:4px solid var(--ink2)"><b>4 · Split</b><br><span class="small">train, validation, test</span></div>
+    <div class="card frag" style="border-top:4px solid var(--blue)"><b>5 · Scale</b><br><span class="small">every input on a similar scale, using training numbers only</span></div>
+    <div class="card frag" style="border-top:4px solid var(--blue)"><b>6 · Feed</b><br><span class="small">tensors and batches: how the data gets into the model</span></div>
+    <div class="card frag" style="border-top:4px solid var(--blue)"><b>7 · Model</b><br><span class="small">a function with knobs; which kind, how big</span></div>
+    <div class="card frag" style="border-top:4px solid var(--blue)"><b>8 · Train</b><br><span class="small">loss, gradients, update; watch validation</span></div>
+    <div class="card frag" style="border-top:4px solid var(--blue)"><b>9 · Size</b><br><span class="small">count the parameters, compare with the data you have</span></div>
+    <div class="card frag" style="border-top:4px solid var(--blue)"><b>10 · Settings</b><br><span class="small">layer size, learning rate…: chosen on validation</span></div>
+    <div class="card frag" style="border-top:4px solid var(--green)"><b>11 · Test</b><br><span class="small">once, at the end, in real units, against a baseline</span></div>
+    <div class="card frag" style="border-top:4px solid var(--green)"><b>12 · Save</b><br><span class="small">weights, scaler and settings together</span></div>
+  </div>
+  <p class="small" style="margin-top:16px">Grey: getting the data ready. Blue: the model, its training and its settings. Green: the final test and keeping the model. All twelve are cells in <code>workshop/notebooks/00_ml_skeleton.ipynb</code>.</p>
+</section>
+
+<!-- 6 · basics collect -->
+<section class="slide">
+  <div class="kicker">The basics · step 1 · collect</div>
+  <h2>Where data comes from, and the first look</h2>
+  <div class="cols" style="margin-top:12px">
+    <div class="col">
+      <ul>
+        <li><b>Files</b> from instruments or colleagues: CSV, Excel, text logs.</li>
+        <li><b>Databases</b> and exports from software.</li>
+        <li><b>Public datasets</b> and web APIs.</li>
+        <li><b>Simulations</b>, when measuring is too slow or too dangerous.</li>
+      </ul>
+      <div class="note blue" style="margin-top:12px">Write down for every file: where it came from, which version or date, the units of every column, and whether you may share it.</div>
+    </div>
+    <div class="col" style="flex:1.15">
+<pre><span class="c"># read it: one line, whatever the format</span>
+<span class="k">import</span> pandas <span class="k">as</span> pd
+df = pd.read_csv(<span class="s">"daily_demand.csv"</span>)
+<span class="c"># pd.read_excel("file.xlsx")   pd.read_sql(query, conn)</span>
+
+<span class="c"># then LOOK before doing anything else</span>
+<span class="h">df.shape        <span class="c"># (1096, 4): rows, columns</span></span>
+<span class="h">df.dtypes       <span class="c"># is each column the type you expect?</span></span>
+df.head()       <span class="c"># the first rows</span>
+<span class="h">df.describe()   <span class="c"># min and max: anything impossible?</span></span></pre>
+      <p class="small frag" style="margin-top:10px">In our example <code>describe()</code> already shows two problems: one demand value ten times too big, and a negative rainfall. Rain cannot be negative.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · basics clean -->
+<section class="slide">
+  <div class="kicker">The basics · step 2 · clean</div>
+  <h2>Cleaning: find what is wrong, fix only what you can explain</h2>
+  <div class="cols" style="margin-top:10px">
+    <div class="col" style="flex:.9">
+      <table style="font-size:15.5px">
+        <tr><th>Problem</th><th>How you find it</th><th>What you do</th></tr>
+        <tr class="frag"><td>wrong type (dates as text)</td><td><code>df.dtypes</code></td><td>convert</td></tr>
+        <tr class="frag"><td>duplicate rows</td><td><code>duplicated()</code></td><td>keep one</td></tr>
+        <tr class="frag"><td>missing values</td><td><code>isna().sum()</code></td><td>short gap: fill from neighbours; long gap: drop</td></tr>
+        <tr class="frag"><td>impossible values</td><td>ranges, physics</td><td>set to unknown, then fill or drop</td></tr>
+        <tr class="frag"><td>spikes (typing or unit errors)</td><td>far from the local median</td><td>replace or drop</td></tr>
+      </table>
+      <div class="note frag" style="margin-top:12px">Keep a list of every fix. Someone else must be able to rebuild your dataset from the raw file and your notes.</div>
+    </div>
+    <div class="col">
+<pre style="font-size:14px">df[<span class="s">"date"</span>] = pd.to_datetime(df[<span class="s">"date"</span>])        <span class="c"># type</span>
+df = df.drop_duplicates(<span class="s">"date"</span>)                 <span class="c"># duplicates</span>
+df = df.sort_values(<span class="s">"date"</span>).set_index(<span class="s">"date"</span>)
+
+df.isna().sum()                                  <span class="c"># count gaps</span>
+<span class="h">df[<span class="s">"temperature"</span>] = df[<span class="s">"temperature"</span>].interpolate(limit=2)</span>
+
+<span class="h">df.loc[df[<span class="s">"rainfall"</span>] &lt; 0, <span class="s">"rainfall"</span>] = np.nan     <span class="c"># impossible</span></span>
+df[<span class="s">"rainfall"</span>] = df[<span class="s">"rainfall"</span>].fillna(0)
+
+median = df[<span class="s">"demand"</span>].rolling(15, center=<span class="k">True</span>).median()
+<span class="h">spike = (df[<span class="s">"demand"</span>] - median).abs() &gt; 300       <span class="c"># spikes</span></span>
+df.loc[spike, <span class="s">"demand"</span>] = median[spike]</pre>
+      <p class="file">workshop/notebooks/00_ml_skeleton.ipynb, step 2</p>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · basics inputs and target -->
+<section class="slide">
+  <div class="kicker">The basics · step 3 · inputs and target</div>
+  <h2>Decide what goes in (X) and what comes out (y)</h2>
+  <table class="mono" style="font-size:15px;margin-top:10px">
+    <tr><th>date</th><th style="color:var(--blue)">temp tomorrow</th><th style="color:var(--blue)">rain tomorrow</th><th style="color:var(--blue)">weekend tomorrow</th><th style="color:var(--blue)">demand today</th><th style="color:var(--orange)">demand tomorrow</th></tr>
+    <tr><td>2021-03-01</td><td>27.4</td><td>0.0</td><td>0</td><td>1 391</td><td style="background:#fff7ed">1 402</td></tr>
+    <tr><td>2021-03-02</td><td>28.1</td><td>11.6</td><td>0</td><td>1 402</td><td style="background:#fff7ed">1 371</td></tr>
+    <tr><td>2021-03-03</td><td>26.9</td><td>0.0</td><td>0</td><td>1 371</td><td style="background:#fff7ed">1 384</td></tr>
+    <tr><td>…</td><td colspan="4" style="color:var(--blue)">X: 4 inputs per example</td><td style="color:var(--orange)">y: 1 target</td></tr>
+  </table>
+  <div class="cols" style="margin-top:16px">
+    <div class="col">
+      <ul style="font-size:17px">
+        <li><b>One row = one example.</b> The model learns the link from the blue columns to the orange one.</li>
+        <li class="frag"><b>Only put in X what you will really have</b> when you make the prediction. Tomorrow's real temperature is not known today; tomorrow's forecast is.</li>
+        <li class="frag"><b>The shape is the first thing to know.</b> A table: (examples, inputs). A time series: (examples, time steps, channels). Images: (examples, height, width, colours).</li>
+      </ul>
+    </div>
+    <div class="col">
+<pre style="font-size:14px">X = data[[<span class="s">"temp_tomorrow"</span>, <span class="s">"rain_tomorrow"</span>,
+          <span class="s">"weekend_tomorrow"</span>, <span class="s">"demand_today"</span>]].to_numpy()
+y = data[[<span class="s">"demand_tomorrow"</span>]].to_numpy()
+<span class="h">X.shape, y.shape      <span class="c"># (1094, 4)  (1094, 1)</span></span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · basics split -->
+<section class="slide" data-anim="split">
+  <div class="kicker">The basics · step 4 · split</div>
+  <h2>Train, validation and test: three separate piles</h2>
+  <canvas id="cv-split" width="1160" height="300"></canvas>
+  <div class="btns"><button id="split-random">random split</button><button id="split-time" class="on">split by time</button></div>
+  <div class="cols">
+    <div class="col">
+      <table style="font-size:14.5px">
+        <tr><th>pile</th><th>used for</th><th>how often</th></tr>
+        <tr><td><span class="pill b">train</span></td><td>the model learns its knobs from it</td><td>every step</td></tr>
+        <tr><td><span class="pill o">validation</span></td><td>we make choices with it: when to stop, how big a model</td><td>every epoch</td></tr>
+        <tr><td><span class="pill g">test</span></td><td>the final, honest score</td><td><b>once</b>, at the end</td></tr>
+      </table>
+      <p class="small" style="margin-top:6px">Data in time order: split by time. Press "random split" to see why: neighbours are near-copies, so a random test set is mostly data the model has seen.</p>
+    </div>
+    <div class="col">
+<pre style="font-size:13.5px">n = len(X)
+i_val, i_test = int(0.70 * n), int(0.85 * n)
+<span class="h">X_train, y_train = X[:i_val],       y[:i_val]        <span class="c"># learn</span></span>
+<span class="h">X_val,   y_val   = X[i_val:i_test], y[i_val:i_test]  <span class="c"># choose</span></span>
+<span class="h">X_test,  y_test  = X[i_test:],      y[i_test:]       <span class="c"># judge</span></span>
+
+<span class="c"># no time order (e.g. separate patients)? a random split is fine:</span>
+<span class="c"># train_test_split(X, y, test_size=0.15, random_state=0)</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · basics scale -->
+<section class="slide" data-anim="scale">
+  <div class="kicker">The basics · step 5 · scale</div>
+  <h2>Put every input on a similar scale</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.35">
+      <canvas id="cv-scale" width="720" height="330"></canvas>
+      <div class="btns"><button data-s="0" class="on">raw flow</button><button data-s="1">log(flow)</button><button data-s="2">standardised</button></div>
+      <p class="small">The example column is a water flow (about 20 000 m³ a day). Next to a temperature of about 25, it would swamp every weighted sum. Networks learn best when every input is near 0 with a spread of about 1.</p>
+    </div>
+    <div class="col">
+      <ul style="font-size:17px">
+        <li><b>log</b> for quantities that only grow by factors (flows, loads): storms stop dominating.</li>
+        <li><b>standardise</b>: z = (x − mean) / std, per channel.</li>
+        <li class="frag"><b>Compute mean and std on the training data only</b>, then reuse those numbers for validation, test and later use. Otherwise the test set leaks into training.</li>
+      </ul>
+<pre class="frag" style="font-size:13.5px"><span class="k">from</span> sklearn.preprocessing <span class="k">import</span> StandardScaler
+<span class="h">scaler = StandardScaler().fit(X_train)   <span class="c"># TRAIN only</span></span>
+X_train = scaler.transform(X_train)
+X_val   = scaler.transform(X_val)        <span class="c"># same mean, std</span>
+X_test  = scaler.transform(X_test)       <span class="c"># same mean, std</span></pre>
+      <p class="tiny frag">Keep the scaler: every new input must be scaled with the same mean and std, for ever.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · basics feed -->
+<section class="slide">
+  <div class="kicker">The basics · step 6 · feed</div>
+  <h2>How the data gets into the model: tensors and batches</h2>
+  <div class="flow" style="margin:18px 0 20px;flex-wrap:nowrap;gap:6px">
+    <div class="box"><b>X_train</b><br><span class="mono small">765 × 4</span><br><span class="small">all training examples</span></div><span class="arrow">→</span>
+    <div class="box frag" style="border-color:var(--ink2)"><b>DataLoader</b><br><span class="small">shuffles, cuts into batches of 32</span></div><span class="arrow frag">→</span>
+    <div class="box frag" style="border-color:var(--blue)"><b>one batch xb</b><br><span class="mono small">32 × 4</span></div><span class="arrow frag">→</span>
+    <div class="box frag" style="border-color:var(--orange)"><b>model(xb)</b><br><span class="mono small">32 × 1</span><br><span class="small">32 guesses at once</span></div>
+  </div>
+  <div class="cols">
+    <div class="col">
+      <ul style="font-size:17px">
+        <li><b>Tensor</b>: an array that PyTorch can do maths on, and follow back for the gradients.</li>
+        <li><b>Batch</b>: a few examples at a time. Faster than one by one, and steadier.</li>
+        <li><b>Epoch</b>: one pass through all the batches. Training runs for many epochs.</li>
+        <li>Shuffle the training batches; never the validation or test data.</li>
+      </ul>
+    </div>
+    <div class="col" style="flex:1.15">
+<pre style="font-size:13.5px"><span class="k">import</span> torch
+<span class="k">from</span> torch.utils.data <span class="k">import</span> TensorDataset, DataLoader
+ds = TensorDataset(torch.tensor(X_train, dtype=torch.float32),
+                   torch.tensor(y_train, dtype=torch.float32))
+<span class="h">train_dl = DataLoader(ds, batch_size=32, shuffle=<span class="k">True</span>)</span>
+
+xb, yb = next(iter(train_dl))
+<span class="h">xb.shape, yb.shape     <span class="c"># (32, 4)  (32, 1)</span></span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 12 · basics model -->
+<section class="slide" data-anim="fit">
+  <div class="kicker">The basics · step 7 · the model</div>
+  <h2>What is a model?</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.25">
+      <canvas id="cv-fit" width="660" height="440"></canvas>
+      <div class="btns"><button id="fit-play">▶ train</button><button id="fit-step">one step</button><button id="fit-reset">↺ reset</button></div>
+    </div>
+    <div class="col">
+      <div class="card" style="margin-bottom:12px">
+        <p style="margin:0" class="big">A model is a <b>function with knobs</b>:</p>
+        <p class="mono" style="font-size:26px;margin:8px 0;color:var(--blue)">ŷ = w · x + b</p>
+        <p class="small" style="margin:0">x: input · ŷ: the model's guess for y · <b>w, b: parameters</b>, the knobs.</p>
+      </div>
+      <div class="kv card" id="fit-panel" style="margin-bottom:12px"></div>
+      <ul class="small" style="font-size:17px">
+        <li class="frag"><b>Loss</b>: one number for "how wrong": the mean squared length of the red lines.</li>
+        <li class="frag"><b>Training</b>: turn the knobs a little in the direction that lowers the loss (the gradient). Repeat.</li>
+        <li class="frag">A neural network is the same thing with <b>thousands</b> of knobs and a more flexible function.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 13 · kinds of learning -->
+<section class="slide">
+  <div class="kicker">The basics · step 7 · kinds of learning</div>
+  <h2>Three kinds of learning: it depends on what answers you have</h2>
+  <div class="cols" style="margin-top:14px;gap:18px">
+    <div class="col card" style="border-top:5px solid var(--blue)">
+      <h3>Supervised</h3>
+      <p class="small" style="margin:0 0 8px">You have the right answer y for every x.</p>
+      <ul style="font-size:16.5px">
+        <li><b>Regression</b>: y is a number. Tomorrow's demand, a temperature, a price.</li>
+        <li><b>Classification</b>: y is a class. Spam or not, which fault, which species.</li>
+      </ul>
+      <p class="small" style="margin:8px 0 0">The loss compares the guess with y. Most of today is this.</p>
+    </div>
+    <div class="col card frag" style="border-top:5px solid var(--purple)">
+      <h3>Unsupervised</h3>
+      <p class="small" style="margin:0 0 8px">There is no y. Find structure in X alone.</p>
+      <ul style="font-size:16.5px">
+        <li><b>Clustering</b>: groups of similar days or samples.</li>
+        <li><b>Dimension reduction</b> (PCA): many columns summarised by a few.</li>
+        <li><b>Anomaly detection</b>: what does not look like the rest.</li>
+      </ul>
+    </div>
+    <div class="col card frag" style="border-top:5px solid var(--green)">
+      <h3>Reinforcement</h3>
+      <p class="small" style="margin:0 0 8px">No right answers, only a score (a reward) after acting.</p>
+      <ul style="font-size:16.5px">
+        <li>An agent tries actions, sees what happens, and learns which actions pay off.</li>
+        <li>Games, robots, controlling a process.</li>
+      </ul>
+      <p class="small" style="margin:8px 0 0">Part 3 of today.</p>
+    </div>
+  </div>
+  <p class="small frag" style="margin-top:16px">Our demand example is supervised regression: for every past day we know the true demand of the next day.</p>
+</section>
+
+<!-- 14 · kinds of models -->
+<section class="slide">
+  <div class="kicker">The basics · step 7 · kinds of models</div>
+  <h2>The shape of your data picks the kind of model</h2>
+  <div class="cols" style="margin-top:8px">
+    <div class="col">
+      <table style="font-size:15.5px">
+        <tr><th>If your input is…</th><th>start with…</th></tr>
+        <tr><td>a table: examples × columns</td><td><b>linear model</b>, <b>decision trees</b> (gradient-boosted trees), <b>MLP</b> (plain layers of neurons)</td></tr>
+        <tr><td>a sequence: examples × time × channels</td><td><b>1-D CNN</b> (a filter sliding along time), <b>RNN / GRU / LSTM</b> (a memory carried through time), <b>Transformer</b></td></tr>
+        <tr><td>an image: examples × height × width × colours</td><td><b>CNN</b> (filters sliding over the picture)</td></tr>
+        <tr><td>a decision with no right answer, only a reward</td><td>reinforcement learning</td></tr>
+      </table>
+    </div>
+    <div class="col">
+      <table style="font-size:15.5px">
+        <tr><th>If your output is…</th><th>last layer · loss</th></tr>
+        <tr><td>a number (or several)</td><td>linear · MSE or MAE</td></tr>
+        <tr><td>one of several classes</td><td>softmax · cross-entropy</td></tr>
+        <tr><td>yes or no</td><td>sigmoid · binary cross-entropy</td></tr>
+        <tr><td>a range (with uncertainty)</td><td>quantiles · pinball loss</td></tr>
+      </table>
+      <div class="note green" style="margin-top:14px;font-size:16.5px"><b>Start simple.</b> First a baseline with no learning at all, then a linear model, and only then something bigger. Our example is a table, 4 numbers in, 1 number out: a linear model or a small MLP.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 · basics forward -->
+<section class="slide" data-anim="forward">
+  <div class="kicker">The basics · step 7 · inside a network</div>
+  <h2>What happens inside a neural network, layer by layer</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.45">
+      <canvas id="cv-forward" width="660" height="470"></canvas>
+      <div class="btns"><button id="fw-play">▶ play</button><button id="fw-step">next step</button><button id="fw-reset">↺ reset</button><button id="fw-new">new input</button></div>
+    </div>
+    <div class="col">
+      <div class="card" style="min-height:220px">
+        <div class="small" style="font-weight:600">What the neuron is computing</div>
+        <div id="fw-panel" class="mono" style="font-size:15px;line-height:1.6;margin-top:6px"></div>
+      </div>
+      <ul style="font-size:16px;margin-top:10px">
+        <li>Each neuron: <b>weighted sum + bias</b>, then an <b>activation</b> (here ReLU: negatives become 0).</li>
+        <li>A whole layer at once: <span class="mono">h = ReLU(W·x + b)</span>. That's one matrix multiplication.</li>
+        <li>Line colour is the weight's sign (blue +, red −); thickness is its size. <b>Training only changes these numbers.</b></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 16 · basics loss -->
+<section class="slide" data-anim="loss">
+  <div class="kicker">The basics · step 8 · train (1)</div>
+  <h2>The loss says what "wrong" means</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.2">
+      <canvas id="cv-loss" width="640" height="400"></canvas>
+      <div class="btns" id="loss-btns"></div>
+    </div>
+    <div class="col">
+      <ul style="font-size:17px">
+        <li><b>MSE</b> (e²): punishes big errors hard; gives the mean.</li>
+        <li><b>MAE</b> (|e|): robust to outliers; gives the median.</li>
+        <li><b>Pinball</b> at τ: under-predicting costs τ, over-predicting 1−τ. At τ = 0.9 the best answer is the value exceeded only 10 % of the time. Three τ values give a band, for example a 10/50/90 % range.</li>
+        <li><b>Cross-entropy</b> for classes; <b>binary cross-entropy</b> for "violation: yes or no".</li>
+      </ul>
+<pre style="font-size:13.5px"><span class="k">from</span> torch <span class="k">import</span> nn
+loss_fn = nn.MSELoss()             <span class="c"># a number</span>
+loss_fn = nn.L1Loss()              <span class="c"># MAE: robust to outliers</span>
+loss_fn = nn.CrossEntropyLoss()    <span class="c"># classes</span>
+loss_fn = nn.BCEWithLogitsLoss()   <span class="c"># yes / no</span>
+<span class="h">loss = loss_fn(pred, y)            <span class="c"># one number: how wrong</span></span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 17 · basics descent -->
+<section class="slide" data-anim="descent">
+  <div class="kicker">The basics · step 8 · train (2)</div>
+  <h2>Gradient descent: walk downhill on the loss</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.2">
+      <canvas id="cv-descent" width="660" height="420"></canvas>
+      <div class="btns"><button data-lr="0.02">learning rate 0.02</button><button data-lr="0.15" class="on">0.15</button><button data-lr="0.5">0.5</button><button id="gd-run">▶ run</button></div>
+    </div>
+    <div class="col">
+      <p class="mono" style="font-size:22px;color:var(--blue);margin:4px 0 10px">w ← w − lr · ∂loss/∂w</p>
+      <ul style="font-size:17px">
+        <li>Contours are the loss over two weights; the ball is the model.</li>
+        <li><b>Too small</b>: it barely moves. <b>Too large</b>: it overshoots and blows up. Try all three.</li>
+        <li><b>Backpropagation</b> computes ∂loss/∂w for every weight in one backward pass: <code>loss.backward()</code>.</li>
+        <li>In practice: <b>Adam</b> (it adapts the step for every knob), sometimes a <b>learning-rate schedule</b> and <b>gradient clipping</b>.</li>
+      </ul>
+      <div id="gd-panel" class="mono small"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 18 · basics training code -->
+<section class="slide" data-anim="loop">
+  <div class="kicker">The basics · step 8 · train (3)</div>
+  <h2>What training code looks like</h2>
+  <div class="cols">
+    <div class="col" style="flex:1">
+      <canvas id="cv-loop" width="520" height="430"></canvas>
+    </div>
+    <div class="col" style="flex:1.15">
+<pre style="font-size:13px">opt = torch.optim.Adam(model.parameters(), lr=1e-2)
+loss_fn = nn.MSELoss()
+<span class="k">for</span> epoch <span class="k">in</span> range(60):
+    model.train()
+    <span class="k">for</span> xb, yb <span class="k">in</span> train_dl:          <span class="c"># 1 a batch</span>
+<span class="h">        pred = model(xb)               <span class="c"># 2 forward</span></span>
+<span class="h">        loss = loss_fn(pred, yb)       <span class="c"># 3 loss</span></span>
+        opt.zero_grad()
+<span class="h">        loss.backward()                <span class="c"># 4 gradients</span></span>
+<span class="h">        opt.step()                     <span class="c"># 5 update</span></span>
+    model.eval()
+    <span class="k">with</span> torch.no_grad():              <span class="c"># validation: no learning</span>
+        val = loss_fn(model(Xv), yv).item()
+    <span class="k">if</span> val &lt; best:                      <span class="c"># keep the best epoch</span>
+        best, best_state = val, copy.deepcopy(model.state_dict())</pre>
+      <canvas id="cv-curves" width="560" height="190" style="margin-top:8px"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- 19 · basics params -->
+<section class="slide" data-anim="params">
+  <div class="kicker">The basics · step 9 · how big?</div>
+  <h2>Counting parameters, and comparing with your data</h2>
+  <div class="cols">
+    <div class="col" style="flex:1.3">
+      <div class="flow" style="margin-bottom:6px"><span class="small">Layer sizes:</span><input type="text" id="par-input" value="4,16,1"></div>
+      <div class="btns" id="par-presets"></div>
+      <canvas id="cv-params" width="700" height="290"></canvas>
+    </div>
+    <div class="col">
+      <table id="par-table" style="font-size:15px"></table>
+      <div class="flow" style="margin-top:12px"><span class="small">Training examples you have:</span><input type="text" id="par-n" value="765" style="width:110px"></div>
+      <div id="par-verdict" class="note" style="margin-top:10px;font-size:16px"></div>
+      <p class="tiny">A dense layer from n inputs to m outputs has n·m weights + m biases. The ratio to examples is a rough guide, not a law: weight decay, early stopping and simple architectures let you go further.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 20 · basics settings -->
+<section class="slide">
+  <div class="kicker">The basics · step 10 · settings</div>
+  <h2>Parameters are learned; settings are chosen by you</h2>
+  <div class="cols" style="margin-top:10px">
+    <div class="col">
+      <table style="font-size:15.5px">
+        <tr><th></th><th>parameters</th><th>settings (hyperparameters)</th></tr>
+        <tr><td>examples</td><td>every weight and bias</td><td>number of layers and units, learning rate, batch size, epochs, regularisation</td></tr>
+        <tr><td>set by</td><td>training</td><td>you, before training</td></tr>
+        <tr><td>judged on</td><td>the training data</td><td><b>the validation data</b></td></tr>
+      </table>
+      <ul style="font-size:16.5px;margin-top:12px">
+        <li><b>The recipe:</b> try a few settings, keep the one with the lowest validation loss, then test that one, once.</li>
+        <li>Good starting points: a small model, Adam with learning rate 10⁻³ to 10⁻², stop at the best validation epoch.</li>
+        <li>Grow the model only while the validation loss keeps falling.</li>
+      </ul>
+    </div>
+    <div class="col" style="flex:1.05">
+<pre style="font-size:13.5px"><span class="k">for</span> hidden <span class="k">in</span> [4, 16, 64]:
+    <span class="k">for</span> lr <span class="k">in</span> [1e-3, 1e-2]:
+        model = make_model(hidden)
+<span class="h">        val, _ = train(model, lr=lr)    <span class="c"># judged on validation</span></span>
+        results.append((hidden, lr, val))</pre>
+      <table class="mono frag" style="font-size:14px;margin-top:10px">
+        <tr><th>hidden</th><th>lr</th><th>parameters</th><th>validation loss</th></tr>
+        <tr class="hl"><td>16</td><td>0.01</td><td>97</td><td>0.222</td></tr>
+        <tr><td>64</td><td>0.01</td><td>385</td><td>0.261</td></tr>
+        <tr><td>4</td><td>0.01</td><td>25</td><td>0.299</td></tr>
+        <tr><td>4</td><td>0.001</td><td>25</td><td>0.317</td></tr>
+        <tr><td>64</td><td>0.001</td><td>385</td><td>0.321</td></tr>
+        <tr><td>16</td><td>0.001</td><td>97</td><td>0.323</td></tr>
+      </table>
+      <p class="small frag">The middle size wins: 4 units are too few to fit, 64 start to memorise. Bigger is not automatically better.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 21 · basics testing code -->
+<section class="slide">
+  <div class="kicker">The basics · step 11 · test</div>
+  <h2>What testing code looks like</h2>
+  <div class="cols" style="margin-top:10px">
+    <div class="col" style="flex:1.15">
+<pre style="font-size:14px">model.load_state_dict(best_state)      <span class="c"># the best epoch</span>
+<span class="h">model.eval()                           <span class="c"># switch off training mode</span></span>
+<span class="h"><span class="k">with</span> torch.no_grad():                  <span class="c"># nothing is learned here</span></span>
+    pred = model(X_test_t)
+pred = pred.numpy() * y_std + y_mean   <span class="c"># back to real units</span>
+
+<span class="h">mae = np.abs(pred - y_test).mean()</span>
+<span class="c"># baseline: "tomorrow = today"</span>
+baseline = np.abs(X_test[:, 3:4] - y_test).mean()</pre>
+<pre class="frag" style="margin-top:10px;background:#fff;color:var(--ink);border:1px solid var(--line);font-size:14px">test error, model:      44.4 thousand litres per day
+test error, baseline:   56.7 thousand litres per day</pre>
+    </div>
+    <div class="col">
+      <ul style="font-size:17px">
+        <li><b>Same preparation</b> as training: the same columns, the same scaler.</li>
+        <li><b>Real units.</b> "44 thousand litres a day" means something; "0.22" does not.</li>
+        <li><b>Against a baseline.</b> The simplest guess you can think of. If the model can't beat it, it is not worth having.</li>
+        <li class="frag"><b>Once.</b> If you go back and change the model after looking at the test score, the test has become validation.</li>
+        <li class="frag">Numbers: MAE, RMSE, R². Classes: accuracy, precision and recall, the confusion matrix.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 22 · basics skeleton -->
+<section class="slide">
+  <div class="kicker">The basics · the whole skeleton</div>
+  <h2>One notebook, twelve steps: the skeleton of every ML notebook</h2>
+  <div class="cols" style="margin-top:8px;gap:16px">
+    <div class="col">
+<pre style="font-size:12.5px;line-height:1.42"><span class="c"># 0  imports and seeds</span>
+<span class="k">import</span> numpy <span class="k">as</span> np, pandas <span class="k">as</span> pd, torch
+<span class="k">from</span> torch <span class="k">import</span> nn;  torch.manual_seed(0)
+<span class="c"># 1  collect</span>
+df = pd.read_csv(<span class="s">"daily_demand.csv"</span>)
+<span class="c"># 2  clean (after looking: shape, dtypes, describe)</span>
+df.describe(); df = df.drop_duplicates(<span class="s">"date"</span>)
+df[<span class="s">"temperature"</span>] = df[<span class="s">"temperature"</span>].interpolate(limit=2)
+<span class="c"># 3  inputs and target</span>
+X = data[inputs].to_numpy(); y = data[[target]].to_numpy()
+<span class="c"># 4  split by time</span>
+X_train, X_val, X_test = X[:i_val], X[i_val:i_test], X[i_test:]
+<span class="c"># 5  scale with training numbers only</span>
+mean, std = X_train.mean(0), X_train.std(0)
+<span class="c"># 6  feed: tensors and batches</span>
+train_dl = DataLoader(TensorDataset(Xt, yt), batch_size=32, shuffle=<span class="k">True</span>)</pre>
+    </div>
+    <div class="col">
+<pre style="font-size:12.5px;line-height:1.42"><span class="c"># 7  model</span>
+model = nn.Sequential(nn.Linear(4, 16), nn.ReLU(), nn.Linear(16, 1))
+<span class="c"># 8  train, keep the best validation epoch</span>
+<span class="k">for</span> epoch <span class="k">in</span> range(60):
+    <span class="k">for</span> xb, yb <span class="k">in</span> train_dl:
+        loss = loss_fn(model(xb), yb)
+        opt.zero_grad(); loss.backward(); opt.step()
+    <span class="c"># validation loss → keep best_state</span>
+<span class="c"># 9  size: count the parameters</span>
+sum(p.numel() <span class="k">for</span> p <span class="k">in</span> model.parameters())   <span class="c"># 97</span>
+<span class="c"># 10 settings: try a few on validation</span>
+<span class="k">for</span> hidden <span class="k">in</span> [4, 16, 64]: ...
+<span class="c"># 11 test once, real units, against a baseline</span>
+model.eval(); pred = model(X_test_t)
+<span class="c"># 12 save weights + scaler + settings</span>
+torch.save({<span class="s">"weights"</span>: model.state_dict(), <span class="s">"mean"</span>: mean, ...}, path)</pre>
+    </div>
+  </div>
+  <p class="small" style="margin-top:12px">Every notebook you meet, including the project's, is these blocks in this order, with more detail inside each. When a notebook confuses you, find which of the twelve steps a cell belongs to.</p>
+</section>
+
+<!-- 23 · basics hands-on -->
+<section class="slide handson">
+  <div class="kicker">Your turn · 10 minutes</div>
+  <h1>Notebook 0: the skeleton</h1>
+  <p style="margin:4px 0 0">Open <code>workshop/notebooks/00_ml_skeleton.ipynb</code> and run it from top to bottom (Shift + Enter). It takes about 10 seconds. <a href="https://claude.ai/artifact/NMc3LiA6MuhKAa6gjGvWHr" style="color:#fff;font-weight:600">Or read it as a web page with all the results.</a></p>
+  <div class="cols" style="margin-top:20px">
+    <div class="col card">
+      <h3>Then change one thing at a time</h3>
+      <ul>
+        <li>Remove <code>demand_today</code> from the inputs. How much worse is the test error?</li>
+        <li>Set <code>hidden</code> to 256. More parameters: better or worse on validation?</li>
+        <li>Try a learning rate of 1.0. What happens to the loss?</li>
+        <li>Replace the split with a random one. Does the test score look better? Should you believe it?</li>
+      </ul>
+    </div>
+    <div class="col card">
+      <h3>Short on time?</h3>
+      <p>The smallest model there is, two knobs, trained in the terminal:</p>
+      <p><code>python workshop/examples/lesson1_knobs.py</code></p>
+    </div>
+  </div>
+</section>
+
+<!-- 24 · quiz basics -->
+<section class="slide" data-anim="quiz" data-key="basics">
+  <div class="kicker">Part 1 · check yourself</div>
+  <h2>Four questions before we move on</h2>
+  <p class="sub" style="margin-bottom:10px">Ask the room first. Then click a question (or press →) to show the answer.</p>
+  <div class="quiz-root faq"></div>
+</section>
+
+<!-- 25 · part 2 divider -->
+<section class="slide divider">
+  <div class="ltrack"><span class="done">1. The basics</span><span class="on">2. Our project: plant data to a forecaster</span><span class="">3. Reinforcement learning and our controller</span></div>
+  <div class="kicker">Part 2 of 3 · 30 min</div>
+  <h1 style="font-size:58px;margin:6px 0 18px">Our project: plant data to a forecaster</h1>
+  <div class="cols" style="margin-top:10px">
+    <div class="col"><div class="card"><h3>In this part</h3><p style="margin:0">The same steps on our research project: the BSM1 plant, its official Excel files, our cleaning (with a physics fix), cutting a time series into examples, choosing a model for it, training and testing it.</p></div></div>
+    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Notebook 1 (collect, clean, prepare) and notebook 2 (choose and train)</p><p style="margin:0">Terminal: <code>lesson2_load_and_clean.py</code> to <code>lesson5_train_and_evaluate.py</code></p></div></div>
+  </div>
+</section>
+
+<!-- 26 · project problem -->
+<section class="slide">
+  <div class="kicker">Our project · the problem</div>
   <h2>What the project is about</h2>
   <div class="cols" style="margin-top:14px">
     <div class="col">
@@ -233,88 +813,18 @@ jupyter lab workshop/notebooks</pre>
   </div>
 </section>
 
-<!-- the plant, as the project drew it -->
+<!-- 27 · project plant -->
 <section class="slide">
-  <div class="kicker">The problem · the plant</div>
+  <div class="kicker">Our project · the plant</div>
   <h2>The plant and its two control loops</h2>
   <img src="diagrams/d0_plant.png" alt="BSM1 plant: five tanks, a settler, two recycles, two sensors and two actuators" style="display:block;margin:4px auto 0;max-height:470px;max-width:100%;border:1px solid var(--line);border-radius:10px;background:#fff">
   <p class="small" style="margin:10px 0 0">Water flows left to right. Tanks 1 and 2 get no air, so bacteria there remove nitrate. Tanks 3 to 5 are aerated, so bacteria there turn ammonium into nitrate. The internal recycle Q<sub>a</sub> carries that nitrate back to tank 1. The settler lets the sludge sink, and most of it goes back to the start. Our controllers move two things: the air in tank 5 (KLa<sub>5</sub>) and the recycle pump (Q<sub>a</sub>). Diagram: <code>docs/diagrams/d0_plant.drawio</code>.</p>
 </section>
 
-<!-- pipeline map -->
-<section class="slide" data-anim="pipeline">
-  <div class="kicker">Our code, end to end</div>
-  <h2>How the project was built: one script per step</h2>
-  <div class="pipe-root"></div>
-</section>
-
-<!-- lesson 1 divider -->
-<section class="slide divider">
-  <div class="ltrack"><span class="on">1. What is a model?</span><span class="">2. Collect and clean the data</span><span class="">3. Prepare the data</span><span class="">4. Choose the model</span><span class="">5. Train and evaluate</span><span class="">6. Reinforcement learning</span><span class="">7. Our project's code</span></div>
-  <div class="kicker">Lesson 1 of 7 · 8 min</div>
-  <h1 style="font-size:58px;margin:6px 0 18px">What is a model?</h1>
-  <div class="cols" style="margin-top:10px">
-    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">A model is a function with knobs. Training turns the knobs, in four steps that every model uses.</p></div></div>
-    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: <code>python workshop/examples/lesson1_knobs.py</code></p><p style="margin:0">Notebook: none needed; slide 8 shows the same lines in notebook 2 and the project.</p></div></div>
-  </div>
-</section>
-
-<!-- 4 ─────────────────────────────── WHAT IS A MODEL -->
-<section class="slide" data-anim="fit">
-  <div class="kicker">Lesson 1 · the core idea</div>
-  <h2>What is a model?</h2>
-  <div class="cols">
-    <div class="col" style="flex:1.25">
-      <canvas id="cv-fit" width="660" height="440"></canvas>
-      <div class="btns"><button id="fit-play">▶ train</button><button id="fit-step">one step</button><button id="fit-reset">↺ reset</button></div>
-    </div>
-    <div class="col">
-      <div class="card" style="margin-bottom:12px">
-        <p style="margin:0" class="big">A model is a <b>function with knobs</b>:</p>
-        <p class="mono" style="font-size:26px;margin:8px 0;color:var(--blue)">ŷ = w · x + b</p>
-        <p class="small" style="margin:0">x: input (here inflow) · ŷ: prediction (ammonium load) · <b>w, b: parameters</b>, the knobs.</p>
-      </div>
-      <div class="kv card" id="fit-panel" style="margin-bottom:12px"></div>
-      <ul class="small" style="font-size:17px">
-        <li class="frag"><b>Loss</b>: one number for "how wrong": the mean squared length of the red lines.</li>
-        <li class="frag"><b>Training</b>: turn the knobs a little in the direction that lowers the loss (the gradient). Repeat.</li>
-        <li class="frag">A neural network is the same thing with <b>thousands</b> of knobs and a more flexible function.</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- code map: lesson1 -->
-<section class="slide" data-anim="codemap" data-key="lesson1">
-  <div class="kicker">Lesson 1 · where is the code?</div>
-  <h2>Four steps train every model</h2>
-  <p class="small" style="margin:2px 0 0">The same steps in the hands-on script, the notebook and the project. Run it yourself: <code>python workshop/examples/lesson1_knobs.py</code></p>
-  <div class="cm-root"></div>
-</section>
-
-<!-- lesson 1 quiz -->
-<section class="slide" data-anim="quiz" data-key="l1">
-  <div class="kicker">Lesson 1 · check yourself</div>
-  <h2>Three questions before we move on</h2>
-  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
-  <div class="quiz-root"></div>
-</section>
-
-<!-- lesson 2 divider -->
-<section class="slide divider">
-  <div class="ltrack"><span class="done">1. What is a model?</span><span class="on">2. Collect and clean the data</span><span class="">3. Prepare the data</span><span class="">4. Choose the model</span><span class="">5. Train and evaluate</span><span class="">6. Reinforcement learning</span><span class="">7. Our project's code</span></div>
-  <div class="kicker">Lesson 2 of 7 · 20 min</div>
-  <h1 style="font-size:58px;margin:6px 0 18px">Collect and clean the data</h1>
-  <div class="cols" style="margin-top:10px">
-    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">Download data reproducibly, read it without traps, check it, and fix what is wrong, including the physics.</p></div></div>
-    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: <code>python workshop/examples/lesson2_load_and_clean.py</code></p><p style="margin:0">Notebook: notebook 1, parts A and B</p></div></div>
-  </div>
-</section>
-
-<!-- 5 ─────────────────────────────── COLLECT -->
+<!-- 28 · project collect -->
 <section class="slide" data-anim="collect">
-  <div class="kicker">Lesson 2 · collect</div>
-  <h2>Where the data comes from</h2>
+  <div class="kicker">Our project · step 1 · collect</div>
+  <h2>Our data: the official BSM1 influent files</h2>
   <div class="cols">
     <div class="col" style="flex:1.45">
       <canvas id="cv-collect" width="760" height="420"></canvas>
@@ -333,9 +843,9 @@ jupyter lab workshop/notebooks</pre>
   <div class="foot">Animation: flow from the repository's influent generator (<code>bsm1/influent.py</code>). Notebook 1 loads the official files.</div>
 </section>
 
-<!-- 6 ─────────────────────────────── LOAD CODE -->
+<!-- 29 · project load -->
 <section class="slide">
-  <div class="kicker">Lesson 2 · collect · the code</div>
+  <div class="kicker">Our project · step 1 · reading the Excel files</div>
   <h2>Load it once, record where it came from, cache it</h2>
   <div class="cols" style="margin-top:12px">
     <div class="col" style="flex:1.3">
@@ -367,10 +877,10 @@ _SRC = <span class="s">"https://raw.githubusercontent.com/davidfernand/"</span>
   </div>
 </section>
 
-<!-- 7 ─────────────────────────────── CLEAN -->
+<!-- 30 · project clean -->
 <section class="slide" data-anim="clean">
-  <div class="kicker">Lesson 2 · clean</div>
-  <h2>Cleaning: look before you learn</h2>
+  <div class="kicker">Our project · step 2 · clean</div>
+  <h2>Cleaning our files, and a fix only physics can find</h2>
   <div class="cols">
     <div class="col" style="flex:1.1">
       <table class="mono" id="clean-table" style="font-size:14px">
@@ -399,9 +909,9 @@ _SRC = <span class="s">"https://raw.githubusercontent.com/davidfernand/"</span>
   </div>
 </section>
 
-<!-- 8 ─────────────────────────────── RESAMPLE -->
+<!-- 31 · project time grid -->
 <section class="slide" data-anim="zoh">
-  <div class="kicker">Lesson 2 · clean · time grid</div>
+  <div class="kicker">Our project · step 2 · one time grid</div>
   <h2>Put everything on one time grid</h2>
   <p class="sub">Sensors sample every 15 min, but the controller acts every 45 s. Between samples the influent is held constant (a zero-order hold): 20 control steps per sample.</p>
   <canvas id="cv-zoh" width="1160" height="360"></canvas>
@@ -411,98 +921,24 @@ idx = np.minimum(np.searchsorted(d[:, 0], t, side=<span class="s">"right"</span>
 flow = d[idx, 15]</pre>
 </section>
 
-<!-- code map: lesson2 -->
+<!-- 32 · code map: lesson2 -->
 <section class="slide" data-anim="codemap" data-key="lesson2">
-  <div class="kicker">Lesson 2 · where is the code?</div>
+  <div class="kicker">Our project · where is the code?</div>
   <h2>Download, read, check, fix</h2>
   <p class="small" style="margin:2px 0 0">The same steps in the hands-on script, the notebook and the project. Run it yourself: <code>python workshop/examples/lesson2_load_and_clean.py</code></p>
   <div class="cm-root"></div>
 </section>
 
-<!-- code tour: data -->
-<section class="slide" data-anim="tour" data-key="data">
-  <div class="kicker">Lesson 2 · our code</div>
-  <h2>How the project loads and corrects the official data</h2>
-  <div class="tour-root"></div>
-</section>
-
-<!-- player: collect -->
+<!-- 33 · player: collect -->
 <section class="slide" data-anim="player" data-key="collect">
-  <div class="kicker">Lesson 2 · the notebook running</div>
+  <div class="kicker">Our project · notebook 1 running</div>
   <h2>Collect and clean, cell by cell</h2>
   <div class="player-root"></div>
 </section>
 
-<!-- lesson 2 quiz -->
-<section class="slide" data-anim="quiz" data-key="l2">
-  <div class="kicker">Lesson 2 · check yourself</div>
-  <h2>Three questions before we move on</h2>
-  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
-  <div class="quiz-root"></div>
-</section>
-
-<!-- 9 ─────────────────────────────── HANDS ON 1 -->
-<section class="slide handson">
-  <div class="kicker">Your turn · 12 minutes</div>
-  <h1>Notebook 1, parts A and B</h1>
-  <p style="margin:4px 0 0">Short on time? The same steps in one terminal command: <code>python workshop/examples/lesson2_load_and_clean.py</code></p>
-  <div class="cols" style="margin-top:20px">
-    <div class="col card">
-      <h3>A · Collect</h3>
-      <ul><li>Download the three official files (cached after the first time)</li><li>Open one raw with pandas: what is in the first rows?</li><li>Name the columns, check the shape, the types and the time step</li><li>Plot the three weathers. Is week 1 really the same in all three?</li></ul>
-    </div>
-    <div class="col card">
-      <h3>B · Clean</h3>
-      <ul><li>Run the checks: NaN, duplicates, negative values, ranges</li><li>Find and fix the problems in a damaged copy</li><li>Apply the S_I dilution fix and add TSS</li><li>Resample to 45 s with a zero-order hold</li></ul>
-    </div>
-  </div>
-  <p style="margin-top:22px"><code>workshop/notebooks/01_data_collect_clean_prepare.ipynb</code> · <a href="https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq" style="color:#fff;font-weight:600">or read it as a web page with all the results</a></p>
-</section>
-
-<!-- lesson 3 divider -->
-<section class="slide divider">
-  <div class="ltrack"><span class="done">1. What is a model?</span><span class="done">2. Collect and clean the data</span><span class="on">3. Prepare the data</span><span class="">4. Choose the model</span><span class="">5. Train and evaluate</span><span class="">6. Reinforcement learning</span><span class="">7. Our project's code</span></div>
-  <div class="kicker">Lesson 3 of 7 · 12 min</div>
-  <h1 style="font-size:58px;margin:6px 0 18px">Prepare the data</h1>
-  <div class="cols" style="margin-top:10px">
-    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">Choose inputs and target, split by time, scale with training numbers only, cut examples.</p></div></div>
-    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: <code>python workshop/examples/lesson3_prepare.py</code></p><p style="margin:0">Notebook: notebook 1, part C</p></div></div>
-  </div>
-</section>
-
-<!-- 10 ─────────────────────────────── TRANSFORM & SCALE -->
-<section class="slide" data-anim="scale">
-  <div class="kicker">Lesson 3 · prepare</div>
-  <h2>Transform and scale the inputs</h2>
-  <div class="cols">
-    <div class="col" style="flex:1.35">
-      <canvas id="cv-scale" width="720" height="330"></canvas>
-      <div class="btns"><button data-s="0" class="on">raw flow</button><button data-s="1">log(flow)</button><button data-s="2">standardised</button></div>
-      <p class="small">Networks learn best when every input is on a similar scale near 0. Flow is ~20 000; ammonium ~30. Without scaling, flow dominates every weighted sum.</p>
-    </div>
-    <div class="col">
-      <ul style="font-size:17px">
-        <li><b>log</b> for quantities that only grow by factors (flows, loads): storms stop dominating.</li>
-        <li><b>standardise</b>: z = (x − mean) / std, per channel.</li>
-        <li class="frag"><b>Compute mean and std on the training data only</b>, then reuse those numbers for validation, test and deployment. Otherwise the test set leaks into training.</li>
-      </ul>
-<pre class="frag" style="font-size:13px"><span class="c"># src/wwtp/warning/dataset.py:224</span>
-<span class="k">class</span> Normaliser:
-    LOG = (0, 1, 2, 6)       <span class="c"># these get log</span>
-    <span class="k">def</span> fit(self, xs):       <span class="c"># TRAIN only</span>
-        z = self._pre(np.concatenate(xs))
-<span class="h">        self.mean = z.mean(0)</span>
-<span class="h">        self.std = z.std(0) + 1e-3</span>
-    <span class="k">def</span> __call__(self, x):   <span class="c"># everywhere</span>
-        <span class="k">return</span> (self._pre(x) - self.mean) / self.std</pre>
-      <p class="tiny frag">The mean and std are saved inside the model file (<code>forecast/train.py:85</code>): a model without its scaler is useless.</p>
-    </div>
-  </div>
-</section>
-
-<!-- 11 ─────────────────────────────── WINDOWS -->
+<!-- 34 · project windows -->
 <section class="slide" data-anim="window">
-  <div class="kicker">Lesson 3 · prepare</div>
+  <div class="kicker">Our project · step 3 · inputs and target</div>
   <h2>Turn one long series into many (input, target) examples</h2>
   <canvas id="cv-window" width="1160" height="380"></canvas>
   <div class="cols" style="margin-top:6px">
@@ -516,113 +952,52 @@ flow = d[idx, 15]</pre>
     <span class="k">return</span> xs, ys</pre>
     </div>
     <div class="col">
-      <p class="small" style="margin:0">The input window ends exactly where the target begins. The model only ever sees the past, as it will on the plant. One 14-day file gives ≈1 240 examples.</p>
+      <p class="small" style="margin:0">Our data is one long series, not a table, so we cut it into examples: the last 24 h in, the next 2 h out. The input window ends exactly where the target begins, so the model only sees the past, as it will on the plant.</p><p class="small" style="margin:8px 0 0"><b>Split:</b> train = dry weather + rain week 2; validation = the first storm; test = the second storm. Scaling uses the training numbers only, as in part 1.</p>
     </div>
   </div>
 </section>
 
-<!-- 12 ─────────────────────────────── SPLIT -->
-<section class="slide" data-anim="split">
-  <div class="kicker">Lesson 3 · prepare</div>
-  <h2>Split by time, not at random</h2>
-  <canvas id="cv-split" width="1160" height="300"></canvas>
-  <div class="btns"><button id="split-random">random split</button><button id="split-time" class="on">split by time</button></div>
-  <div class="cols">
-    <div class="col">
-      <ul style="font-size:17px">
-        <li>Neighbouring windows share 95 % of their samples. Split them at random and the test set holds near-copies of training examples, so the score looks far better than reality.</li>
-        <li>Train on the past, validate on later data, test on data that nothing was tuned on.</li>
-      </ul>
-    </div>
-    <div class="col">
-      <ul style="font-size:17px">
-        <li>In this project:
-          <ul><li>paper 2: learn on week 1, test on week 2 (<code>rl/train.py</code>)</li>
-          <li>warning model: separate simulated plants for train, val and test (seeds 0, 1000, 2000 in <code>experiments/04</code>)</li>
-          <li>paper 1: a held-out test whose protocol was committed <b>before</b> it was run (<code>docs/PAPER1_HELDOUT_PROTOCOL.md</code>)</li></ul></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- code map: lesson3 -->
-<section class="slide" data-anim="codemap" data-key="lesson3">
-  <div class="kicker">Lesson 3 · where is the code?</div>
-  <h2>Choose, split, scale, cut</h2>
-  <p class="small" style="margin:2px 0 0">The same steps in the hands-on script, the notebook and the project. Run it yourself: <code>python workshop/examples/lesson3_prepare.py</code></p>
-  <div class="cm-root"></div>
-</section>
-
-<!-- player: prepare -->
+<!-- 35 · player: prepare -->
 <section class="slide" data-anim="player" data-key="prepare">
-  <div class="kicker">Lesson 3 · the notebook running</div>
-  <h2>Prepare, cell by cell</h2>
+  <div class="kicker">Our project · notebook 1 running</div>
+  <h2>Choose, split, scale, cut: cell by cell</h2>
   <div class="player-root"></div>
 </section>
 
-<!-- lesson 3 quiz -->
-<section class="slide" data-anim="quiz" data-key="l3">
-  <div class="kicker">Lesson 3 · check yourself</div>
-  <h2>Three questions before we move on</h2>
-  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
-  <div class="quiz-root"></div>
-</section>
-
-<!-- 13 ─────────────────────────────── HANDS ON 2 -->
+<!-- 36 · project hands-on 1 -->
 <section class="slide handson">
-  <div class="kicker">Your turn · 10 minutes</div>
-  <h1>Notebook 1, part C: prepare</h1>
-  <p style="margin:4px 0 0">Short on time? The same steps in one terminal command: <code>python workshop/examples/lesson3_prepare.py</code></p>
+  <div class="kicker">Your turn · 15 minutes</div>
+  <h1>Notebook 1: collect, clean, prepare</h1>
+  <p style="margin:4px 0 0">Short on time? The same steps in one terminal command: <code>python workshop/examples/lesson2_load_and_clean.py</code> then <code>lesson3_prepare.py</code></p>
   <div class="cols" style="margin-top:20px">
     <div class="col card">
-      <ul>
-        <li>Pick the inputs a real plant can measure at the inlet: flow, ammonium, COD (as <code>forecast/dataset.py</code>)</li>
-        <li>Split: train = dry (14 d) + rain week 2; validation = storm days 7–10.25 (storm 1); test = storm days 10.25–14 (storm 2)</li>
-        <li>log, then standardise with <b>training</b> statistics</li>
-        <li>Cut windows: 96 past steps → 8 future steps of flow</li>
-        <li>Check the shapes and that no window crosses a split</li>
-        <li>Save everything to <code>prepared.npz</code></li>
-      </ul>
+      <h3>A · Collect</h3>
+      <ul style="font-size:17px"><li>Download the three official files (cached after the first time)</li><li>Open one raw with pandas: what is in the first rows?</li><li>Name the columns, check the shape, the types and the time step</li><li>Plot the three weathers. Is week 1 really the same in all three?</li></ul>
     </div>
     <div class="col card">
-      <h3>Question to think about</h3>
-      <p>The training data has only one rain event and no storm. The test is a storm. What do you expect from the model, and from the baselines?</p>
+      <h3>B · Clean</h3>
+      <ul style="font-size:17px"><li>Run the checks: NaN, duplicates, negative values, ranges</li><li>Find and fix the problems in a damaged copy</li><li>Apply the S_I dilution fix and add TSS</li><li>Resample to 45 s with a zero-order hold</li></ul>
+    </div>
+    <div class="col card">
+      <h3>C · Prepare</h3>
+      <ul style="font-size:17px"><li>Inputs: flow, ammonium, COD; target: flow in the next 2 h</li><li>Split by weather and time</li><li>log, then scale with training numbers</li><li>Cut windows, check shapes, save <code>prepared.npz</code></li></ul>
     </div>
   </div>
+  <p style="margin-top:22px"><code>workshop/notebooks/01_data_collect_clean_prepare.ipynb</code> · <a href="https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq" style="color:#fff;font-weight:600">or read it as a web page with all the results</a></p>
 </section>
 
-<!-- lesson 4 divider -->
-<section class="slide divider">
-  <div class="ltrack"><span class="done">1. What is a model?</span><span class="done">2. Collect and clean the data</span><span class="done">3. Prepare the data</span><span class="on">4. Choose the model</span><span class="">5. Train and evaluate</span><span class="">6. Reinforcement learning</span><span class="">7. Our project's code</span></div>
-  <div class="kicker">Lesson 4 of 7 · 10 min</div>
-  <h1 style="font-size:58px;margin:6px 0 18px">Choose the model</h1>
-  <div class="cols" style="margin-top:10px">
-    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">Let the input and output shapes pick the model family; look inside a network layer by layer; count its knobs.</p></div></div>
-    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: <code>python workshop/examples/lesson4_models.py</code></p><p style="margin:0">Notebook: notebook 2, sections 1–6</p></div></div>
-  </div>
-</section>
-
-<!-- 14 ─────────────────────────────── SHAPES DECIDE -->
+<!-- 37 · project shapes -->
 <section class="slide" data-anim="shapes">
-  <div class="kicker">Lesson 4 · choose a model</div>
-  <h2>The input and output decide the model</h2>
+  <div class="kicker">Our project · step 7 · which model?</div>
+  <h2>Our shapes, and the models in the project</h2>
   <div class="cols" style="margin-top:8px">
     <div class="col" style="flex:.9">
-      <table style="font-size:15px">
-        <tr><th>If your input is…</th><th>start with…</th></tr>
-        <tr><td>a table, N × features</td><td>linear model, gradient-boosted trees, MLP (multi-layer perceptron: plain layers of neurons)</td></tr>
-        <tr><td>a sequence, N × time × channels</td><td>1-D CNN / TCN (convolutions over time), GRU / LSTM (recurrent: a memory), Transformer</td></tr>
-        <tr><td>an image, N × H × W × C</td><td>CNN</td></tr>
-        <tr><td>a decision with no correct answer, only a reward</td><td>reinforcement learning</td></tr>
-      </table>
-      <table style="font-size:15px;margin-top:12px">
-        <tr><th>If your output is…</th><th>last layer · loss</th></tr>
-        <tr><td>a number (or several)</td><td>linear · MSE / MAE</td></tr>
-        <tr><td>a class</td><td>softmax · cross-entropy</td></tr>
-        <tr><td>a yes/no probability</td><td>sigmoid · binary cross-entropy</td></tr>
-        <tr><td>a range (uncertainty)</td><td>quantiles · pinball loss</td></tr>
-        <tr><td>a bounded action</td><td>tanh · from a critic or a reward</td></tr>
-      </table>
+      <div class="card">
+        <p style="margin:0 0 8px"><b>Forecast:</b> input X is a sequence, <span class="mono">(N, 96, 3)</span>: 96 time steps of flow, ammonium and COD. Output y is <span class="mono">(N, 8)</span>: the next 8 flows.</p>
+        <p style="margin:0 0 8px">By the table in part 1: a sequence in, numbers out. So a <b>1-D CNN</b> (or a recurrent network), with a linear last layer and an MSE or pinball loss.</p>
+        <p style="margin:0">And as always: <b>baselines first</b> (no learning), then a linear model, then an MLP, then the CNN.</p>
+      </div>
+      <p class="small" style="margin-top:10px">The other parts of the project have other shapes, so other models. Click them on the right.</p>
     </div>
     <div class="col" style="flex:1.1">
       <div class="small" style="margin-bottom:6px">Click a model from this repository:</div>
@@ -634,51 +1009,9 @@ flow = d[idx, 15]</pre>
   </div>
 </section>
 
-<!-- 15 ─────────────────────────────── INSIDE A NETWORK -->
-<section class="slide" data-anim="forward">
-  <div class="kicker">Lesson 4 · inside the model</div>
-  <h2>What happens inside a neural network, layer by layer</h2>
-  <div class="cols">
-    <div class="col" style="flex:1.45">
-      <canvas id="cv-forward" width="660" height="470"></canvas>
-      <div class="btns"><button id="fw-play">▶ play</button><button id="fw-step">next step</button><button id="fw-reset">↺ reset</button><button id="fw-new">new input</button></div>
-    </div>
-    <div class="col">
-      <div class="card" style="min-height:220px">
-        <div class="small" style="font-weight:600">What the neuron is computing</div>
-        <div id="fw-panel" class="mono" style="font-size:15px;line-height:1.6;margin-top:6px"></div>
-      </div>
-      <ul style="font-size:16px;margin-top:10px">
-        <li>Each neuron: <b>weighted sum + bias</b>, then an <b>activation</b> (here ReLU: negatives become 0).</li>
-        <li>A whole layer at once: <span class="mono">h = ReLU(W·x + b)</span>. That's one matrix multiplication.</li>
-        <li>Line colour is the weight's sign (blue +, red −); thickness is its size. <b>Training only changes these numbers.</b></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- 16 ─────────────────────────────── PARAMETERS -->
-<section class="slide" data-anim="params">
-  <div class="kicker">Lesson 4 · size of the model</div>
-  <h2>Counting parameters</h2>
-  <div class="cols">
-    <div class="col" style="flex:1.3">
-      <div class="flow" style="margin-bottom:6px"><span class="small">Layer sizes:</span><input type="text" id="par-input" value="3,256,256,1"></div>
-      <div class="btns" id="par-presets"></div>
-      <canvas id="cv-params" width="700" height="290"></canvas>
-    </div>
-    <div class="col">
-      <table id="par-table" style="font-size:15px"></table>
-      <div class="flow" style="margin-top:12px"><span class="small">Training examples you have:</span><input type="text" id="par-n" value="1906" style="width:110px"></div>
-      <div id="par-verdict" class="note" style="margin-top:10px;font-size:16px"></div>
-      <p class="tiny">A dense layer from n inputs to m outputs has n·m weights + m biases. The ratio to examples is a rough guide, not a law: weight decay, early stopping and simple architectures let you go further.</p>
-    </div>
-  </div>
-</section>
-
-<!-- 17 ─────────────────────────────── CONV -->
+<!-- 38 · project conv -->
 <section class="slide" data-anim="conv">
-  <div class="kicker">Lesson 4 · models for sequences (1)</div>
+  <div class="kicker">Our project · step 7 · the forecaster's building block</div>
   <h2>A causal convolution: the same small filter slides along time</h2>
   <canvas id="cv-conv" width="1160" height="370"></canvas>
   <div class="cols">
@@ -694,151 +1027,31 @@ flow = d[idx, 15]</pre>
   </div>
 </section>
 
-<!-- 18 ─────────────────────────────── GRU -->
-<section class="slide" data-anim="gru">
-  <div class="kicker">Lesson 4 · models for sequences (2)</div>
-  <h2>A recurrent network carries a memory through time</h2>
-  <canvas id="cv-gru" width="1160" height="360"></canvas>
-  <div class="cols">
-    <div class="col">
-      <ul style="font-size:17px">
-        <li>At every step the same cell reads the new input and the previous memory h, and writes a new h.</li>
-        <li>The digital twin (<code>twin/models.py</code>): input [oxygen, nitrate, air, recycle, inflow…], output the next oxygen and nitrate.</li>
-      </ul>
-    </div>
-    <div class="col">
-      <div class="note blue" style="font-size:16px">Why a GRU there: the plant has hidden state no sensor measures (how many bacteria, the sludge in the settler). The memory h can stand in for it. Training trick: <b>scheduled sampling</b>, where the model sometimes gets its own prediction as the next input, so it learns to roll out alone (<code>twin/train.py</code>).</div>
-    </div>
-  </div>
-</section>
-
-<!-- code map: lesson4 -->
-<section class="slide" data-anim="codemap" data-key="lesson4">
-  <div class="kicker">Lesson 4 · where is the code?</div>
-  <h2>Shapes, baselines, linear, MLP, CNN</h2>
-  <p class="small" style="margin:2px 0 0">The same steps in the hands-on script, the notebook and the project. Run it yourself: <code>python workshop/examples/lesson4_models.py</code></p>
-  <div class="cm-root"></div>
-</section>
-
-<!-- player: model -->
+<!-- 39 · player: model -->
 <section class="slide" data-anim="player" data-key="model">
-  <div class="kicker">Lesson 4 · the notebook running</div>
+  <div class="kicker">Our project · notebook 2 running</div>
   <h2>Shapes, baselines and models, cell by cell</h2>
   <div class="player-root"></div>
 </section>
 
-<!-- lesson 4 quiz -->
-<section class="slide" data-anim="quiz" data-key="l4">
-  <div class="kicker">Lesson 4 · check yourself</div>
-  <h2>Three questions before we move on</h2>
-  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
-  <div class="quiz-root"></div>
+<!-- 40 · player: train -->
+<section class="slide" data-anim="player" data-key="train">
+  <div class="kicker">Our project · notebook 2 running</div>
+  <h2>Training, overfitting and the test, cell by cell</h2>
+  <div class="player-root"></div>
 </section>
 
-<!-- lesson 5 divider -->
-<section class="slide divider">
-  <div class="ltrack"><span class="done">1. What is a model?</span><span class="done">2. Collect and clean the data</span><span class="done">3. Prepare the data</span><span class="done">4. Choose the model</span><span class="on">5. Train and evaluate</span><span class="">6. Reinforcement learning</span><span class="">7. Our project's code</span></div>
-  <div class="kicker">Lesson 5 of 7 · 20 min</div>
-  <h1 style="font-size:58px;margin:6px 0 18px">Train and evaluate</h1>
-  <div class="cols" style="margin-top:10px">
-    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">Train with a validation set, spot overfitting, beat the baselines, test once, save the model with its scaler.</p></div></div>
-    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: <code>python workshop/examples/lesson5_train_and_evaluate.py</code></p><p style="margin:0">Notebook: notebook 2, sections 5–9</p></div></div>
-  </div>
-</section>
-
-<!-- 19 ─────────────────────────────── LOSS -->
-<section class="slide" data-anim="loss">
-  <div class="kicker">Lesson 5 · train</div>
-  <h2>The loss says what "wrong" means</h2>
-  <div class="cols">
-    <div class="col" style="flex:1.2">
-      <canvas id="cv-loss" width="640" height="400"></canvas>
-      <div class="btns" id="loss-btns"></div>
-    </div>
-    <div class="col">
-      <ul style="font-size:17px">
-        <li><b>MSE</b> (e²): punishes big errors hard; gives the mean.</li>
-        <li><b>MAE</b> (|e|): robust to outliers; gives the median.</li>
-        <li><b>Pinball</b> at τ: under-predicting costs τ, over-predicting 1−τ. At τ = 0.9 the best answer is the value exceeded only 10 % of the time. Three τ values give a band: the forecaster's 10/50/90 % range.</li>
-        <li><b>Cross-entropy</b> for classes; <b>binary cross-entropy</b> for "violation: yes or no".</li>
-      </ul>
-<pre style="font-size:13.5px"><span class="c"># src/wwtp/forecast/models.py:85</span>
-<span class="k">def</span> quantile_loss(pred, target, quantiles=(0.1, 0.5, 0.9)):
-    err = target.unsqueeze(-1) - pred
-<span class="h">    <span class="k">return</span> torch.maximum(taus*err, (taus-1)*err).mean()</span></pre>
-    </div>
-  </div>
-</section>
-
-<!-- 20 ─────────────────────────────── GRADIENT DESCENT -->
-<section class="slide" data-anim="descent">
-  <div class="kicker">Lesson 5 · train</div>
-  <h2>Gradient descent: walk downhill on the loss</h2>
-  <div class="cols">
-    <div class="col" style="flex:1.2">
-      <canvas id="cv-descent" width="660" height="420"></canvas>
-      <div class="btns"><button data-lr="0.02">learning rate 0.02</button><button data-lr="0.15" class="on">0.15</button><button data-lr="0.5">0.5</button><button id="gd-run">▶ run</button></div>
-    </div>
-    <div class="col">
-      <p class="mono" style="font-size:22px;color:var(--blue);margin:4px 0 10px">w ← w − lr · ∂loss/∂w</p>
-      <ul style="font-size:17px">
-        <li>Contours are the loss over two weights; the ball is the model.</li>
-        <li><b>Too small</b>: it barely moves. <b>Too large</b>: it overshoots and blows up. Try all three.</li>
-        <li><b>Backpropagation</b> computes ∂loss/∂w for every weight in one backward pass: <code>loss.backward()</code>.</li>
-        <li>In practice: <b>Adam/AdamW</b> (adaptive steps), a <b>learning-rate schedule</b> (OneCycle, cosine) and <b>gradient clipping</b>, as in every training file of the repo.</li>
-      </ul>
-      <div id="gd-panel" class="mono small"></div>
-    </div>
-  </div>
-</section>
-
-<!-- 21 ─────────────────────────────── TRAINING LOOP -->
-<section class="slide" data-anim="loop">
-  <div class="kicker">Lesson 5 · train</div>
-  <h2>The training loop</h2>
-  <div class="cols">
-    <div class="col" style="flex:1">
-      <canvas id="cv-loop" width="520" height="430"></canvas>
-    </div>
-    <div class="col" style="flex:1.15">
-<pre style="font-size:13.5px"><span class="c"># src/wwtp/forecast/train.py:51 (shortened)</span>
-<span class="k">for</span> epoch <span class="k">in</span> range(epochs):
-    model.train()
-    <span class="k">for</span> xb, yb, rb <span class="k">in</span> train_loader:          <span class="c"># 1 a batch</span>
-<span class="h">        q, logits, _ = model(xb)                <span class="c"># 2 forward</span></span>
-<span class="h">        loss = quantile_loss(q, yb) + 0.2*CE(logits, rb)  <span class="c"># 3</span></span>
-        opt.zero_grad()
-<span class="h">        loss.backward()                         <span class="c"># 4 gradients</span></span>
-        clip_grad_norm_(model.parameters(), 1.0)
-<span class="h">        opt.step(); sched.step()                <span class="c"># 5 update</span></span>
-    model.eval()
-    <span class="k">with</span> torch.no_grad():                       <span class="c"># 6 validation</span>
-        ...
-<span class="c"># warning/train.py:80 keeps the best epoch on validation</span>
-<span class="k">if</span> v &lt; best: best_state = model.state_dict()</pre>
-      <canvas id="cv-curves" width="560" height="190" style="margin-top:8px"></canvas>
-    </div>
-  </div>
-</section>
-
-<!-- code map: lesson5 -->
+<!-- 41 · code map: lesson5 -->
 <section class="slide" data-anim="codemap" data-key="lesson5">
-  <div class="kicker">Lesson 5 · where is the code?</div>
+  <div class="kicker">Our project · where is the code?</div>
   <h2>Train, validate, test once, save</h2>
   <p class="small" style="margin:2px 0 0">The same steps in the hands-on script, the notebook and the project. Run it yourself: <code>python workshop/examples/lesson5_train_and_evaluate.py</code></p>
   <div class="cm-root"></div>
 </section>
 
-<!-- player: train -->
-<section class="slide" data-anim="player" data-key="train">
-  <div class="kicker">Lesson 5 · the notebook running</div>
-  <h2>Training, overfitting and the test, cell by cell</h2>
-  <div class="player-root"></div>
-</section>
-
-<!-- 22 ─────────────────────────────── EVALUATION -->
+<!-- 42 · project baselines -->
 <section class="slide" data-anim="baselines">
-  <div class="kicker">Lesson 5 · evaluate</div>
+  <div class="kicker">Our project · step 9 · test against baselines</div>
   <h2>A model is only good compared with something simple</h2>
   <div class="cols">
     <div class="col">
@@ -857,15 +1070,7 @@ flow = d[idx, 15]</pre>
   </div>
 </section>
 
-<!-- lesson 5 quiz -->
-<section class="slide" data-anim="quiz" data-key="l5">
-  <div class="kicker">Lesson 5 · check yourself</div>
-  <h2>Three questions before we move on</h2>
-  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
-  <div class="quiz-root"></div>
-</section>
-
-<!-- 23 ─────────────────────────────── HANDS ON 3 -->
+<!-- 43 · project hands-on 2 -->
 <section class="slide handson">
   <div class="kicker">Your turn · 20 minutes</div>
   <h1>Notebook 2: choose and train</h1>
@@ -891,20 +1096,28 @@ flow = d[idx, 15]</pre>
   <p style="margin-top:14px"><code>workshop/notebooks/02_choose_and_train_a_model.ipynb</code> · <a href="https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm" style="color:#fff;font-weight:600">or read it as a web page with all the results</a></p>
 </section>
 
-<!-- lesson 6 divider -->
+<!-- 44 · quiz project -->
+<section class="slide" data-anim="quiz" data-key="project">
+  <div class="kicker">Part 2 · check yourself</div>
+  <h2>Four questions before we move on</h2>
+  <p class="sub" style="margin-bottom:10px">Ask the room first. Then click a question (or press →) to show the answer.</p>
+  <div class="quiz-root faq"></div>
+</section>
+
+<!-- 45 · part 3 divider -->
 <section class="slide divider">
-  <div class="ltrack"><span class="done">1. What is a model?</span><span class="done">2. Collect and clean the data</span><span class="done">3. Prepare the data</span><span class="done">4. Choose the model</span><span class="done">5. Train and evaluate</span><span class="on">6. Reinforcement learning</span><span class="">7. Our project's code</span></div>
-  <div class="kicker">Lesson 6 of 7 · 13 min</div>
-  <h1 style="font-size:58px;margin:6px 0 18px">Reinforcement learning</h1>
+  <div class="ltrack"><span class="done">1. The basics</span><span class="done">2. Our project: plant data to a forecaster</span><span class="on">3. Reinforcement learning and our controller</span></div>
+  <div class="kicker">Part 3 of 3 · 20 min</div>
+  <h1 style="font-size:58px;margin:6px 0 18px">Reinforcement learning and our controller</h1>
   <div class="cols" style="margin-top:10px">
-    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">Learn from a reward instead of right answers: environment, reward, exploring, learning. Then the project's agents.</p></div></div>
-    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: <code>python workshop/examples/lesson6_rl.py</code></p><p style="margin:0">Notebook: notebook 3</p></div></div>
+    <div class="col"><div class="card"><h3>In this part</h3><p style="margin:0">Learning from a reward instead of right answers. Then the project itself: how it was built, the published methods we rebuilt, our controller and the latest results.</p></div></div>
+    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Notebook 3: reinforcement learning in brief</p><p style="margin:0">Terminal: <code>python workshop/examples/lesson6_rl.py</code></p></div></div>
   </div>
 </section>
 
-<!-- 24 ─────────────────────────────── RL LOOP -->
+<!-- 46 · rl loop -->
 <section class="slide" data-anim="rl">
-  <div class="kicker">Lesson 6 · reinforcement learning</div>
+  <div class="kicker">Reinforcement learning · the idea</div>
   <h2>When there is no correct answer to copy</h2>
   <div class="cols">
     <div class="col" style="flex:1.3">
@@ -927,9 +1140,9 @@ flow = d[idx, 15]</pre>
   </div>
 </section>
 
-<!-- 25 ─────────────────────────────── RL PIECES -->
+<!-- 47 · rl pieces -->
 <section class="slide">
-  <div class="kicker">Lesson 6 · reinforcement learning</div>
+  <div class="kicker">Reinforcement learning · the parts</div>
   <h2>The parts of an actor-critic agent (DDPG, SAC)</h2>
   <div class="cols" style="margin-top:10px">
     <div class="col">
@@ -958,66 +1171,14 @@ soft_update(actor, actor_target, tau=0.001)</pre>
   </div>
 </section>
 
-<!-- code map: lesson6 -->
-<section class="slide" data-anim="codemap" data-key="lesson6">
-  <div class="kicker">Lesson 6 · where is the code?</div>
-  <h2>Environment, reward, act, learn</h2>
-  <p class="small" style="margin:2px 0 0">The same steps in the hands-on script, the notebook and the project. Run it yourself: <code>python workshop/examples/lesson6_rl.py</code></p>
-  <div class="cm-root"></div>
-</section>
-
-<!-- tour: rl code -->
-<section class="slide" data-anim="tour" data-key="rlcode">
-  <div class="kicker">Lesson 6 · our code</div>
-  <h2>Reward, DDPG update and SAC-IL update, in the project's code</h2>
-  <div class="tour-root"></div>
-</section>
-
-<!-- player: rl -->
+<!-- 48 · player: rl -->
 <section class="slide" data-anim="player" data-key="rl">
-  <div class="kicker">Lesson 6 · the notebook running</div>
+  <div class="kicker">Reinforcement learning · notebook 3 running</div>
   <h2>Reinforcement learning, cell by cell</h2>
   <div class="player-root"></div>
 </section>
 
-<!-- 26 ─────────────────────────────── SAC-IL -->
-<section class="slide">
-  <div class="kicker">Lesson 6 · the project's controller</div>
-  <h2>Start from the expert, then improve, behind a safety gate</h2>
-  <div class="flow" style="margin:20px 0 22px;justify-content:center;flex-wrap:nowrap;gap:6px">
-    <div class="box frag" style="border-color:var(--orange)"><b>1 · Expert</b><br><span class="small">run the PID on dry week 1, record (state, action)</span></div><span class="arrow frag">→</span>
-    <div class="box frag" style="border-color:var(--blue)"><b>2 · Imitation</b><br><span class="small">behaviour cloning = <b>supervised</b>: copy the PID</span></div><span class="arrow frag">→</span>
-    <div class="box frag" style="border-color:var(--green)"><b>3 · SAC</b><br><span class="small">improve from reward, imitation term kept above a floor</span></div><span class="arrow frag">→</span>
-    <div class="box frag" style="border-color:var(--red)"><b>4 · Safety gate</b><br><span class="small">input outside training range → fall back to the PID</span></div>
-  </div>
-  <div class="cols">
-    <div class="col">
-<pre style="font-size:14px"><span class="c"># src/wwtp/sacil/sacil.py:279</span>
-<span class="k">def</span> pretrain_bc(self, steps=4000):
-    <span class="k">for</span> _ <span class="k">in</span> range(steps):
-        o, a, *_ = self.demo.sample(self.cfg.batch, self.rng)
-        mu, _ = self.actor(o)
-<span class="h">        loss = F.mse_loss(torch.tanh(mu), a)   <span class="c"># plain regression</span></span>
-        self.opt_a.zero_grad(); loss.backward(); self.opt_a.step()</pre>
-    </div>
-    <div class="col">
-      <ul style="font-size:17px">
-        <li>Learning from scratch on a plant means weeks of bad actions. Starting from the expert removes that.</li>
-        <li class="frag">Result: −74 to −87 % oxygen error against the paper's PID. But a PID tuned term by term with the ILC did as well, and on new sensors with noise every high-gain controller failed. Held-out test 2, at the end of the lesson, shows what fixed part of that and what is still open.</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- lesson 6 quiz -->
-<section class="slide" data-anim="quiz" data-key="l6">
-  <div class="kicker">Lesson 6 · check yourself</div>
-  <h2>Three questions before we move on</h2>
-  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
-  <div class="quiz-root"></div>
-</section>
-
-<!-- 27 ─────────────────────────────── HANDS ON 4 -->
+<!-- 49 · rl hands-on -->
 <section class="slide handson">
   <div class="kicker">Your turn · 12 minutes</div>
   <h1>Notebook 3: reinforcement learning in brief</h1>
@@ -1040,34 +1201,66 @@ soft_update(actor, actor_target, tau=0.001)</pre>
   <p style="margin-top:20px"><code>workshop/notebooks/03_reinforcement_learning_in_brief.ipynb</code> · <a href="https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5" style="color:#fff;font-weight:600">or read it as a web page with all the results</a></p>
 </section>
 
-<!-- lesson 7 divider -->
-<section class="slide divider">
-  <div class="ltrack"><span class="done">1. What is a model?</span><span class="done">2. Collect and clean the data</span><span class="done">3. Prepare the data</span><span class="done">4. Choose the model</span><span class="done">5. Train and evaluate</span><span class="done">6. Reinforcement learning</span><span class="on">7. Our project's code</span></div>
-  <div class="kicker">Lesson 7 of 7 · 5 min</div>
-  <h1 style="font-size:58px;margin:6px 0 18px">Our project's code</h1>
-  <div class="cols" style="margin-top:10px">
-    <div class="col"><div class="card"><h3>After this lesson you can…</h3><p style="margin:0">Read the published methods and our controller in the project's own code, and the lessons they taught us.</p></div></div>
-    <div class="col"><div class="card"><h3>Hands-on</h3><p style="margin:0 0 6px">Terminal: none; this lesson reads the project's own files on the slides</p><p style="margin:0">Notebook: none needed. To go deeper: <code>docs/PAPER1_STUDY.md</code> and <code>README.md</code>.</p></div></div>
+<!-- 50 · pipeline map -->
+<section class="slide" data-anim="pipeline">
+  <div class="kicker">Our project · end to end</div>
+  <h2>How the project was built: one script per step</h2>
+  <div class="pipe-root"></div>
+</section>
+
+<!-- 51 · tour: rl code -->
+<section class="slide" data-anim="tour" data-key="rlcode">
+  <div class="kicker">Our project · RL code</div>
+  <h2>Reward, DDPG update and SAC-IL update, in the project's code</h2>
+  <div class="tour-root"></div>
+</section>
+
+<!-- 52 · sac-il -->
+<section class="slide">
+  <div class="kicker">Our project · our learned controller</div>
+  <h2>Start from the expert, then improve, behind a safety gate</h2>
+  <div class="flow" style="margin:20px 0 22px;justify-content:center;flex-wrap:nowrap;gap:6px">
+    <div class="box frag" style="border-color:var(--orange)"><b>1 · Expert</b><br><span class="small">run the PID on dry week 1, record (state, action)</span></div><span class="arrow frag">→</span>
+    <div class="box frag" style="border-color:var(--blue)"><b>2 · Imitation</b><br><span class="small">behaviour cloning = <b>supervised</b>: copy the PID</span></div><span class="arrow frag">→</span>
+    <div class="box frag" style="border-color:var(--green)"><b>3 · SAC</b><br><span class="small">improve from reward, imitation term kept above a floor</span></div><span class="arrow frag">→</span>
+    <div class="box frag" style="border-color:var(--red)"><b>4 · Safety gate</b><br><span class="small">input outside training range → fall back to the PID</span></div>
+  </div>
+  <div class="cols">
+    <div class="col">
+<pre style="font-size:14px"><span class="c"># src/wwtp/sacil/sacil.py:279</span>
+<span class="k">def</span> pretrain_bc(self, steps=4000):
+    <span class="k">for</span> _ <span class="k">in</span> range(steps):
+        o, a, *_ = self.demo.sample(self.cfg.batch, self.rng)
+        mu, _ = self.actor(o)
+<span class="h">        loss = F.mse_loss(torch.tanh(mu), a)   <span class="c"># plain regression</span></span>
+        self.opt_a.zero_grad(); loss.backward(); self.opt_a.step()</pre>
+    </div>
+    <div class="col">
+      <ul style="font-size:17px">
+        <li>Learning from scratch on a plant means weeks of bad actions. Starting from the expert removes that.</li>
+        <li class="frag">Result: −74 to −87 % oxygen error against the paper's PID. But a PID tuned term by term with the ILC did as well, and on new sensors with noise every high-gain controller failed. Held-out test 2, three slides on, shows what fixed part of that and what is still open.</li>
+      </ul>
+    </div>
   </div>
 </section>
 
-<!-- tour: papers -->
+<!-- 53 · tour: papers -->
 <section class="slide" data-anim="tour" data-key="papers">
-  <div class="kicker">Lesson 7 · reproducing the papers</div>
+  <div class="kicker">Our project · reproducing the papers</div>
   <h2>Papers 1 and 3 exactly as printed, and why they don't learn</h2>
   <div class="tour-root"></div>
 </section>
 
-<!-- tour: ours -->
+<!-- 54 · tour: ours -->
 <section class="slide" data-anim="tour" data-key="ours">
-  <div class="kicker">Lesson 7 · our controller</div>
+  <div class="kicker">Our project · our controller</div>
   <h2>ILC, the control step, the safety gate and the training script</h2>
   <div class="tour-root"></div>
 </section>
 
-<!-- held-out test 2 -->
+<!-- 55 · held-out test 2 -->
 <section class="slide">
-  <div class="kicker">Lesson 7 · the latest results</div>
+  <div class="kicker">Our project · the latest results</div>
   <h2>The second held-out test: two fixes, one open problem</h2>
   <div class="cols" style="margin-top:6px;gap:22px">
     <div class="col" style="flex:1.05">
@@ -1094,25 +1287,25 @@ soft_update(actor, actor_target, tau=0.001)</pre>
   </div>
 </section>
 
-<!-- lesson 7 quiz -->
-<section class="slide" data-anim="quiz" data-key="l7">
-  <div class="kicker">Lesson 7 · check yourself</div>
-  <h2>Three questions before we move on</h2>
-  <p class="sub" style="margin-bottom:12px">Ask the room first. Then click a question (or press →) to show the answer.</p>
-  <div class="quiz-root"></div>
+<!-- 56 · quiz rl -->
+<section class="slide" data-anim="quiz" data-key="rl">
+  <div class="kicker">Part 3 · check yourself</div>
+  <h2>Four questions before we move on</h2>
+  <p class="sub" style="margin-bottom:10px">Ask the room first. Then click a question (or press →) to show the answer.</p>
+  <div class="quiz-root faq"></div>
 </section>
 
-<!-- questions learners ask -->
+<!-- 57 · questions learners ask -->
 <section class="slide" data-anim="quiz" data-key="faq">
-  <div class="kicker">Lesson 7 · questions people ask</div>
+  <div class="kicker">Questions people ask</div>
   <h2>Questions learners ask, with short answers</h2>
   <p class="sub" style="margin-bottom:10px">Collected by going through this lesson from scratch. Click a question (or press →).</p>
   <div class="quiz-root faq"></div>
 </section>
 
-<!-- 28 ─────────────────────────────── LESSONS -->
+<!-- 58 · take home -->
 <section class="slide">
-  <div class="kicker">Lesson 7 · take home</div>
+  <div class="kicker">Take home</div>
   <h2>What this project teaches about doing ML research</h2>
   <div class="cols" style="margin-top:14px">
     <div class="col">
@@ -1135,7 +1328,6 @@ soft_update(actor, actor_target, tau=0.001)</pre>
   <div class="note green" style="margin-top:18px">Everything shown today is in the repository: <code>src/wwtp/</code> (library), <code>experiments/</code> (numbered scripts), <code>docs/REPORT.md</code> (every result), <code>workshop/</code> (these slides and the notebooks).</div>
   <h2 style="margin-top:22px;text-align:center">Questions?</h2>
 </section>
-
 </div>
 <div id="bar"></div><div id="count"></div><div id="help">← → or space (also runs the next cell / next code block) · R replays · F full screen</div>
 <script src="data.js"></script>

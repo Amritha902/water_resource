@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notebook 0 · The skeleton of every ML notebook</title><style>
+:root{--bg:#fbfaf7;--ink:#1d2433;--ink2:#4b5563;--muted:#8a919c;--line:#e3e1db;--blue:#2563eb;--orange:#ea580c;--soft:#f1efe9}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif}
+header{position:sticky;top:0;z-index:5;background:rgba(251,250,247,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.bar{max-width:1240px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.bar .t{font-weight:700}.bar .k{font-size:13px;color:var(--blue);font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.bar .sp{flex:1}
+button,.navlink{font:inherit;font-size:14px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 11px;cursor:pointer;color:var(--ink);text-decoration:none}
+button:hover,.navlink:hover{border-color:var(--blue);color:var(--blue)}button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.wrap{max-width:1240px;margin:0 auto;display:flex;gap:28px;padding:0 20px}
+nav.toc{position:sticky;top:64px;align-self:flex-start;width:250px;flex:none;max-height:calc(100vh - 80px);overflow:auto;padding:18px 0;font-size:14px}
+nav.toc a{display:block;color:var(--ink2);text-decoration:none;padding:3px 8px;border-left:2px solid transparent}
+nav.toc a.h3{padding-left:20px;font-size:13px;color:var(--muted)}
+nav.toc a.cur{border-color:var(--blue);color:var(--blue);font-weight:600}
+main{flex:1;min-width:0;max-width:900px;padding:10px 0 80px}
+h1{font-size:36px;line-height:1.2;margin:24px 0 10px}h2{font-size:27px;margin:44px 0 8px;padding-top:6px;border-top:1px solid var(--line)}h3{font-size:20px;margin:28px 0 6px}
+h1,h2,h3{scroll-margin-top:70px}
+p,li{max-width:76ch}
+code{font-family:Consolas,Menlo,monospace;background:var(--soft);padding:1px 5px;border-radius:4px;font-size:.88em}
+table{border-collapse:collapse;margin:10px 0;font-size:15px}td,th{border-bottom:1px solid var(--line);padding:5px 10px;text-align:left;vertical-align:top}th{color:var(--ink2)}
+blockquote{margin:14px 0;padding:12px 16px;background:#fff8e6;border:1px solid #fde68a;border-left:5px solid #f59e0b;border-radius:0 10px 10px 0}
+blockquote p{margin:0}
+hr{border:none;border-top:1px dashed var(--line);margin:18px 0}
+.md ul,.md ol{padding-left:24px}
+.cell{margin:14px 0}
+.in{display:flex;align-items:center;gap:10px;font:13px Consolas,Menlo,monospace;color:var(--blue);margin-bottom:3px}
+.in button{font-size:12px;padding:2px 8px}
+pre{margin:0;overflow:auto;font:13.5px/1.5 Consolas,Menlo,monospace}
+pre.code{background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:10px}
+pre.code .k{color:#c4b5fd}pre.code .s{color:#fcd34d}pre.code .c{color:#7d8ba1;font-style:italic}pre.code .n{color:#5eead4}pre.code .b{color:#93c5fd}pre.code .f{color:#bfdbfe}
+.out{border-left:3px solid #fde68a;padding:4px 0 4px 12px;margin-top:6px}
+.out pre{background:#fff;color:#111827;font-size:13px;max-height:420px}
+.out img{max-width:100%;display:block;margin:6px 0;background:#fff}
+.out .html{overflow:auto;max-height:440px;font-size:13px}.out .html table{font-size:13px}
+.nocode .cell .in,.nocode .cell pre.code{display:none}.nocode .cell .out{border-left-color:transparent;padding-left:0}
+.nocode .cell.no-output{display:none}
+.endnav{display:flex;gap:10px;flex-wrap:wrap;margin-top:40px;padding-top:18px;border-top:1px solid var(--line)}
+.note{font-size:13px;color:var(--muted)}
+@media (max-width:900px){nav.toc{display:none}h1{font-size:28px}}
+</style></head>
+<body>
+<header><div class="bar"><span class="k">Workshop notebook</span><span class="t">Notebook 0 · The skeleton of every ML notebook</span><span class="sp"></span>
+<a class="navlink" href="https://claude.ai/artifact/66EGWBVkQQRAKsHadr5ob5">The slide deck</a><button id="m-code" class="on">Show code</button><button id="m-ideas">Explanations only</button></div></header>
+<div class="wrap"><nav class="toc"><a class="h2" href="#1-collect">1. Collect</a><a class="h3" href="#then-look-before-you-do-anything-else">Then look, before you do anything else</a><a class="h2" href="#2-clean">2. Clean</a><a class="h2" href="#3-inputs-x-and-target-y">3. Inputs (X) and target (y)</a><a class="h2" href="#4-split-train-validation-test-by-time">4. Split: train, validation, test, by time</a><a class="h2" href="#5-scale-with-the-training-numbers-only">5. Scale, with the training numbers only</a><a class="h2" href="#6-feed-tensors-and-batches">6. Feed: tensors and batches</a><a class="h2" href="#7-the-model-a-function-with-knobs">7. The model: a function with knobs</a><a class="h2" href="#8-train-the-loop-every-model-uses">8. Train: the loop every model uses</a><a class="h2" href="#9-size-parameters-against-examples">9. Size: parameters against examples</a><a class="h2" href="#10-settings-hyperparameters-chosen-on-validation">10. Settings (hyperparameters): chosen on validation, never on test</a><a class="h2" href="#11-test-once-in-real-units-against-a-baseline">11. Test: once, in real units, against a baseline</a><a class="h2" href="#12-save-everything-needed-to-use-the-model-again">12. Save everything needed to use the model again</a></nav>
+<main>
+<p class="note">This page shows the notebook <code>workshop/notebooks/00_ml_skeleton.ipynb</code> with the results of a real run.
+To run it yourself: <code>pip install -r workshop/requirements.txt</code>, then <code>jupyter lab workshop/notebooks</code>.
+"Explanations only" hides the code and keeps the text and the results.</p>
+<div class="md"><h1 id="notebook-0-the-skeleton-of-every-machine-learnin">Notebook 0: the skeleton of every machine-learning notebook</h1>
+<p>Before we touch the plant data, here is the whole recipe on a small, simple problem: <strong>predict tomorrow's water demand of a town from the weather.</strong> The data is made up inside the notebook, so nothing needs downloading.</p>
+<p>Every ML notebook you will meet, including the project's, has these same steps in this order:</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>What it does</th>
+<th>Question it answers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Collect</td>
+<td>read the raw file, then look: shape, types, summary</td>
+<td>where does the data come from, what is in it?</td>
+</tr>
+<tr>
+<td>2. Clean</td>
+<td>duplicates, wrong types, gaps, impossible values</td>
+<td>what is wrong with it?</td>
+</tr>
+<tr>
+<td>3. Inputs and target</td>
+<td>choose X (what we know) and y (what we want)</td>
+<td>what goes in, what comes out?</td>
+</tr>
+<tr>
+<td>4. Split</td>
+<td>train / validation / test, by time</td>
+<td>which data may the model learn from?</td>
+</tr>
+<tr>
+<td>5. Scale</td>
+<td>standardise with the training numbers only</td>
+<td>are all inputs on a similar scale?</td>
+</tr>
+<tr>
+<td>6. Feed</td>
+<td>tensors and batches</td>
+<td>how does the data get into the model?</td>
+</tr>
+<tr>
+<td>7. Model</td>
+<td>the function with knobs</td>
+<td>what shape of function?</td>
+</tr>
+<tr>
+<td>8. Train</td>
+<td>loss, gradients, update, check validation</td>
+<td>how are the knobs set?</td>
+</tr>
+<tr>
+<td>9. Size</td>
+<td>count the knobs, compare with the examples</td>
+<td>is the model too big for the data?</td>
+</tr>
+<tr>
+<td>10. Settings</td>
+<td>try a few sizes and learning rates on validation</td>
+<td>how big, how fast?</td>
+</tr>
+<tr>
+<td>11. Test</td>
+<td>once, in real units, against a simple baseline</td>
+<td>is it actually good?</td>
+</tr>
+<tr>
+<td>12. Save</td>
+<td>weights + scaler + settings</td>
+<td>can someone else use it?</td>
+</tr>
+</tbody>
+</table>
+<p>Run the cells from top to bottom with <strong>Shift + Enter</strong>.</p></div><div class="cell no-output"><div class="in">In [1]:<button class="copy">Copy</button></div><pre class="code"><span class="c"># Step 0: the libraries. Every notebook starts with its imports.</span>
+<span class="k">import</span> numpy <span class="k">as</span> <span class="b">np</span>
+<span class="k">import</span> pandas <span class="k">as</span> <span class="b">pd</span>
+<span class="k">import</span> <span class="b">torch</span>
+<span class="k">from</span> <span class="b">torch</span> <span class="k">import</span> <span class="b">nn</span>
+
+<span class="b">torch</span>.<span class="f">manual_seed</span>(<span class="n">0</span>)       <span class="c"># fixed seeds: the same numbers every time you run</span>
+rng = <span class="b">np</span>.random.<span class="f">default_rng</span>(<span class="n">0</span>)</pre></div><div class="md"><h2 id="1-collect">1. Collect</h2>
+<p>In real work this is a file you were given, an export from a database, or a download. Here we write a small CSV first, with a few typical problems hidden in it, and then read it back as if someone had sent it to us.</p></div><div class="cell no-output"><div class="in">In [2]:<button class="copy">Copy</button></div><pre class="code"><span class="c"># Make a fake &quot;daily_demand.csv&quot;: 3 years of daily data.</span>
+days = <span class="b">pd</span>.<span class="f">date_range</span>(<span class="s">&quot;2021-01-01&quot;</span>, periods=<span class="n">3</span> * <span class="n">365</span>, freq=<span class="s">&quot;D&quot;</span>)
+t = <span class="b">np</span>.<span class="f">arange</span>(<span class="b">len</span>(days))
+temperature = <span class="n">25</span> + <span class="n">6</span> * <span class="b">np</span>.<span class="f">sin</span>(<span class="n">2</span> * <span class="b">np</span>.pi * (t - <span class="n">100</span>) / <span class="n">365</span>) + rng.<span class="f">normal</span>(<span class="n">0</span>, <span class="n">1.5</span>, <span class="b">len</span>(t))   <span class="c"># °C</span>
+rainfall = <span class="b">np</span>.<span class="f">where</span>(rng.<span class="f">random</span>(<span class="b">len</span>(t)) &lt; <span class="n">0.25</span>, rng.<span class="f">gamma</span>(<span class="n">2</span>, <span class="n">6</span>, <span class="b">len</span>(t)), <span class="n">0.0</span>)                  <span class="c"># mm</span>
+weekend = (days.dayofweek &gt;= <span class="n">5</span>).<span class="f">astype</span>(<span class="b">int</span>)
+demand = <span class="n">900</span> + <span class="n">18</span> * temperature - <span class="n">2.5</span> * rainfall - <span class="n">60</span> * weekend + <span class="n">0.15</span> * t + rng.<span class="f">normal</span>(<span class="n">0</span>, <span class="n">25</span>, <span class="b">len</span>(t))  <span class="c"># thousand litres</span>
+
+raw = <span class="b">pd</span>.<span class="f">DataFrame</span>({<span class="s">&quot;date&quot;</span>: days.<span class="f">strftime</span>(<span class="s">&quot;%Y-%m-%d&quot;</span>), <span class="s">&quot;temperature&quot;</span>: temperature.<span class="f">round</span>(<span class="n">1</span>),
+                    <span class="s">&quot;rainfall&quot;</span>: rainfall.<span class="f">round</span>(<span class="n">1</span>), <span class="s">&quot;demand&quot;</span>: demand.<span class="f">round</span>(<span class="n">0</span>)})
+raw.loc[<span class="n">40</span>, <span class="s">&quot;temperature&quot;</span>] = <span class="b">np</span>.nan            <span class="c"># a missing reading</span>
+raw.loc[<span class="n">300</span>, <span class="s">&quot;demand&quot;</span>] = raw.loc[<span class="n">300</span>, <span class="s">&quot;demand&quot;</span>] * <span class="n">10</span>   <span class="c"># a typing error (an extra zero)</span>
+raw.loc[<span class="n">500</span>, <span class="s">&quot;rainfall&quot;</span>] = -<span class="n">3.0</span>                <span class="c"># an impossible value</span>
+raw = <span class="b">pd</span>.<span class="f">concat</span>([raw, raw.iloc[[<span class="n">700</span>]]])        <span class="c"># a duplicated row</span>
+raw.<span class="f">to_csv</span>(<span class="s">&quot;daily_demand.csv&quot;</span>, index=<span class="k">False</span>)
+
+<span class="c"># This is the line you would normally start with:</span>
+df = <span class="b">pd</span>.<span class="f">read_csv</span>(<span class="s">&quot;daily_demand.csv&quot;</span>)</pre></div><div class="md"><h3 id="then-look-before-you-do-anything-else">Then look, before you do anything else</h3></div><div class="cell"><div class="in">In [3]:<button class="copy">Copy</button></div><pre class="code"><span class="b">print</span>(df.shape)          <span class="c"># rows, columns</span>
+<span class="b">print</span>(df.dtypes)         <span class="c"># is every column the type you expect?</span>
+df.<span class="f">head</span>()</pre><div class="out"><pre>(1096, 4)
+date               str
+temperature    float64
+rainfall       float64
+demand         float64
+dtype: object
+</pre><div class="html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>date</th>
+      <th>temperature</th>
+      <th>rainfall</th>
+      <th>demand</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2021-01-01</td>
+      <td>19.3</td>
+      <td>0.0</td>
+      <td>1239.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2021-01-02</td>
+      <td>18.9</td>
+      <td>0.0</td>
+      <td>1197.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2021-01-03</td>
+      <td>20.0</td>
+      <td>0.0</td>
+      <td>1177.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2021-01-04</td>
+      <td>19.2</td>
+      <td>0.0</td>
+      <td>1271.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2021-01-05</td>
+      <td>18.2</td>
+      <td>0.0</td>
+      <td>1247.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div></div><div class="cell"><div class="in">In [4]:<button class="copy">Copy</button></div><pre class="code">df.<span class="f">describe</span>().<span class="f">round</span>(<span class="n">1</span>)   <span class="c"># look at min and max: anything impossible?</span></pre><div class="out"><div class="html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>temperature</th>
+      <th>rainfall</th>
+      <th>demand</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>1095.0</td>
+      <td>1096.0</td>
+      <td>1096.0</td>
+    </tr>
+    <tr>
+      <th>mean</th>
+      <td>24.9</td>
+      <td>3.2</td>
+      <td>1417.3</td>
+    </tr>
+    <tr>
+      <th>std</th>
+      <td>4.4</td>
+      <td>7.0</td>
+      <td>390.8</td>
+    </tr>
+    <tr>
+      <th>min</th>
+      <td>15.5</td>
+      <td>-3.0</td>
+      <td>1123.0</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>21.0</td>
+      <td>0.0</td>
+      <td>1331.0</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>24.9</td>
+      <td>0.0</td>
+      <td>1406.0</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>28.9</td>
+      <td>3.0</td>
+      <td>1484.0</td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td>34.9</td>
+      <td>48.3</td>
+      <td>13910.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div></div><div class="md"><p>Already visible: <code>demand</code> has a maximum far above everything else, and <code>rainfall</code> has a negative minimum. Rain cannot be negative.</p></div><div class="md"><h2 id="2-clean">2. Clean</h2>
+<p>Fix only what you can explain, and write down every fix.</p></div><div class="cell"><div class="in">In [5]:<button class="copy">Copy</button></div><pre class="code">df[<span class="s">&quot;date&quot;</span>] = <span class="b">pd</span>.<span class="f">to_datetime</span>(df[<span class="s">&quot;date&quot;</span>])                  <span class="c"># text → real dates</span>
+<span class="b">print</span>(<span class="s">&quot;duplicate dates:&quot;</span>, df[<span class="s">&quot;date&quot;</span>].<span class="f">duplicated</span>().<span class="b">sum</span>())
+df = df.<span class="f">drop_duplicates</span>(<span class="s">&quot;date&quot;</span>).<span class="f">sort_values</span>(<span class="s">&quot;date&quot;</span>).<span class="f">set_index</span>(<span class="s">&quot;date&quot;</span>)
+
+<span class="b">print</span>(<span class="s">&quot;missing values:\n&quot;</span>, df.<span class="f">isna</span>().<span class="b">sum</span>())
+df[<span class="s">&quot;temperature&quot;</span>] = df[<span class="s">&quot;temperature&quot;</span>].<span class="f">interpolate</span>(limit=<span class="n">2</span>)  <span class="c"># fill short gaps only</span>
+
+df.loc[df[<span class="s">&quot;rainfall&quot;</span>] &lt; <span class="n">0</span>, <span class="s">&quot;rainfall&quot;</span>] = <span class="b">np</span>.nan             <span class="c"># impossible → unknown</span>
+df[<span class="s">&quot;rainfall&quot;</span>] = df[<span class="s">&quot;rainfall&quot;</span>].<span class="f">fillna</span>(<span class="n">0</span>)
+
+median = df[<span class="s">&quot;demand&quot;</span>].<span class="f">rolling</span>(<span class="n">15</span>, center=<span class="k">True</span>, min_periods=<span class="n">1</span>).<span class="f">median</span>()
+spike = (df[<span class="s">&quot;demand&quot;</span>] - median).<span class="b">abs</span>() &gt; <span class="n">300</span>                 <span class="c"># far from its neighbours</span>
+<span class="b">print</span>(<span class="s">&quot;spikes found:&quot;</span>, <span class="b">int</span>(spike.<span class="b">sum</span>()))
+df.loc[spike, <span class="s">&quot;demand&quot;</span>] = median[spike]                     <span class="c"># replace by the local median</span>
+
+df.<span class="f">describe</span>().<span class="f">round</span>(<span class="n">1</span>)</pre><div class="out"><pre>duplicate dates: 1
+missing values:
+ temperature    1
+rainfall       0
+demand         0
+dtype: int64
+spikes found: 1
+</pre><div class="html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>temperature</th>
+      <th>rainfall</th>
+      <th>demand</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>1095.0</td>
+      <td>1095.0</td>
+      <td>1095.0</td>
+    </tr>
+    <tr>
+      <th>mean</th>
+      <td>24.9</td>
+      <td>3.2</td>
+      <td>1405.9</td>
+    </tr>
+    <tr>
+      <th>std</th>
+      <td>4.4</td>
+      <td>7.0</td>
+      <td>100.3</td>
+    </tr>
+    <tr>
+      <th>min</th>
+      <td>15.5</td>
+      <td>0.0</td>
+      <td>1123.0</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>21.0</td>
+      <td>0.0</td>
+      <td>1331.0</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>24.9</td>
+      <td>0.0</td>
+      <td>1406.0</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>28.9</td>
+      <td>2.8</td>
+      <td>1484.0</td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td>34.9</td>
+      <td>48.3</td>
+      <td>1650.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div></div><div class="md"><h2 id="3-inputs-x-and-target-y">3. Inputs (X) and target (y)</h2>
+<p><strong>Target y:</strong> tomorrow's demand. <strong>Inputs X:</strong> only what we know today: tomorrow's weather forecast, whether tomorrow is a weekend, and today's demand. Never put anything in X that you would not have at the time of the prediction.</p></div><div class="cell"><div class="in">In [6]:<button class="copy">Copy</button></div><pre class="code">data = <span class="b">pd</span>.<span class="f">DataFrame</span>({
+    <span class="s">&quot;temp_tomorrow&quot;</span>: df[<span class="s">&quot;temperature&quot;</span>].<span class="f">shift</span>(-<span class="n">1</span>),
+    <span class="s">&quot;rain_tomorrow&quot;</span>: df[<span class="s">&quot;rainfall&quot;</span>].<span class="f">shift</span>(-<span class="n">1</span>),
+    <span class="s">&quot;weekend_tomorrow&quot;</span>: ((df.index + <span class="b">pd</span>.<span class="f">Timedelta</span>(days=<span class="n">1</span>)).dayofweek &gt;= <span class="n">5</span>).<span class="f">astype</span>(<span class="b">int</span>),
+    <span class="s">&quot;demand_today&quot;</span>: df[<span class="s">&quot;demand&quot;</span>],
+    <span class="s">&quot;y_demand_tomorrow&quot;</span>: df[<span class="s">&quot;demand&quot;</span>].<span class="f">shift</span>(-<span class="n">1</span>),
+}).<span class="f">dropna</span>()
+
+X = data.<span class="f">drop</span>(columns=<span class="s">&quot;y_demand_tomorrow&quot;</span>).<span class="f">to_numpy</span>(dtype=<span class="b">np</span>.float32)
+y = data[<span class="s">&quot;y_demand_tomorrow&quot;</span>].<span class="f">to_numpy</span>(dtype=<span class="b">np</span>.float32).<span class="f">reshape</span>(-<span class="n">1</span>, <span class="n">1</span>)
+<span class="b">print</span>(<span class="s">&quot;X:&quot;</span>, X.shape, <span class="s">&quot; y:&quot;</span>, y.shape)     <span class="c"># (examples, inputs) and (examples, outputs)</span></pre><div class="out"><pre>X: (1094, 4)  y: (1094, 1)
+</pre></div></div><div class="md"><h2 id="4-split-train-validation-test-by-time">4. Split: train, validation, test, by time</h2>
+<ul>
+<li><strong>train</strong>: the model learns from it</li>
+<li><strong>validation</strong>: we use it to make choices (when to stop, how big a model)</li>
+<li><strong>test</strong>: looked at <strong>once</strong>, at the very end</li>
+</ul>
+<p>The data is a time series, so we split by time: the past trains, the future tests. A random split would let the model peek at days next to the test days.</p></div><div class="cell"><div class="in">In [7]:<button class="copy">Copy</button></div><pre class="code">n = <span class="b">len</span>(X)
+i_val, i_test = <span class="b">int</span>(<span class="n">0.70</span> * n), <span class="b">int</span>(<span class="n">0.85</span> * n)
+X_train, y_train = X[:i_val], y[:i_val]
+X_val, y_val = X[i_val:i_test], y[i_val:i_test]
+X_test, y_test = X[i_test:], y[i_test:]
+<span class="b">print</span>(<span class="s">&quot;train&quot;</span>, X_train.shape, <span class="s">&quot; val&quot;</span>, X_val.shape, <span class="s">&quot; test&quot;</span>, X_test.shape)</pre><div class="out"><pre>train (765, 4)  val (164, 4)  test (165, 4)
+</pre></div></div><div class="md"><h2 id="5-scale-with-the-training-numbers-only">5. Scale, with the training numbers only</h2></div><div class="cell"><div class="in">In [8]:<button class="copy">Copy</button></div><pre class="code">mean, std = X_train.<span class="f">mean</span>(axis=<span class="n">0</span>), X_train.<span class="f">std</span>(axis=<span class="n">0</span>)       <span class="c"># from TRAIN only</span>
+y_mean, y_std = y_train.<span class="f">mean</span>(), y_train.<span class="f">std</span>()
+scale_x = <span class="k">lambda</span> a: (a - mean) / std
+scale_y = <span class="k">lambda</span> a: (a - y_mean) / y_std
+unscale_y = <span class="k">lambda</span> a: a * y_std + y_mean
+<span class="b">print</span>(<span class="s">&quot;train inputs after scaling: mean&quot;</span>, <span class="f">scale_x</span>(X_train).<span class="f">mean</span>(<span class="n">0</span>).<span class="f">round</span>(<span class="n">2</span>), <span class="s">&quot; std&quot;</span>, <span class="f">scale_x</span>(X_train).<span class="f">std</span>(<span class="n">0</span>).<span class="f">round</span>(<span class="n">2</span>))</pre><div class="out"><pre>train inputs after scaling: mean [0. 0. 0. 0.]  std [1. 1. 1. 1.]
+</pre></div></div><div class="md"><h2 id="6-feed-tensors-and-batches">6. Feed: tensors and batches</h2>
+<p>A model eats <strong>tensors</strong> (arrays PyTorch understands), a few rows at a time (<strong>a batch</strong>).</p></div><div class="cell"><div class="in">In [9]:<button class="copy">Copy</button></div><pre class="code"><span class="k">from</span> <span class="b">torch</span>.utils.data <span class="k">import</span> TensorDataset, DataLoader
+to_t = <span class="k">lambda</span> a: <span class="b">torch</span>.<span class="f">tensor</span>(a, dtype=<span class="b">torch</span>.float32)
+train_dl = <span class="f">DataLoader</span>(<span class="f">TensorDataset</span>(<span class="f">to_t</span>(<span class="f">scale_x</span>(X_train)), <span class="f">to_t</span>(<span class="f">scale_y</span>(y_train))), batch_size=<span class="n">32</span>, shuffle=<span class="k">True</span>)
+Xv, yv = <span class="f">to_t</span>(<span class="f">scale_x</span>(X_val)), <span class="f">to_t</span>(<span class="f">scale_y</span>(y_val))
+
+xb, yb = <span class="f">next</span>(<span class="f">iter</span>(train_dl))
+<span class="b">print</span>(<span class="s">&quot;one batch:&quot;</span>, xb.shape, <span class="s">&quot;→&quot;</span>, yb.shape)     <span class="c"># 32 examples × 4 inputs → 32 × 1 output</span></pre><div class="out"><pre>one batch: torch.Size([32, 4]) → torch.Size([32, 1])
+</pre></div></div><div class="md"><h2 id="7-the-model-a-function-with-knobs">7. The model: a function with knobs</h2>
+<p>Input size 4 (our 4 columns), output size 1 (one number). In between: one hidden layer.</p></div><div class="cell"><div class="in">In [10]:<button class="copy">Copy</button></div><pre class="code"><span class="k">def</span> <span class="f">make_model</span>(hidden=<span class="n">16</span>):
+    <span class="k">return</span> <span class="b">nn</span>.<span class="f">Sequential</span>(<span class="b">nn</span>.<span class="f">Linear</span>(<span class="n">4</span>, hidden), <span class="b">nn</span>.<span class="f">ReLU</span>(), <span class="b">nn</span>.<span class="f">Linear</span>(hidden, <span class="n">1</span>))
+
+model = <span class="f">make_model</span>()
+<span class="b">print</span>(model)
+<span class="b">print</span>(<span class="s">&quot;parameters (knobs):&quot;</span>, <span class="b">sum</span>(p.<span class="f">numel</span>() <span class="k">for</span> p <span class="k">in</span> model.<span class="f">parameters</span>()))   <span class="c"># 4·16+16 + 16·1+1 = 97</span></pre><div class="out"><pre>Sequential(
+  (0): Linear(in_features=4, out_features=16, bias=True)
+  (1): ReLU()
+  (2): Linear(in_features=16, out_features=1, bias=True)
+)
+parameters (knobs): 97
+</pre></div></div><div class="md"><h2 id="8-train-the-loop-every-model-uses">8. Train: the loop every model uses</h2>
+<p>For each batch: <strong>forward</strong> (guess), <strong>loss</strong> (how wrong), <strong>backward</strong> (which way to turn each knob), <strong>step</strong> (turn them). After each pass over the data (an <strong>epoch</strong>), check the validation loss and keep the best model.</p></div><div class="cell"><div class="in">In [11]:<button class="copy">Copy</button></div><pre class="code"><span class="k">import</span> copy
+
+<span class="k">def</span> <span class="f">train</span>(model, lr=<span class="n">1e-2</span>, epochs=<span class="n">60</span>):
+    opt = <span class="b">torch</span>.optim.<span class="f">Adam</span>(model.<span class="f">parameters</span>(), lr=lr)
+    loss_fn = <span class="b">nn</span>.<span class="f">MSELoss</span>()
+    best, best_state, history = <span class="b">float</span>(<span class="s">&quot;inf&quot;</span>), <span class="k">None</span>, []
+    <span class="k">for</span> epoch <span class="k">in</span> <span class="b">range</span>(epochs):
+        model.<span class="f">train</span>()
+        <span class="k">for</span> xb, yb <span class="k">in</span> train_dl:
+            pred = <span class="f">model</span>(xb)               <span class="c"># forward</span>
+            loss = <span class="f">loss_fn</span>(pred, yb)       <span class="c"># loss</span>
+            opt.<span class="f">zero_grad</span>()
+            loss.<span class="f">backward</span>()                <span class="c"># backward: gradients</span>
+            opt.<span class="f">step</span>()                     <span class="c"># update the knobs</span>
+        model.<span class="f">eval</span>()
+        <span class="k">with</span> <span class="b">torch</span>.<span class="f">no_grad</span>():
+            val = <span class="f">loss_fn</span>(<span class="f">model</span>(Xv), yv).<span class="f">item</span>()   <span class="c"># validation, no learning</span>
+        history.<span class="f">append</span>(val)
+        <span class="k">if</span> val &lt; best:
+            best, best_state = val, copy.<span class="f">deepcopy</span>(model.<span class="f">state_dict</span>())
+    model.<span class="f">load_state_dict</span>(best_state)      <span class="c"># keep the best epoch</span>
+    <span class="k">return</span> best, history
+
+best, history = <span class="f">train</span>(model)
+<span class="b">print</span>(<span class="s">&quot;best validation loss:&quot;</span>, <span class="f">round</span>(best, <span class="n">4</span>), <span class="s">&quot; at epoch&quot;</span>, <span class="b">int</span>(<span class="b">np</span>.<span class="f">argmin</span>(history)))</pre><div class="out"><pre>best validation loss: 0.2763  at epoch 49
+</pre></div></div><div class="md"><h2 id="9-size-parameters-against-examples">9. Size: parameters against examples</h2>
+<p>A rough check, not a law: far more knobs than examples means the model can learn the examples by heart.</p></div><div class="cell"><div class="in">In [12]:<button class="copy">Copy</button></div><pre class="code">n_params = <span class="b">sum</span>(p.<span class="f">numel</span>() <span class="k">for</span> p <span class="k">in</span> model.<span class="f">parameters</span>())
+<span class="b">print</span>(<span class="s">f&quot;{n_params} parameters for {len(X_train)} training examples: {n_params / len(X_train):.2f} per example&quot;</span>)</pre><div class="out"><pre>97 parameters for 765 training examples: 0.13 per example
+</pre></div></div><div class="md"><h2 id="10-settings-hyperparameters-chosen-on-validation">10. Settings (hyperparameters): chosen on validation, never on test</h2>
+<p>The <strong>parameters</strong> (weights) are learned. The <strong>settings</strong> are chosen by us: layer size, learning rate, number of epochs, batch size. Try a few, keep the one with the lowest <em>validation</em> loss.</p></div><div class="cell"><div class="in">In [13]:<button class="copy">Copy</button></div><pre class="code">results = []
+<span class="k">for</span> hidden <span class="k">in</span> [<span class="n">4</span>, <span class="n">16</span>, <span class="n">64</span>]:
+    <span class="k">for</span> lr <span class="k">in</span> [<span class="n">1e-3</span>, <span class="n">1e-2</span>]:
+        <span class="b">torch</span>.<span class="f">manual_seed</span>(<span class="n">0</span>)
+        m = <span class="f">make_model</span>(hidden)
+        v, _ = <span class="f">train</span>(m, lr=lr)
+        results.<span class="f">append</span>((hidden, lr, <span class="b">sum</span>(p.<span class="f">numel</span>() <span class="k">for</span> p <span class="k">in</span> m.<span class="f">parameters</span>()), <span class="f">round</span>(v, <span class="n">4</span>)))
+<span class="b">pd</span>.<span class="f">DataFrame</span>(results, columns=[<span class="s">&quot;hidden&quot;</span>, <span class="s">&quot;lr&quot;</span>, <span class="s">&quot;parameters&quot;</span>, <span class="s">&quot;validation loss&quot;</span>]).<span class="f">sort_values</span>(<span class="s">&quot;validation loss&quot;</span>)</pre><div class="out"><div class="html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>hidden</th>
+      <th>lr</th>
+      <th>parameters</th>
+      <th>validation loss</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>3</th>
+      <td>16</td>
+      <td>0.010</td>
+      <td>97</td>
+      <td>0.2224</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>64</td>
+      <td>0.010</td>
+      <td>385</td>
+      <td>0.2614</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>4</td>
+      <td>0.010</td>
+      <td>25</td>
+      <td>0.2990</td>
+    </tr>
+    <tr>
+      <th>0</th>
+      <td>4</td>
+      <td>0.001</td>
+      <td>25</td>
+      <td>0.3172</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>64</td>
+      <td>0.001</td>
+      <td>385</td>
+      <td>0.3211</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>16</td>
+      <td>0.001</td>
+      <td>97</td>
+      <td>0.3234</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div></div><div class="cell"><div class="in">In [14]:<button class="copy">Copy</button></div><pre class="code">hidden, lr = <span class="f">sorted</span>(results, key=<span class="k">lambda</span> r: r[<span class="n">3</span>])[<span class="n">0</span>][:<span class="n">2</span>]    <span class="c"># the best settings</span>
+<span class="b">torch</span>.<span class="f">manual_seed</span>(<span class="n">0</span>)
+model = <span class="f">make_model</span>(hidden)
+<span class="f">train</span>(model, lr=lr)
+<span class="b">print</span>(<span class="s">&quot;chosen: hidden =&quot;</span>, hidden, <span class="s">&quot; lr =&quot;</span>, lr)</pre><div class="out"><pre>chosen: hidden = 16  lr = 0.01
+</pre></div></div><div class="md"><h2 id="11-test-once-in-real-units-against-a-baseline">11. Test: once, in real units, against a baseline</h2>
+<p><strong>Baseline:</strong> "tomorrow = today". If the model can't beat that, it is not worth having.</p></div><div class="cell"><div class="in">In [15]:<button class="copy">Copy</button></div><pre class="code">model.<span class="f">eval</span>()
+<span class="k">with</span> <span class="b">torch</span>.<span class="f">no_grad</span>():
+    pred = <span class="f">unscale_y</span>(<span class="f">model</span>(<span class="f">to_t</span>(<span class="f">scale_x</span>(X_test))).<span class="f">numpy</span>())
+mae_model = <span class="b">np</span>.<span class="b">abs</span>(pred - y_test).<span class="f">mean</span>()
+mae_baseline = <span class="b">np</span>.<span class="b">abs</span>(X_test[:, <span class="n">3</span>:<span class="n">4</span>] - y_test).<span class="f">mean</span>()     <span class="c"># demand_today as the guess</span>
+<span class="b">print</span>(<span class="s">f&quot;test error, model:    {mae_model:6.1f} thousand litres per day&quot;</span>)
+<span class="b">print</span>(<span class="s">f&quot;test error, baseline: {mae_baseline:6.1f} thousand litres per day&quot;</span>)</pre><div class="out"><pre>test error, model:      44.4 thousand litres per day
+test error, baseline:   56.7 thousand litres per day
+</pre></div></div><div class="md"><h2 id="12-save-everything-needed-to-use-the-model-again">12. Save everything needed to use the model again</h2></div><div class="cell"><div class="in">In [16]:<button class="copy">Copy</button></div><pre class="code"><span class="b">torch</span>.<span class="f">save</span>({<span class="s">&quot;weights&quot;</span>: model.<span class="f">state_dict</span>(), <span class="s">&quot;hidden&quot;</span>: hidden,
+            <span class="s">&quot;mean&quot;</span>: mean, <span class="s">&quot;std&quot;</span>: std, <span class="s">&quot;y_mean&quot;</span>: y_mean, <span class="s">&quot;y_std&quot;</span>: y_std,
+            <span class="s">&quot;inputs&quot;</span>: <span class="b">list</span>(data.columns[:-<span class="n">1</span>])}, <span class="s">&quot;demand_model.pt&quot;</span>)
+
+ck = <span class="b">torch</span>.<span class="f">load</span>(<span class="s">&quot;demand_model.pt&quot;</span>, weights_only=<span class="k">False</span>)        <span class="c"># later, somewhere else</span>
+m2 = <span class="f">make_model</span>(ck[<span class="s">&quot;hidden&quot;</span>]); m2.<span class="f">load_state_dict</span>(ck[<span class="s">&quot;weights&quot;</span>]); m2.<span class="f">eval</span>()
+x_new = <span class="b">np</span>.<span class="f">array</span>([[<span class="n">31.0</span>, <span class="n">0.0</span>, <span class="n">0</span>, <span class="n">1450.0</span>]], dtype=<span class="b">np</span>.float32)  <span class="c"># hot, dry weekday, 1450 today</span>
+<span class="k">with</span> <span class="b">torch</span>.<span class="f">no_grad</span>():
+    <span class="b">print</span>(<span class="s">&quot;forecast for tomorrow:&quot;</span>, <span class="b">float</span>((<span class="f">m2</span>(<span class="f">to_t</span>((x_new - ck[<span class="s">&quot;mean&quot;</span>]) / ck[<span class="s">&quot;std&quot;</span>])) * ck[<span class="s">&quot;y_std&quot;</span>] + ck[<span class="s">&quot;y_mean&quot;</span>])[<span class="n">0</span>, <span class="n">0</span>]))</pre><div class="out"><pre>forecast for tomorrow: 1500.388916015625
+</pre></div></div><div class="md"><p><strong>That is the whole skeleton.</strong> Notebooks 1 and 2 do the same twelve steps on the real plant data: a messier file, a time series instead of a table, and a harder question.</p></div>
+<div class="endnav"><a class="navlink" href="https://claude.ai/artifact/66EGWBVkQQRAKsHadr5ob5">The slide deck</a><a class="navlink" href="https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq">Notebook 1 · Collect, clean and prepare the plant data →</a><a class="navlink" href="https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm">Notebook 2 · Choose a model and train it →</a><a class="navlink" href="https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5">Notebook 3 · Reinforcement learning in brief →</a></div>
+</main></div>
+<script>
+const root=document.documentElement;
+function setMode(code){document.body.classList.toggle('nocode',!code);
+  document.getElementById('m-code').classList.toggle('on',code);document.getElementById('m-ideas').classList.toggle('on',!code);
+  try{localStorage.setItem('ws-nocode',code?'0':'1')}catch(e){}}
+document.getElementById('m-code').onclick=()=>setMode(true);
+document.getElementById('m-ideas').onclick=()=>setMode(false);
+try{if(localStorage.getItem('ws-nocode')==='1')setMode(false)}catch(e){}
+document.querySelectorAll('button.copy').forEach(b=>b.onclick=()=>{
+  const code=b.closest('.cell').querySelector('pre.code').innerText;
+  const done=t=>{b.textContent=t;setTimeout(()=>b.textContent='Copy',1400)};
+  try{navigator.clipboard.writeText(code).then(()=>done('Copied ✓'),()=>done('Select and copy by hand'))}catch(e){done('Select and copy by hand')}});
+const heads=[...document.querySelectorAll('main h2, main h3')],links=[...document.querySelectorAll('nav.toc a')];
+const spy=()=>{let cur=heads[0];for(const h of heads){if(h.getBoundingClientRect().top<120)cur=h}
+  links.forEach(a=>a.classList.toggle('cur',cur&&a.getAttribute('href')==='#'+cur.id))};
+document.addEventListener('scroll',spy,{passive:true});spy();
+</script>
+</body></html>

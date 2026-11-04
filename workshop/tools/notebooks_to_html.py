@@ -25,9 +25,10 @@ from nbclient import NotebookClient
 ROOT = Path(__file__).resolve().parents[2]
 NBDIR = ROOT / "workshop" / "notebooks"
 OUT = NBDIR / "html"
-NAMES = {"01_data_collect_clean_prepare": "Part 1 · Collect, clean and prepare the data",
-         "02_choose_and_train_a_model": "Part 2 · Choose a model and train it",
-         "03_reinforcement_learning_in_brief": "Part 3 · Reinforcement learning in brief"}
+NAMES = {"00_ml_skeleton": "Notebook 0 · The skeleton of every ML notebook",
+         "01_data_collect_clean_prepare": "Notebook 1 · Collect, clean and prepare the plant data",
+         "02_choose_and_train_a_model": "Notebook 2 · Choose a model and train it",
+         "03_reinforcement_learning_in_brief": "Notebook 3 · Reinforcement learning in brief"}
 
 KW = set("def class return for in if elif else while with as import from not and or lambda None True False try "
          "except finally yield is break continue pass assert raise global nonlocal del".split())
@@ -196,7 +197,7 @@ To run it yourself: <code>pip install -r workshop/requirements.txt</code>, then 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--links", help="JSON file with the URLs of the deck and the three parts")
+    ap.add_argument("--links", help="JSON file with the URLs of the deck and the notebooks")
     a = ap.parse_args()
     links = json.loads(Path(a.links).read_text()) if a.links else {}
     OUT.mkdir(parents=True, exist_ok=True)

@@ -3,7 +3,7 @@
 Contents:
   * the whole repository at the current commit (git archive): library, experiments,
     tests, results, trained models, docs, demo, workshop;
-  * the three notebooks executed, with their outputs (workshop/notebooks/executed/);
+  * the four notebooks executed, with their outputs (workshop/notebooks/executed/);
   * the data, so nothing needs the internet: the official IWA influent files with their
     GPL-3 licence (data/official/ and workshop/data/), the prepared dataset and the
     trained forecaster of notebook 2;
@@ -37,7 +37,7 @@ DIST = ROOT / "dist"
 REV = "5dadb209a5a34ecb0e2f83a2e79c060bf3470582"
 BASE = f"https://raw.githubusercontent.com/davidfernand/BSM1_in_Python/{REV}"
 FILES = {"dry": "Inf_dry_2006.xlsx", "rain": "Inf_rain_2006.xlsx", "storm": "Inf_strm_2006.xlsx"}
-NOTEBOOKS = ("01_data_collect_clean_prepare", "02_choose_and_train_a_model", "03_reinforcement_learning_in_brief")
+NOTEBOOKS = ("00_ml_skeleton", "01_data_collect_clean_prepare", "02_choose_and_train_a_model", "03_reinforcement_learning_in_brief")
 
 
 def git(*args) -> str:
@@ -62,7 +62,7 @@ START_HERE = """# Start here
 Bundle of the repository `amritha902/water_resource` at commit `{sha}` ({day}), with the
 hands-on ML/RL workshop, its data and the notebooks already run. Nothing in it needs the internet.
 
-## 1. The workshop: one lesson in seven steps (90 minutes, any laptop, Python 3.10+)
+## 1. The workshop: the basics, then the project (90 minutes, any laptop, Python 3.10+)
 
 ```bash
 pip install -r workshop/requirements.txt
@@ -71,7 +71,7 @@ pip install -r workshop/requirements.txt
 1. **Slides:** open `workshop/slides/index.html` in Chrome, Edge or Firefox (no internet needed).
    → and ← move; on interactive slides → first steps inside the slide (next notebook cell, next code block,
    next highlighted step, next quiz answer). R replays an animation, F is full screen.
-2. **The seven steps, each as one terminal command** (seconds each), in `workshop/examples/`:
+2. **Each step as one terminal command** (seconds each), in `workshop/examples/`:
 
    ```bash
    python workshop/examples/lesson1_knobs.py
@@ -82,13 +82,13 @@ pip install -r workshop/requirements.txt
    python workshop/examples/lesson6_rl.py
    ```
 
-3. **Notebooks:** `jupyter lab workshop/notebooks`. To read them with every result, without running
+3. **Notebooks:** `jupyter lab workshop/notebooks`. Start with `00_ml_skeleton.ipynb`, the twelve steps of every ML notebook. To read them with every result, without running
    anything, open `workshop/notebooks/html/*.html` in a browser (or `workshop/notebooks/executed/` in Jupyter).
 4. **Teaching guide**, the whole lesson slide by slide with the physics and every script explained line by line:
    `workshop/teaching_guide.html` (open in a browser) or `workshop/TEACHING_GUIDE.md`.
    **Presenter notes**, timetable and expected results: `workshop/README.md`. Pictures of every slide:
    `workshop/slides/stills/`; narration per slide: `workshop/SPEECHIFY_OUTLINE.md`.
-5. **Online copies** (private until the owner shares them): the deck and the three notebook pages are listed
+5. **Online copies** (private until the owner shares them): the deck and the four notebook pages are listed
    in `workshop/README.md`, under "Published pages".
 
 ## 2. The full project (Python 3.11)

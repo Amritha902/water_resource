@@ -1,6 +1,6 @@
 # Hands-on workshop: from plant data to a trained model
 
-About 90 minutes, for research scholars. It teaches machine learning and reinforcement learning with this repository's project: learning to control the BSM1 wastewater treatment plant. Short animated slides alternate with notebooks the participants run themselves. Every step points to the file in `src/wwtp/` that does the same thing for real.
+About 90 minutes, for research scholars, in three parts. Part 1 teaches the basics of any machine-learning project, one step per slide, on a simple example (tomorrow's water demand of a town). Part 2 does the same steps on this repository's project: the BSM1 wastewater plant, its data and code. Part 3 is reinforcement learning and the project's controller. Short animated slides alternate with notebooks the participants run themselves.
 
 ```
 workshop/
@@ -9,6 +9,7 @@ workshop/
   tools/build_slide_content.py  regenerates content.js and slides/img/ from the notebooks and src/
   tools/make_bundle.py   builds dist/water_resource_workshop_bundle_<commit>.zip: everything, offline
   notebooks/
+    00_ml_skeleton.ipynb                  the twelve steps of every ML notebook, on a simple example (≈ 10 s)
     01_data_collect_clean_prepare.ipynb   collect, clean, prepare (≈ 5 s to run)
     02_choose_and_train_a_model.ipynb     baselines, linear, MLP, causal CNN, overfitting, save/reload (≈ 30 s)
     03_reinforcement_learning_in_brief.ipynb  environment, PID, imitation, Q-learning, reward design (≈ 30 s)
@@ -24,11 +25,12 @@ workshop/
 - Teaching guide, the whole lesson slide by slide with every script explained: https://claude.ai/artifact/HqpLrBanoEpinRiffb7Wma (source `workshop/guide/TEACHING_GUIDE.src.md`, built by `python workshop/tools/build_guide.py` into `workshop/TEACHING_GUIDE.md` and `workshop/teaching_guide.html`)
 
 - Slide deck: https://claude.ai/artifact/66EGWBVkQQRAKsHadr5ob5
-- Part 1, collect, clean and prepare: https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq
-- Part 2, choose a model and train it: https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm
-- Part 3, reinforcement learning in brief: https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5
+- Notebook 0, the skeleton of every ML notebook: https://claude.ai/artifact/NMc3LiA6MuhKAa6gjGvWHr
+- Notebook 1, collect, clean and prepare: https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq
+- Notebook 2, choose a model and train it: https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm
+- Notebook 3, reinforcement learning in brief: https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5
 
-The notebook pages are made by `python workshop/tools/notebooks_to_html.py --links workshop/notebooks/html/links.json` (they show a real run; "Explanations only" hides the code). Each notebook has a "New to notebooks?" box, a glossary and an "In plain words" box for every step.
+The notebook pages are made by `python workshop/tools/notebooks_to_html.py --links workshop/notebooks/html/links.json` (they show a real run; "Explanations only" hides the code). Notebooks 1 to 3 have a "New to notebooks?" box, a glossary and an "In plain words" box for every step.
 
 ## Setup (do this the day before)
 
@@ -56,20 +58,17 @@ The workshop needs neither `bsm2-python` nor a GPU. Notebook 1 downloads the thr
 
 The buttons and sliders on the slides are live: press them during the talk.
 
-## Timetable: one lesson in seven steps
+## Timetable: basics first, then the project
 
-The deck is one continuous lesson (62 slides). Every step has the same rhythm: a divider with the goal → the idea (animated) → **where is the code?** (the same steps, colour by colour, in the hands-on script, the notebook and the project) → the code running (notebook player or code tour) → **check yourself** (three questions, click to reveal) → hands-on.
+The deck has 58 slides in three parts. Part 1 uses no project words at all: every step of a machine-learning project, one per slide, on a made-up example (predict tomorrow's water demand of a town from the weather), all of it in notebook 0. Parts 2 and 3 then do the same steps on the project's real files and code.
 
-| Time | Slides | Step | Terminal | Notebook |
+| Time | Slides | Part | Terminal | Notebook |
 |---|---|---|---|---|
-| 0:00 | 1–6 | Welcome, the plan, glossary of every word, the problem, the plant and its two loops, the project's pipeline | | |
-| 0:04 | 7–10 | **1 · What is a model?** Line fit, four training steps everywhere, quiz | `lesson1_knobs.py` | |
-| 0:12 | 11–20 | **2 · Collect and clean** Data, loading, cleaning, time grid, code map, our loader, notebook running, quiz, hands-on | `lesson2_load_and_clean.py` | NB1 A, B |
-| 0:32 | 21–28 | **3 · Prepare** Scaling, windows, split by time, code map, notebook running, quiz, hands-on | `lesson3_prepare.py` | NB1 C |
-| 0:44 | 29–37 | **4 · Choose the model** Shapes decide, layer by layer, parameters, CNN, GRU, code map, notebook running, quiz | `lesson4_models.py` | NB2 1–6 |
-| 0:54 | 38–46 | **5 · Train and evaluate** Loss, gradient descent, training loop, code map, notebook running, baselines, quiz, hands-on | `lesson5_train_and_evaluate.py` | NB2 5–9 |
-| 1:14 | 47–55 | **6 · Reinforcement learning** RL loop, actor-critic, code map, our RL code, notebook running, SAC-IL, quiz, hands-on | `lesson6_rl.py` | NB3 |
-| 1:27 | 56–62 | **7 · Our project's code** Papers as printed, our controller, held-out test 2 (the latest results), quiz, questions learners ask, take-home lessons | | |
+| 0:00 | 1–3 | Welcome, the plan, the glossary of every word | | |
+| 0:03 | 4–24 | **Part 1 · The basics.** The twelve steps (5); collect and look (6); clean (7); inputs and target (8); split into train, validation and test (9); scale (10); feed: tensors and batches (11); what a model is (12); kinds of learning (13); kinds of models (14); inside a network (15); loss, gradient descent, training code (16–18); how many parameters (19); choosing the settings (20); testing code (21); the whole skeleton (22); hands-on notebook 0 (23); quiz (24) | `lesson1_knobs.py` | NB0 |
+| 0:43 | 25–44 | **Part 2 · Our project.** The problem and the plant (26–27); the official Excel files and how they are read (28–29); cleaning and the physics fix (30); one time grid (31); where the code is (32); notebook 1 running (33, 35); cutting the series into examples and the split (34); hands-on notebook 1 (36); which model for our shapes (37); the causal CNN (38); notebook 2 running (39–40); where the training code is (41); baselines (42); hands-on notebook 2 (43); quiz (44) | `lesson2_…` to `lesson5_…` | NB1, NB2 |
+| 1:13 | 45–56 | **Part 3 · RL and our controller.** The RL idea and its parts (46–47); notebook 3 running (48); hands-on notebook 3 (49); how the project was built (50); the RL code (51); SAC-IL (52); the papers as printed (53); our controller (54); held-out test 2, the latest results (55); quiz (56) | `lesson6_rl.py` | NB3 |
+| 1:28 | 57–58 | Questions learners ask; take-home lessons | | |
 
 Keys: → advances; on interactive slides it first steps inside the slide (next cell, next code block, next step, next answer). ← goes back. R replays an animation; F is full screen.
 
@@ -84,6 +83,8 @@ python workshop/tools/build_slide_content.py
 ```
 
 ## What each notebook shows (results from our run; small differences between machines are normal)
+
+**Notebook 0.** Twelve steps on made-up data with planted problems (a missing value, a duplicate row, a negative rainfall, a typing error): the cleaning finds each one. 765 / 164 / 165 examples split by time; a 4 → 16 → 1 network (97 parameters); of six settings tried on validation, 16 units with learning rate 0.01 wins. Test error 44.4 against 56.7 thousand litres a day for the "tomorrow = today" baseline.
 
 **Notebook 1.**
 - The raw file has a header row, which turns every column into text: look before you parse.
@@ -131,4 +132,4 @@ python workshop/tools/build_slide_content.py
 ## Notes
 
 - The slide animations of the influent use the repository's own generator (`src/wwtp/bsm1/influent.py`), not the official files, which are not redistributed. The notebooks use the official files.
-- The numbers on slide 22 (oxygen error against paper 1's PID) are copied from the repository README.
+- The numbers on slide 42 (oxygen error against paper 1's PID) are copied from the repository README.

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Part 3 · Reinforcement learning in brief</title><style>
+<title>Notebook 3 · Reinforcement learning in brief</title><style>
 :root{--bg:#fbfaf7;--ink:#1d2433;--ink2:#4b5563;--muted:#8a919c;--line:#e3e1db;--blue:#2563eb;--orange:#ea580c;--soft:#f1efe9}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif}
@@ -42,7 +42,7 @@ pre.code .k{color:#c4b5fd}pre.code .s{color:#fcd34d}pre.code .c{color:#7d8ba1;fo
 @media (max-width:900px){nav.toc{display:none}h1{font-size:28px}}
 </style></head>
 <body>
-<header><div class="bar"><span class="k">Workshop notebook</span><span class="t">Part 3 · Reinforcement learning in brief</span><span class="sp"></span>
+<header><div class="bar"><span class="k">Workshop notebook</span><span class="t">Notebook 3 · Reinforcement learning in brief</span><span class="sp"></span>
 <a class="navlink" href="https://claude.ai/artifact/66EGWBVkQQRAKsHadr5ob5">The slide deck</a><button id="m-code" class="on">Show code</button><button id="m-ideas">Explanations only</button></div></header>
 <div class="wrap"><nav class="toc"><a class="h2" href="#1-the-environment">1. The environment</a><a class="h2" href="#2-the-expert-an-incremental-pid">2. The expert: an incremental PID</a><a class="h2" href="#3-imitation-learn-to-copy-the-expert-this-is-sup">3. Imitation: learn to copy the expert (this is supervised learning)</a><a class="h2" href="#4-q-learning-learn-from-reward-alone">4. Q-learning: learn from reward alone</a><a class="h3" href="#a-stronger-baseline-the-pid-plus-engineering-kno">A stronger baseline: the PID plus engineering knowledge</a><a class="h2" href="#5-compare-on-days-never-used-for-training-over-s">5. Compare on days never used for training, over several seeds</a><a class="h2" href="#6-the-reward-is-the-specification">6. The reward is the specification</a><a class="h3" href="#what-you-just-did">What you just did</a></nav>
 <main>
@@ -536,7 +536,7 @@ Q-learning, w = 5    mean oxygen 0.49 mg/L   mean KLa  14.8   time below 1.5 mg/
 <li>trained a <strong>Q-learning</strong> agent from reward alone, kept its best policy, tested it on unseen days over several seeds</li>
 <li>saw that the <strong>reward is the specification</strong>: the agent does what you wrote, not what you meant</li>
 </ul></div>
-<div class="endnav"><a class="navlink" href="https://claude.ai/artifact/66EGWBVkQQRAKsHadr5ob5">The slide deck</a><a class="navlink" href="https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq">← Part 1 · Collect, clean and prepare the data</a><a class="navlink" href="https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm">← Part 2 · Choose a model and train it</a></div>
+<div class="endnav"><a class="navlink" href="https://claude.ai/artifact/66EGWBVkQQRAKsHadr5ob5">The slide deck</a><a class="navlink" href="https://claude.ai/artifact/NMc3LiA6MuhKAa6gjGvWHr">← Notebook 0 · The skeleton of every ML notebook</a><a class="navlink" href="https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq">← Notebook 1 · Collect, clean and prepare the plant data</a><a class="navlink" href="https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm">← Notebook 2 · Choose a model and train it</a></div>
 </main></div>
 <script>
 const root=document.documentElement;

@@ -22,3 +22,7 @@ logs_*/
 # workshop: downloaded and generated data
 /workshop/data/
 /dist/
+
+# workshop notebook 0 writes these
+/workshop/notebooks/daily_demand.csv
+/workshop/notebooks/demand_model.pt

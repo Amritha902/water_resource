@@ -1,4 +1,7 @@
-{"deck": "https://claude.ai/artifact/66EGWBVkQQRAKsHadr5ob5",
+{
+ "deck": "https://claude.ai/artifact/66EGWBVkQQRAKsHadr5ob5",
+ "00_ml_skeleton": "https://claude.ai/artifact/NMc3LiA6MuhKAa6gjGvWHr",
  "01_data_collect_clean_prepare": "https://claude.ai/artifact/MhofB2ez4udSC5zVvviBkq",
  "02_choose_and_train_a_model": "https://claude.ai/artifact/XJEAVKk3wnmgh8RBvUHtwm",
- "03_reinforcement_learning_in_brief": "https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5"}
+ "03_reinforcement_learning_in_brief": "https://claude.ai/artifact/TsXUrKphd3CRGddACxi2m5"
+}

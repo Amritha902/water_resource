@@ -218,7 +218,7 @@ A.fit = {
       if (playing && step < 300) { acc++; if (acc % 4 === 0) gd(); }
       const ctx = canvas("cv-fit"); clear(ctx);
       const ax = axes(60, 20, 380, 360, [0, 1], [0, 1.05]);
-      frame(ctx, ax, {xlabel: "x: inflow (scaled)", ylabel: "y: ammonium load (scaled)"});
+      frame(ctx, ax, {xlabel: "x: input (scaled)", ylabel: "y: target (scaled)"});
       // residuals
       pts.forEach(([x, y]) => line(ctx, [[ax.x(x), ax.y(y)], [ax.x(x), ax.y(w * x + b)]], "rgba(220,38,38,.55)", 1.5));
       line(ctx, [[ax.x(0), ax.y(b)], [ax.x(1), ax.y(w + b)]], C.blue, 3);
@@ -500,7 +500,7 @@ A.shapes = {
 // ═════════════════════════════ 15. forward pass, neuron by neuron
 A.forward = {
   start() {
-    const sizes = [3, 4, 4, 1], names = ["inflow Q", "ammonium", "COD"];
+    const sizes = [3, 4, 4, 1], names = ["temp.", "rain", "demand"];
     let rnd = seeded(21);
     const W = [], B = [];
     for (let l = 1; l < sizes.length; l++) {
@@ -558,7 +558,7 @@ A.forward = {
         if (known) text(ctx, v.toFixed(2), X(l), Yn(l, j), {align: "center", size: 13, mono: true, weight: 700});
         if (l === 0) text(ctx, names[j], X(l) - 32, Yn(l, j), {align: "right", size: 13, color: C.ink2});
       }
-      text(ctx, "flow in 1 h", X(3), Yn(3, 0) + 40, {align: "center", size: 13, color: C.ink2});
+      text(ctx, "demand tomorrow", X(3), Yn(3, 0) + 40, {align: "center", size: 13, color: C.ink2});
       text(ctx, "(scaled)", X(3), Yn(3, 0) + 58, {align: "center", size: 12, color: C.muted});
       // panel
       if (!cur_) { panel.innerHTML = `Input (already scaled):<br>x = [${x.map(v => v.toFixed(2)).join(", ")}]<br><br>Press <b>play</b> or <b>next step</b>.`; return; }
@@ -579,7 +579,7 @@ A.forward = {
 A.params = {
   start() {
     const inp = $("#par-input"), nIn = $("#par-n"), tb = $("#par-table"), verdict = $("#par-verdict");
-    const presets = [["our MLP (notebook 2)", "288,64,64,8"], ["linear model", "288,8"], ["DDPG actor", "3,256,256,1"], ["SAC-IL actor", "11,128,128,4"], ["too big", "288,1024,1024,8"]];
+    const presets = [["notebook 0 model", "4,16,1"], ["linear model", "4,1"], ["two hidden layers", "4,64,64,1"], ["too big", "4,1024,1024,1"], ["digit images (28×28) → 10 classes", "784,128,10"]];
     const box = $("#par-presets"); box.innerHTML = "";
     presets.forEach(([n, v]) => { const b = document.createElement("button"); b.textContent = n; b.onclick = () => { inp.value = v; draw(); }; box.appendChild(b); });
     const draw = () => {
@@ -606,7 +606,7 @@ A.params = {
       text(ctx, "units per layer", 340, 286, {align: "center", size: 12, color: C.muted});
     };
     inp.oninput = draw; nIn.oninput = draw;
-    inp.value = "288,64,64,8"; draw();
+    inp.value = "4,16,1"; draw();
   },
   stop() {}
 };
@@ -1110,18 +1110,20 @@ A.pipeline = {
 // ═════════════════════════════ glossary: every word of the workshop, in plain words
 const GLOSSARY = [
   ["data", "Numbers we have recorded.", "A diary of the plant: every 15 minutes, how much water came in and how dirty it was.", "notebook 1"],
-  ["dataset", "A table of numbers a model learns from.", "A spreadsheet: one row per moment, one column per measurement.", "1 345 rows × 15 columns per weather file"],
-  ["cleaning", "Finding and fixing wrong or missing values.", "Washing the vegetables before cooking.", "lesson 2, notebook 1 part B"],
+  ["dataset", "A table of numbers a model learns from.", "A spreadsheet: one row per moment, one column per measurement.", "notebook 0: 1 096 days × 4 columns; our files: 1 345 rows × 15 columns"],
+  ["cleaning", "Finding and fixing wrong or missing values.", "Washing the vegetables before cooking.", "part 1 step 2; for our files, notebook 1 part B"],
   ["input (x)", "What the model gets to see.", "The front of a flash card.", "the last 24 hours of flow, ammonium and COD"],
   ["target (y)", "What the model must guess.", "The back of a flash card.", "the flow over the next 2 hours"],
   ["model", "A function with adjustable numbers inside.", "A recipe whose amounts you can change.", "linear model, MLP, CNN, GRU, actor, critic"],
   ["parameter / weight", "One adjustable number inside a model.", "One knob on the mixing desk.", "23 176 in our MLP; 67 073 in paper 2's actor"],
-  ["training", "Turning the knobs until the guesses get good.", "Taste, adjust, taste again.", "lesson 5, notebook 2"],
+  ["training", "Turning the knobs until the guesses get good.", "Taste, adjust, taste again.", "part 1 step 8; notebooks 0 and 2"],
   ["loss", "One number for how wrong the model is.", "Points lost in a game; training wants as few as possible.", "MSE, MAE, pinball, cross-entropy"],
   ["gradient", "Which way to turn every knob to lower the loss.", "Feeling which way is downhill with your feet, in the fog.", "computed by loss.backward()"],
-  ["learning rate", "How big a step we take each time.", "Baby steps or giant leaps: too big and you overshoot.", "lesson 5: try 0.02, 0.15 and 0.5 on the gradient-descent slide"],
+  ["learning rate", "How big a step we take each time.", "Baby steps or giant leaps: too big and you overshoot.", "try 0.02, 0.15 and 0.5 on the gradient-descent slide"],
+  ["hyperparameter (setting)", "A choice made by you before training, not learned: layer size, learning rate, epochs.", "The oven temperature: the recipe does not find it for you.", "chosen on the validation data, part 1 step 10"],
+  ["tensor", "An array of numbers PyTorch can compute with, and trace back for gradients.", "A spreadsheet that remembers every sum it was part of.", "X of shape (N, 96, 3) in notebook 2"],
   ["batch / epoch", "A handful of examples / one pass through all of them.", "A few flash cards at a time / the whole pack once.", "batch 128, up to 150 epochs"],
-  ["neural network", "Layers of simple units, one after the other.", "An assembly line: each station does a small job.", "lesson 4: watch numbers flow layer by layer"],
+  ["neural network", "Layers of simple units, one after the other.", "An assembly line: each station does a small job.", "part 1: watch numbers flow layer by layer"],
   ["ReLU", "Keep positive numbers, turn negatives into 0.", "A one-way valve.", "after every hidden layer"],
   ["train / validation / test", "Learn on / check while learning on / final exam, used once.", "Homework / practice test / the real exam.", "dry + rain week 2 / storm 1 / storm 2"],
   ["overfitting", "Memorising examples instead of learning the pattern.", "Learning the answers of last year's exam by heart.", "notebook 2 section 7"],
@@ -1134,13 +1136,13 @@ const GLOSSARY = [
   ["BSM1", "Benchmark Simulation Model no. 1: a standard computer model of a wastewater plant.", "A flight simulator, for wastewater engineers.", "src/wwtp/official/plant.py; every result of the project"],
   ["COD / ammonium / TSS", "How much organic dirt / nitrogen as ammonium / floating solids are in the water.", "The ingredients list of the dirty water.", "S_S, S_NH and the TSS column in the data"],
   ["KLa", "How fast oxygen from the blown air dissolves into the water (per day).", "The volume knob of the air blower.", "KLa5: the action of every controller in the project"],
-  ["mean / standard deviation", "The average / how far values typically are from it.", "The average height in a class / how much heights vary.", "the scaler of lesson 3"],
-  ["MLP / CNN / GRU", "Plain stacked layers / a filter sliding over time / a network with a memory.", "An assembly line / a magnifying glass moved along / a notepad carried along.", "lesson 4; the forecaster is a CNN, the digital twin a GRU"],
+  ["mean / standard deviation", "The average / how far values typically are from it.", "The average height in a class / how much heights vary.", "the scaler, part 1 step 5"],
+  ["MLP / CNN / GRU", "Plain stacked layers / a filter sliding over time / a network with a memory.", "An assembly line / a magnifying glass moved along / a notepad carried along.", "kinds of models, part 1; the forecaster is a CNN, the digital twin a GRU"],
   ["DDPG / SAC", "Two actor-critic RL methods: an actor picks actions, a critic scores them. SAC adds a little planned randomness.", "A player and a coach watching every move.", "paper 2's agent (DDPG); our controller (SAC-IL)"],
-  ["ILC", "Iterative learning control: learns a pattern that repeats every day and acts on it ahead of time.", "Leaving earlier because you know rush hour comes at 8 every day.", "our controller, lesson 7"],
+  ["ILC", "Iterative learning control: learns a pattern that repeats every day and acts on it ahead of time.", "Leaving earlier because you know rush hour comes at 8 every day.", "our controller, part 3"],
   ["anti-windup", "Stop a controller from piling up correction while the actuator is already at its limit.", "Stop pressing the accelerator once it is on the floor.", "the ILC fix of held-out test 2"],
   ["held-out test", "A final test on data and conditions nothing was tuned on, with the plan written down before running it.", "An exam set by someone else, sealed until exam day.", "docs/PAPER1_HELDOUT_PROTOCOL.md and PAPER1_HELDOUT2_PROTOCOL.md"],
-  ["MAACC / IOQL", "The learning controllers of papers 1 and 3 (adaptive-critic and Q-learning methods).", "Two published recipes we cooked exactly as written.", "lesson 7: neither learned as printed"],
+  ["MAACC / IOQL", "The learning controllers of papers 1 and 3 (adaptive-critic and Q-learning methods).", "Two published recipes we cooked exactly as written.", "part 3: neither learned as printed"],
 ];
 A.glossary = {
   start(el) {
@@ -1235,31 +1237,21 @@ A.codemap = {
 
 // ═════════════════════════════ check yourself: click a question (or press →) to reveal the answer
 const QUIZ = {
-  l1: [["Which parts of ŷ = w·x + b does training change?", "Only w and b, the knobs. The inputs x and the true answers y are data and never change. The shape of the function is chosen by us before training."],
-       ["The loss is very large. What does that tell you?", "The guesses are far from the true answers: the knobs are not yet good, or the model's shape cannot fit the data."],
-       ["What happens if the step size (learning rate) is far too big?", "Each step jumps over the bottom of the valley and lands higher on the other side, further each time: the loss explodes. Try lr = 1.2 in lesson1_knobs.py and see it."]],
-  l2: [["Why did every column come out as text?", "The first row holds names. One text row makes pandas read the whole column as text. Tell it row 0 is the header."],
-       ["All checks passed. Can the data still be wrong?", "Yes: S_I stays at 30 while rain doubles the flow. Only physics (rain dilutes) catches it."],
-       ["When may you fill a gap by interpolation?", "Only when it is short (here ≤ 1 hour). Filling a long gap invents data."]],
-  l3: [["Why not split the windows at random?", "Neighbouring windows share 95 of 96 samples: the test would hold near-copies of training examples and the score would be far too good."],
-       ["Where do the mean and std for scaling come from?", "From the training data only. Then the same numbers are used for validation, test and the real plant."],
-       ["Read the shape (1906, 96, 3).", "1 906 examples, each with 96 time steps, each step with 3 measurements (flow, ammonium, COD)."]],
-  l4: [["How many knobs has a layer from 64 to 8 units?", "64 × 8 weights + 8 biases = 520."],
-       ["What does ReLU do?", "Keeps positive numbers, turns negative ones into 0. That bend is what lets a network learn curved patterns."],
-       ["Why is the convolution 'causal'?", "It is padded on the left only, so each output sees only the present and the past, never the future."]],
-  l5: [["Training loss falls, validation loss rises. What is happening?", "Overfitting: the model memorises the training examples. Keep the best epoch, regularise, use a smaller model or get more data."],
-       ["Why use the test set only once?", "Every look that changes a decision turns the test into training data. Then it no longer measures the future."],
-       ["What must be saved with the weights?", "The scaler (mean, std) and the settings. Without them nobody can feed new raw measurements to the model."]],
-  l6: [["What is the difference between a reward and a label?", "A label is the right answer for this example. A reward only scores what happened, often late, and never says what the right action was."],
-       ["Why does the agent sometimes act at random?", "To explore: without trying new actions it can never find out that one is better."],
-       ["Air made very expensive in the reward: what did the agent do?", "Switched the air almost off and let the oxygen fall. It did exactly what the reward said, not what we meant."]],
-  l7: [["MAACC as printed equals its PID in 80 of 80 runs. Why?", "Its learning signal with the printed weights is about 10⁻⁴: the networks hardly move from their zero start."],
+  basics: [["Which parts of ŷ = w·x + b does training change?", "Only w and b, the knobs (parameters). The inputs x and the true answers y are data and never change. The shape of the function, and settings such as the learning rate, are chosen by us before training."],
+           ["Where do the mean and std for scaling come from?", "From the training data only. The same numbers are then used for validation, test and every later prediction, so they are saved with the model."],
+           ["Training loss falls, validation loss rises. What is happening?", "Overfitting: the model is memorising the training examples. Keep the best validation epoch, use a smaller model or regularisation, or get more data."],
+           ["Why look at the test set only once?", "Every decision made after looking at it turns it into validation data. Then it no longer tells you how the model does on new data."]],
+  project: [["Why did every column of the Excel file come out as text?", "The first row holds names. One text row makes pandas read the whole column as text. Tell it which row is the header, and keep only the numeric rows."],
+            ["All the usual checks passed. Can the data still be wrong?", "Yes: S_I stays at 30 while rain doubles the flow. Only physics (rain dilutes) catches it."],
+            ["Read the shape (1906, 96, 3).", "1 906 examples, each with 96 time steps, each step with 3 measurements (flow, ammonium, COD)."],
+            ["Why did the simplest model win on the storm?", "About 1 900 examples and no storm in training: the flexible models had little to learn from and more room to overfit. More varied data helps more than a bigger model."]],
+  rl: [["What is the difference between a reward and a label?", "A label is the right answer for this example. A reward only scores what happened, often late, and never says what the right action was."],
+       ["Air made very expensive in the reward: what did the agent do?", "Switched the air almost off and let the oxygen fall. It did exactly what the reward said, not what we meant."],
        ["What does the safety gate do?", "When an input leaves the range seen in training, the learned part is switched off and the expert PID acts alone."],
        ["What did held-out test 2 show?", "Anti-windup removed the ILC's harm under overload, and the robust PID never failed. But under the official sensor noise nothing beat the paper's own PID. That is the open problem."]],
   faq: [["Do I need a GPU?", "No. Every script and notebook here runs on a laptop CPU in seconds to a minute. GPUs matter for big models on big data, not for this."],
-        ["Where does the gradient formula 2·(pred − y)·x in lesson 1 come from?", "It is the slope of the loss (pred − y)² when you nudge w: calculus (the chain rule). In real code loss.backward() computes it for every knob automatically."],
+        ["Where does the gradient formula 2·(pred − y)·x in lesson1_knobs.py come from?", "It is the slope of the loss (pred − y)² when you nudge w: calculus (the chain rule). In real code loss.backward() computes it for every knob automatically."],
         ["How big should my model be?", "Start small and simple (a baseline, then a linear model). Grow only while the validation error keeps improving. Far more knobs than examples means it can memorise."],
-        ["Why did the simplest model win on the storm?", "About 1 900 examples and no storm in training: the flexible models had little to learn and more to overfit. More varied data helps more than a bigger model."],
         ["My data has no time order. Do I still split by time?", "No: then a random split is fine. Split by whatever must be new at test time: time, plant, patient, sensor."],
         ["Why not pick the best model on the test set?", "Then the test score is part of your choices and no longer tells you about new data. Choose on validation, test once."],
         ["Can the RL agent run on a real plant?", "Not straight away: early exploration means bad actions. The project starts from the expert (imitation), keeps a safety gate, and tests in simulation first."],

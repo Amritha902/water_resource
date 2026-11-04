@@ -4,11 +4,11 @@ This is the whole workshop written out as a lesson, in the order of the slides. 
 
 Every code block below is copied from the repository when this guide is built, and every output block comes from running the lesson scripts at that moment. If the code changes, rebuild the guide (`python workshop/tools/build_guide.py`) and it follows.
 
-How to use it on the day. Keep the deck (`workshop/slides/index.html`) on the projector and this guide on your laptop. The right arrow moves on. On the interactive slides it first steps through the slide: the next notebook cell, the next block of code, the next quiz answer. Each lesson ends with the same terminal command the scholars can run, so if a notebook breaks on someone's machine, the script still works.
+How to use it on the day. Keep the deck (`workshop/slides/index.html`) on the projector and this guide on your laptop. The right arrow moves on. On the interactive slides it first steps through the slide: the next notebook cell, the next block of code, the next quiz answer.
 
-The timing is 90 minutes. Lessons 2 and 5 are the long ones because they hold the main hands-on sessions.
+The session has three parts and takes 90 minutes. Part 1 (40 minutes) is the basics: every step of a machine-learning project, one per slide, on a simple example with no plant in it. Part 2 (30 minutes) does the same steps on our project's real data and code. Part 3 (20 minutes) is reinforcement learning and the project's controller. Keep the project out of part 1. If a scholar asks about the plant there, say it is coming in part 2.
 
-## Before the lessons
+## Opening
 
 ### Slide 1 · From plant data to a trained model
 
@@ -18,15 +18,243 @@ Say: "Today we learn machine learning the way it is used in research, on one rea
 
 Move the slider while you talk. The oxygen reading changes, and so does the energy figure underneath. That one trade-off is the whole project in miniature.
 
-### Slide 2 · One lesson, seven steps, 90 minutes
+### Slide 2 · First the basics, then our project
 
-Read the seven steps out loud once. Then point out the rhythm, because it repeats in every lesson: the idea with an animation, where the code is, the code running, three questions, and the scholars' turn. Tell them now that every step has a one-line terminal command, so nobody gets left behind if their notebook misbehaves.
+Read the three parts out loud. Say: "First we learn the recipe on an easy problem, so the ideas are not buried under plant chemistry. Then we cook the same recipe with our research data, where every step is harder and more interesting." Point at the notebook links: the scholars can read every notebook as a web page with all its results if their laptop gives trouble.
 
-### Slide 3 · Every word you will hear today
+### Slide 3 · Every word you will hear today, explained simply
 
-Thirty-two words, each with a plain meaning, a comparison from daily life and where it appears in the project. Do not read them all. Click four: *model*, *loss*, *overfitting* and *reinforcement learning*. Then tell the room this slide is their dictionary for the day and they can come back to it any time.
+Thirty-four words, each with a plain meaning, a comparison from daily life and where it appears in the project. Do not read them all. Click four: *model*, *loss*, *overfitting* and *reinforcement learning*. Then tell the room this slide is their dictionary for the day and they can come back to it any time.
 
-### Slide 4 · What the project is about
+## Part 1. The basics
+
+### Slide 4 · The basics
+
+The example for the whole of part 1: a town wants to know tomorrow's water demand, and it has three years of daily temperature, rainfall and demand. Everything in part 1 is in `workshop/notebooks/00_ml_skeleton.ipynb`, which makes its own data, so it needs no download and runs in about ten seconds.
+
+### Slide 5 · Every machine-learning project follows the same steps
+
+Press the right arrow twelve times; each step appears in turn. Read them as a story: "We get the data, clean it, decide what goes in and what comes out, split it into piles, scale it, feed it in, choose a model, train it, test it, check its size, tune its settings and save it." The colours group them: grey is getting the data ready, blue is the model and its training, green is judging and keeping it. Tell the room that the next eighteen slides take these steps one at a time, and that most research time goes into the grey ones.
+
+### Slide 6 · Where data comes from, and the first look
+
+Data comes from files (CSV, Excel, logs), databases, public datasets and simulations. Whatever the source, write four things down: where the file came from, which version or date, the units of every column, and whether you may share it.
+
+Then the code. `pd.read_csv` reads the file into a table (a DataFrame); `read_excel` and `read_sql` do the same for other sources. The four lines after it are the first look, and they are not optional:
+
+- `df.shape` gives rows and columns. Is it as big as you expected?
+- `df.dtypes` gives the type of each column. A column of numbers that comes out as text (`object`) means something in it is not a number.
+- `df.head()` shows the first rows. Titles, units and notes often hide there.
+- `df.describe()` gives the minimum, maximum, mean and spread of each column. Read the minimum and maximum against common sense.
+
+Press the arrow for the last line: in our example `describe()` already shows a demand ten times too big and a negative rainfall.
+
+### Slide 7 · Cleaning: find what is wrong, fix only what you can explain
+
+Each press adds one row to the table: the problem, how you find it, and what you do. Then go through the code on the right, which is step 3 of notebook 0:
+
+- `pd.to_datetime` turns date text into real dates, so they sort and subtract properly.
+- `drop_duplicates("date")` keeps one row per day.
+- `isna().sum()` counts the missing values in each column. Count before you fix.
+- `interpolate(limit=2)` fills a gap with a straight line between its neighbours, but only gaps of at most two days. A long gap filled like this would be invented data.
+- A negative rainfall is impossible, so it becomes unknown (`np.nan`) and is then filled with 0, the most common rainfall.
+- A spike is a value far from the median of its neighbours (`rolling(15, center=True).median()`). One wrong value cannot move a median, so the median shows what the value should have been.
+
+The note at the bottom is the habit that matters most: keep a list of every fix, so someone else can rebuild your dataset from the raw file.
+
+### Slide 8 · Decide what goes in (X) and what comes out (y)
+
+One row is one example. The blue columns are the inputs X, the orange one is the target y. The model learns the link from blue to orange.
+
+Spend time on the second bullet. Only put in X what you will really have at the moment of prediction. Tomorrow's real temperature is not known today, but tomorrow's weather forecast is. A model trained with tomorrow's real temperature looks great on paper and fails in use. This mistake has a name, leakage, and it is the most common error in applied machine learning.
+
+Then the shapes. A table is (examples, inputs), here (1094, 4). A time series is (examples, time steps, channels). Images are (examples, height, width, colours). The shape is the first thing to know about any dataset, because in a few slides it will choose the model.
+
+### Slide 9 · Train, validation and test: three separate piles
+
+The table gives the three piles and what each is for. Training data sets the knobs. Validation data is for our choices: when to stop training and how big a model to use. Test data is the final score and is looked at once.
+
+Click *random split* on the animation. Red outlines appear on validation and test examples that sit right next to a training example. Say: "When data comes in time order, neighbouring examples are almost the same. Split at random and the test is mostly things the model has already seen. The score looks wonderful and means nothing. So we split by time: the past trains, the future tests."
+
+The code is three slices of the arrays: the first 70 % trains, the next 15 % validates, the last 15 % tests. When there is no time order, for example one row per patient, a random split with `train_test_split` is fine. The rule is to split by whatever must be new when the model is used: time, patient, plant, sensor.
+
+### Slide 10 · Put every input on a similar scale
+
+Click the three buttons: raw values, log, standardised. The example column is a water flow of about 20 000 m³ a day.
+
+Say: "Inside a model every input is multiplied by a weight and the results are added. A flow of 20 000 next to a temperature of 25 would drown it out. So we bring every input to the same scale, around zero with a spread of one. For quantities that change by factors, such as flows, we take the log first, so one big storm does not stretch the whole scale. Then we standardise: subtract the mean, divide by the standard deviation."
+
+Now press the arrow for the most important rule of part 1. The mean and standard deviation come from the training data only (`StandardScaler().fit(X_train)`). Then exactly those numbers are used for validation, test and every later prediction. If you compute them from all the data, the test set has leaked into training. That is also why the scaler is saved with the model.
+
+### Slide 11 · How the data gets into the model: tensors and batches
+
+Press through the boxes. The whole training set, 765 rows of 4 inputs, goes into a `DataLoader`. It shuffles the rows and serves them 32 at a time. One batch is a 32 × 4 tensor, and the model turns it into 32 guesses at once.
+
+- A tensor is an array PyTorch can compute with. It also remembers every calculation it was part of, which is how the gradients are found later.
+- A batch is a few examples at a time: faster than one by one, and the small randomness helps.
+- An epoch is one pass through all the batches. Training runs for many epochs.
+- Shuffle the training batches, never the validation or test data.
+
+The code: `TensorDataset` pairs each X row with its y row, `DataLoader` cuts them into shuffled batches, and `next(iter(train_dl))` takes one batch to look at its shape. Checking shapes like this catches most bugs before training starts.
+
+### Slide 12 · What is a model?
+
+Press **train** and let the line fit itself while you talk.
+
+Say: "A model is a function with knobs. Here the function is a straight line, ŷ = w · x + b. The input x is what we know. The output ŷ is the model's guess of the answer y. The two knobs are w, the slope, and b, the offset. Those two numbers are the model's parameters. Training changes them and nothing else.
+
+How wrong is the line? Each red line is one mistake. Square each mistake, take the average, and you have one number called the loss. Training means turning each knob a little in the direction that makes the loss smaller, and doing that again and again. A neural network is exactly this with thousands of knobs and a bendier function."
+
+#### The code: `lesson1_knobs.py`
+
+Run it with `python workshop/examples/lesson1_knobs.py`. It is the smallest model there is, two knobs, trained twice: once by hand in numpy, once with PyTorch. First the data.
+
+{{code:workshop/examples/lesson1_knobs.py|rng = np.random.default_rng(0)|y = 0.7 * x}}
+
+- `default_rng(0)` makes a random number generator with seed 0, so everyone in the room gets the same numbers.
+- `x` is 20 input values between 0 and 1 (already scaled).
+- `y` is the true answer. We make it ourselves with a hidden rule, slope 0.7 and offset 0.15, plus a little noise. The model is never told 0.7 or 0.15. It has to find them. That is why we invent the data here: we know the right answer, so we can check the model got it.
+
+Now training by hand, in plain numpy.
+
+{{code:workshop/examples/lesson1_knobs.py|w, b = 0.0, 0.0|the hidden rule was}}
+
+- `w, b = 0.0, 0.0`: the knobs start at zero. The model knows nothing yet.
+- `lr = 0.5` is the learning rate, the size of each turn of the knobs.
+- `for step in range(201)` repeats the four steps 201 times.
+- **Step 1, guess.** `pred = w * x + b` runs the model on all 20 inputs at once.
+- **Step 2, how wrong.** `loss = np.mean((pred - y) ** 2)` is the mean squared error, the average of the squared mistakes.
+- **Step 3, which way.** The gradient says how the loss changes when you nudge each knob. For this loss, calculus gives `mean(2·(pred − y)·x)` for w and `mean(2·(pred − y))` for b. If the gradient for w is positive, turning w up makes things worse, so we turn it down.
+- **Step 4, turn the knobs.** `w = w - lr * grad_w` steps against the gradient, downhill.
+
+Part B does exactly the same with PyTorch, the way every real training script does it.
+
+{{code:workshop/examples/lesson1_knobs.py|xt = torch.tensor|opt.step()}}
+
+- `torch.nn.Linear(1, 1)` is a layer with one input and one output: one weight (our w) and one bias (our b).
+- `torch.optim.SGD(model.parameters(), lr=0.5)` hands the knobs to an optimiser. SGD is plain gradient descent, the same rule as Part A.
+- `opt.zero_grad()` clears the gradients from the last step. PyTorch adds gradients up by default, so forgetting this line is a classic bug.
+- `loss.backward()` computes every gradient automatically. This replaces the two hand-written lines of Part A, and it works for a network of any size.
+- `opt.step()` turns every knob.
+
+The output, from the run that built this guide:
+
+{{run:lesson1_knobs}}
+
+Read it with the room. The loss falls from 0.31 to 0.0011, and w and b end near 0.67 and 0.17. They do not land exactly on 0.7 and 0.15 because of the noise we added: with 20 noisy points, this is the best line. PyTorch arrives at the same answer.
+
+> Try this with the room: change `lr = 0.5` to `1.2` and run again. The loss grows instead of shrinking, because each step jumps over the bottom of the valley and lands higher on the other side. The gradient-descent slide shows the same thing as a picture.
+
+### Slide 13 · Three kinds of learning: it depends on what answers you have
+
+Three cards, one per kind. Press the arrow to bring in the second and third.
+
+- **Supervised**: there is a right answer y for every x. If y is a number it is regression (tomorrow's demand); if y is a class it is classification (spam or not). The loss compares the guess with y.
+- **Unsupervised**: there is no y. The model finds structure in X alone: groups of similar samples (clustering), a few numbers that summarise many columns (PCA), or samples unlike the rest (anomaly detection).
+- **Reinforcement**: no right answers at all, only a score after acting. An agent tries actions and learns which ones pay off. That is part 3.
+
+Last press: our demand example is supervised regression, because for every past day we know what the demand of the next day really was.
+
+### Slide 14 · The shape of your data picks the kind of model
+
+Say: "Start from the shapes, not from the fashionable model. If your input is a table, start with a linear model or decision trees, then a small network (an MLP). If it is a sequence, use a model that knows about time order: a 1-D convolution, a recurrent network, or a Transformer. For images, a convolutional network. The output decides the last layer and the loss: a number needs a linear last layer and squared or absolute error; a class needs softmax and cross-entropy; yes or no needs a sigmoid and binary cross-entropy."
+
+Then the green note, which is the rule that saves the most time: always build a baseline with no learning first, then a linear model, and only then something bigger. Our example is a table, 4 numbers in and 1 out, so a linear model or a small MLP.
+
+### Slide 15 · What happens inside a neural network, layer by layer
+
+Press *next step* by hand, slowly. This slide is where most people finally understand what a network is.
+
+Say: "Three inputs come in: tomorrow's temperature, tomorrow's rain and today's demand. Each neuron in the first layer multiplies every input by its own weight, adds them, adds its bias, and gets one number z. Then it applies ReLU: if z is negative it becomes zero, otherwise it stays. The next layer does the same with these results. The last neuron gives the guess for tomorrow's demand. Blue lines are positive weights, red are negative, and thicker lines are bigger weights. Training only changes those numbers."
+
+A whole layer at once is h = ReLU(W·x + b), one matrix multiplication. That is why networks run fast on hardware built for matrices.
+
+### Slide 16 · The loss says what "wrong" means
+
+Toggle the curves. Squared error (MSE) punishes big mistakes hard and aims at the mean. Absolute error (MAE) is calmer about outliers and aims at the median. The pinball loss is lopsided: at τ = 0.9, guessing too low costs 9 times more than guessing too high, so the best answer is the value exceeded only 10 % of the time. Train three of these and you get a band. Cross-entropy is the loss for classes and yes-or-no questions. The code on the slide shows that in PyTorch each loss is one line, and the result is always one number.
+
+### Slide 17 · Gradient descent: walk downhill on the loss
+
+Try the three learning rates. At 0.02 the ball barely moves. At 0.15 it walks to the bottom. At 0.5 it bounces from side to side and flies off. This is what happens in `lesson1_knobs.py` with a learning rate of 1.2, drawn. In practice most code uses Adam, which adapts the step size for each knob, sometimes with a learning-rate schedule and gradient clipping.
+
+### Slide 18 · What training code looks like
+
+The circle animates the five stages: a batch, forward, loss, backward, update. Below it the two loss curves are drawn epoch by epoch. Training loss keeps falling. Validation loss falls, then starts to rise. That turning point is where the model starts to memorise, and that epoch is the one we keep.
+
+#### The code, step by step
+
+This is `train()` from notebook 0, step 8.
+
+- `torch.optim.Adam(model.parameters(), lr=1e-2)` hands every knob to the optimiser. Adam is gradient descent that adapts the step size for each knob.
+- `model.train()` switches the model into training mode. It matters for layers such as dropout, which behave differently while training.
+- `for xb, yb in train_dl` takes one shuffled batch at a time.
+- `pred = model(xb)` is the forward pass, the guess. `loss_fn(pred, yb)` turns the 32 mistakes into one number.
+- `opt.zero_grad()` clears the old gradients, `loss.backward()` computes new ones for every knob, and `opt.step()` turns the knobs. These are the four steps of the two-knob model, unchanged.
+- After each epoch, `model.eval()` and `torch.no_grad()` switch learning off, and the validation loss is measured.
+- `if val < best` keeps a copy of the knobs from the best epoch. `copy.deepcopy` matters: without it you would keep a reference to knobs that go on changing.
+
+### Slide 19 · Counting parameters, and comparing with your data
+
+Type layer sizes or click the presets. A dense layer from n inputs to m outputs has n × m weights and m biases.
+
+The notebook 0 model, 4 → 16 → 1, has (4·16 + 16) + (16·1 + 1) = 97 knobs for 765 training examples, about one knob for every eight examples. It cannot memorise much. Click *too big*: 4 → 1024 → 1024 → 1 has over a million knobs for the same 765 examples, so it can learn every example by heart. The digit-image preset shows why image models are big: 784 pixels in already means 100 000 knobs in the first layer. Too many knobs for the data is not forbidden, but it means you must watch the validation curve.
+
+This is how the size of a model is decided in practice: the shapes fix the first and last layer, and the amount of data limits what goes in between. The next slide chooses between a few sizes properly.
+
+### Slide 20 · Parameters are learned; settings are chosen by you
+
+This answers the question "how do we decide how big the model is, and how fast it learns?"
+
+The table on the left: parameters are every weight and bias, set by training on the training data. Settings, also called hyperparameters, are the choices made before training: the number of layers and units, the learning rate, the batch size, the number of epochs, regularisation. Training cannot choose them, so we do, and we judge them on the validation data, never on the test.
+
+The code tries three layer sizes and two learning rates, six trainings in all, and records the validation loss of each. Press for the table. The middle size (16 units, learning rate 0.01, 97 knobs) wins. Four units are too few to fit the pattern; 64 start to fit the noise. Bigger is not automatically better. The chosen settings are then trained once more, and only then tested, once (next slide).
+
+Good starting points to give the room: a small model, Adam with a learning rate between 10⁻³ and 10⁻², and keep the best validation epoch. Grow the model only while the validation loss keeps falling.
+
+### Slide 21 · What testing code looks like
+
+Go through the code line by line:
+
+- `load_state_dict(best_state)` puts back the knobs from the best validation epoch.
+- `model.eval()` and `with torch.no_grad()` make sure nothing is learned here.
+- The predictions come out scaled, so `* y_std + y_mean` turns them back into thousands of litres. Report errors in real units: "44 thousand litres a day" means something to the town, "0.22" means nothing.
+- The baseline is the simplest guess there is, tomorrow equals today (`X_test[:, 3:4]`, the `demand_today` column).
+
+Press the arrow for the result: the model is off by 44.4 thousand litres a day, the baseline by 56.7. The model earns its place, by about 22 %. Note where this sits: after the settings were chosen. The test is always the very last look.
+
+Then the rules on the right. Test with the same preparation as training, in real units, against a baseline, and once. Press for the last two: if you change the model after seeing the test score, the test has become validation. For numbers the usual measures are MAE, RMSE and R²; for classes, accuracy, precision and recall, and the confusion matrix.
+
+### Slide 22 · One notebook, twelve steps: the skeleton of every ML notebook
+
+The whole of part 1 on one slide, as the code of notebook 0, steps 0 to 12. Read the green comments down the left column and then the right. Say: "Every notebook you will meet, including the project's, is these blocks in this order, with more detail inside each. When a notebook confuses you, ask which of the twelve steps a cell belongs to."
+
+### Slide 23 · Your turn: Notebook 0: the skeleton
+
+Everyone opens `workshop/notebooks/00_ml_skeleton.ipynb` and runs it from the top with Shift + Enter. Then they change one thing at a time. What they should find:
+
+- Without `demand_today` the test error grows a lot. Yesterday's demand is the strongest input.
+- With 256 hidden units the validation loss is no better, often worse.
+- A learning rate of 1.0 makes the loss jump about or explode.
+- A random split gives a test score that looks better than the time split, and should not be believed: the test days now sit between training days.
+
+Anyone whose setup fails can run `python workshop/examples/lesson1_knobs.py` in a terminal instead.
+
+### Slide 24 · Check yourself
+
+Ask each question to the room before you reveal the answer.
+
+1. Which parts of ŷ = w·x + b does training change? Only w and b. The data, the shape of the function and the settings stay as we chose them.
+2. Where do the mean and standard deviation for scaling come from? The training data only, and they are saved with the model.
+3. Training loss falls and validation loss rises. Overfitting: keep the best epoch, use a smaller model or regularisation, or get more data.
+4. Why look at the test set only once? Any decision made after looking at it turns it into validation data.
+
+## Part 2. Our project: plant data to a forecaster
+
+### Slide 25 · Our project: plant data to a forecaster
+
+Say: "Now the same recipe on real research data. Every step from part 1 comes back, and each one turns out harder: the file is an Excel sheet with a trap in it, one error can only be found with physics, and the data is a time series, not a table."
+
+### Slide 26 · What the project is about
 
 Go through the five bullets in order. The table on the right matters more than it looks: the project contains four different kinds of machine learning, and the scholars will see all four today.
 
@@ -35,7 +263,7 @@ Go through the five bullets in order. The table on the right matters more than i
 - Predicting how the plant will respond is a **sequence model**: the answer depends on everything that happened before.
 - Deciding how much air to blow is **reinforcement learning**: there is no right answer to copy, only a score afterwards.
 
-### Slide 5 · The plant and its two control loops
+### Slide 27 · The plant and its two control loops
 
 This is the project's own drawing of the plant, so spend two minutes on the physics. The scholars do not need chemistry, but they need to know why the two control loops exist.
 
@@ -56,91 +284,7 @@ Some numbers to quote. The tanks hold 1000 + 1000 + 1333 × 3 = 5999 m³, and th
 
 The whole plant is a standard computer model called BSM1, Benchmark Simulation Model no. 1. Everyone in this field tests their controllers on the same simulated plant, so results can be compared. Our project uses the official version (the `bsm2-python` package), wrapped in `src/wwtp/official/plant.py`.
 
-### Slide 6 · How the project was built: one script per step
-
-Press the right arrow and walk through the boxes in order. Each box is one script in `experiments/`, and the panel shows the command that runs it and the file it writes. The story to tell:
-
-1. Rebuild the official plant and its data.
-2. Rebuild three published controllers exactly as their papers print them, and check their claims. Two of the three did not work as printed.
-3. Build our own controller and two strong baselines to compare it with.
-4. Test everything on data nothing was tuned on, twice, with the test plan committed to git before each test was run.
-5. Audit every number. 76 of 76 checks pass.
-
-The point to land: research code is a chain of small scripts, each writing a result file that the next one reads, so every number in the report can be traced back to a command.
-
-## Lesson 1. What is a model?
-
-### Slide 7 · Lesson 1 of 7
-
-Read the goal: "A model is a function with knobs. Training turns the knobs, in four steps that every model uses." Everything else today builds on this.
-
-### Slide 8 · What is a model?
-
-Press **train** and let the line fit itself while you talk.
-
-Say: "A model is a function with knobs. Here the function is a straight line, ŷ = w · x + b. The input x is the inflow. The output ŷ is our guess of the ammonium load. The two knobs are w, the slope, and b, the offset. Those two numbers are the model's parameters. Training changes them and nothing else.
-
-How wrong is the line? Each red line is one mistake. Square each mistake, take the average, and you have one number called the loss. Training means turning each knob a little in the direction that makes the loss smaller, and doing that again and again. A neural network is exactly this with thousands of knobs and a bendier function."
-
-### Slide 9 · Four steps train every model
-
-This slide shows the same four steps in four places at once: the lesson script, notebook 2, the project's flow forecaster and the project's reinforcement-learning critic. Press the right arrow and each step lights up in all four panels in the same colour. The point: the 2-knob toy and the 171 211-knob forecaster are trained by the same four lines.
-
-#### The code: `lesson1_knobs.py`
-
-Run it with `python workshop/examples/lesson1_knobs.py`. First the data.
-
-{{code:workshop/examples/lesson1_knobs.py|rng = np.random.default_rng(0)|y = 0.7 * x}}
-
-- `default_rng(0)` makes a random number generator with seed 0, so everyone in the room gets the same numbers.
-- `x` is 20 inflow values between 0 and 1 (already scaled).
-- `y` is the true load. We make it ourselves with a hidden rule, slope 0.7 and offset 0.15, plus a little noise. The model is never told 0.7 or 0.15. It has to find them. That is why we invent the data here: we know the right answer, so we can check the model got it.
-
-Now training by hand, in plain numpy.
-
-{{code:workshop/examples/lesson1_knobs.py|w, b = 0.0, 0.0|the hidden rule was}}
-
-- `w, b = 0.0, 0.0`: the knobs start at zero. The model knows nothing yet.
-- `lr = 0.5` is the learning rate, the size of each turn of the knobs.
-- `for step in range(201)` repeats the four steps 201 times.
-- **Step 1, guess.** `pred = w * x + b` runs the model on all 20 inputs at once.
-- **Step 2, how wrong.** `loss = np.mean((pred - y) ** 2)` is the mean squared error, the average of the squared mistakes.
-- **Step 3, which way.** The gradient says how the loss changes when you nudge each knob. For this loss, calculus gives `mean(2·(pred − y)·x)` for w and `mean(2·(pred − y))` for b. If the gradient for w is positive, turning w up makes things worse, so we turn it down.
-- **Step 4, turn the knobs.** `w = w - lr * grad_w` steps against the gradient, downhill.
-
-Part B does exactly the same with PyTorch, the way the project's code does it.
-
-{{code:workshop/examples/lesson1_knobs.py|xt = torch.tensor|opt.step()}}
-
-- `torch.nn.Linear(1, 1)` is a layer with one input and one output: one weight (our w) and one bias (our b).
-- `torch.optim.SGD(model.parameters(), lr=0.5)` hands the knobs to an optimiser. SGD is plain gradient descent, the same rule as Part A.
-- `opt.zero_grad()` clears the gradients from the last step. PyTorch adds gradients up by default, so forgetting this line is a classic bug.
-- `loss.backward()` computes every gradient automatically. This replaces the two hand-written lines of Part A, and it works for a network of any size.
-- `opt.step()` turns every knob.
-
-The output, from the run that built this guide:
-
-{{run:lesson1_knobs}}
-
-Read it with the room. The loss falls from 0.31 to 0.0011, and w and b end near 0.67 and 0.17. They do not land exactly on 0.7 and 0.15 because of the noise we added: with 20 noisy points, this is the best line. PyTorch arrives at the same answer.
-
-> Try this with the room: change `lr = 0.5` to `1.2` and run again. The loss grows instead of shrinking, because each step jumps over the bottom of the valley and lands higher on the other side. This prepares question 3 of the quiz.
-
-### Slide 10 · Check yourself
-
-Ask each question to the room before you reveal the answer.
-
-1. Which parts does training change? Only w and b. The data and the shape of the function stay fixed.
-2. What does a large loss mean? The guesses are far from the truth: the knobs are not good yet, or a straight line cannot fit this data.
-3. What happens with a learning rate that is too big? The steps overshoot and the loss explodes.
-
-## Lesson 2. Collect and clean the data
-
-### Slide 11 · Lesson 2 of 7
-
-Goal: download data so anyone can get the same file again, read it without falling into traps, check it, and fix what is wrong, including the physics. This lesson takes 20 minutes with its hands-on session.
-
-### Slide 12 · Where the data comes from
+### Slide 28 · Our data: the official BSM1 influent files
 
 The curves draw themselves as if a sensor were logging them, and rows appear in the table on the right.
 
@@ -148,7 +292,7 @@ Say: "Our data is what flows into the plant: the flow rate and 13 concentrations
 
 The rain file has one long rain period around days 8.4 to 10.4. The storm file has two short storms, around day 8.8 and day 11, with flows up to 60 000 m³/d, more than three times the dry average.
 
-### Slide 13 · Load it once, record where it came from, cache it
+### Slide 29 · Load it once, record where it came from, cache it
 
 This is the project's loading code. Four habits, one per bullet.
 
@@ -157,7 +301,7 @@ This is the project's loading code. Four habits, one per bullet.
 - **Cache it.** Reading Excel is slow. The project saves the numbers as `.npy`, which loads in milliseconds.
 - **Respect the licence.** These files are under the GPL, so the repository downloads them when needed instead of storing copies.
 
-### Slide 14 · Cleaning: look before you learn
+### Slide 30 · Cleaning our files, and a fix only physics can find
 
 The table on the left is invented to show the usual problems. Each right-arrow press highlights one problem and its fix.
 
@@ -174,11 +318,11 @@ S_I is inert soluble COD: organic matter the bacteria cannot eat, so it passes s
 
 No statistical check finds this. There are no missing values, no duplicates and nothing negative. Only someone who knows what the numbers mean can see it is impossible.
 
-### Slide 15 · Put everything on one time grid
+### Slide 31 · Put everything on one time grid
 
 The sensors give a value every 15 minutes, but the controller acts every 45 seconds. Between two samples we keep using the last one, a zero-order hold. That is 20 control steps per sample. The animation shows the held values filling in step by step.
 
-### Slide 16 · Download, read, check, fix
+### Slide 32 · Download, read, check, fix
 
 The same four steps in the lesson script, notebook 1 and the project. Press through them.
 
@@ -225,63 +369,21 @@ One caution for the room: `center=True` uses readings from after the moment bein
 
 The repair finds the one spike, and the largest remaining error is 1.5 g/m³ against values around 30. After the fix S_I goes down to 10 g/m³ at the peak of the rain, when the flow is three times the dry flow.
 
-### Slide 17 · How the project loads and corrects the official data
-
-A code tour of `load_influent` in `src/wwtp/official/plant.py`. Press through five blocks:
-
-1. A second data source, the BSM2 influent, used only for the held-out tests. It now has a version run through a simple primary clarifier, added for held-out test 2.
-2. The raw table, from the cache.
-3. The 22-column layout the plant simulator expects.
-4. The S_I fix, one line.
-5. The derived and constant columns: suspended solids, the flow, and the temperature of 15 °C.
-
-### Slide 18 · Collect and clean, cell by cell
+### Slide 33 · Collect and clean, cell by cell
 
 Notebook 1 running inside the slide. Each press runs one cell and shows its real output. The panel on the right explains the idea behind the cell. Use this slide if the room is slow to get started: they can watch the first cells run before trying themselves.
 
-### Slide 19 · Check yourself
-
-1. Why did every column come out as text? One row of names makes pandas read the whole column as text.
-2. All the checks passed. Can the data still be wrong? Yes. S_I stays at 30 while rain doubles the flow. Only physics catches it.
-3. When may you fill a gap by interpolation? Only when it is short, here up to one hour.
-
-### Slide 20 · Your turn: notebook 1, parts A and B (12 minutes)
-
-Scholars open `workshop/notebooks/01_data_collect_clean_prepare.ipynb`. Walk around the room. The usual problems: they skip a cell, or their kernel was started in the wrong folder. The menu item *Kernel, Restart Kernel and Run All Cells* fixes most of it. Anyone stuck can run the lesson 2 script instead.
-
-## Lesson 3. Prepare the data
-
-### Slide 21 · Lesson 3 of 7
-
-Goal: choose inputs and a target, split by time, scale with numbers from the training data only, and cut the series into examples.
-
-### Slide 22 · Transform and scale the inputs
-
-Click the three buttons: raw flow, log of flow, standardised.
-
-Say: "Flow is about 20 000; ammonium is about 30. Inside a model, every input is multiplied by a weight and the results are added. The big number would drown out the small one. So we bring every input to the same scale, around zero with a spread of one.
-
-First the log. Flows and loads change by factors: a storm multiplies the flow by three. Taking the log turns multiplication into addition, so the storm no longer stretches the whole scale. Then we standardise: subtract the mean, divide by the standard deviation.
-
-Now the most important rule of the lesson. The mean and the standard deviation must come from the training data only. We then reuse exactly those two numbers for the validation data, the test data and the real plant. If you compute them from all the data, the test set has leaked into training."
-
-### Slide 23 · Turn one long series into many examples
+### Slide 34 · Turn one long series into many (input, target) examples
 
 The animation slides a window along the flow curve. The blue part is the input, the last 24 hours. The orange part is the target, the next 2 hours. Each position of the window is one example. Stack them and you get an array of shape (examples, 96 time steps, 3 channels).
 
 The input always ends exactly where the target begins. The model only ever sees the past, as it will on the real plant.
 
-### Slide 24 · Split by time, not at random
+The split, as in part 1, is by time and weather. Training uses the dry file and the rain file's second week, validation is the first storm, test the second storm. The model never sees a storm while it trains, on purpose: the test asks whether it copes with something new. Other parts of the project split differently: paper 2 learns on week 1 and tests on week 2, and the warning model uses separate simulated plants for training, validation and test.
 
-Click *random split*. Red outlines appear on test windows that overlap a training window.
+### Slide 35 · Choose, split, scale, cut: cell by cell
 
-Say: "Two neighbouring windows share 95 of their 96 samples. Split them at random and almost every test window has a near-copy in the training set. The score looks wonderful and means nothing. So we split by time: learn on the past, check on later data, test on data nothing was tuned on."
-
-How the project does it: paper 2 learns on week 1 and tests on week 2. The warning model uses separate simulated plants for training, validation and test. Paper 1 got two held-out tests with their plans committed before running them.
-
-### Slide 25 · Choose, split, scale, cut
-
-The four steps in the lesson script, notebook 1 and the project's own dataset code. Press through them.
+Notebook 1, part C, running cell by cell.
 
 #### The code: `lesson3_prepare.py`
 
@@ -314,61 +416,27 @@ The split is by the time of the target, in days. Training uses the dry file from
 
 Read the shapes out loud: 1906 training examples, each 96 steps by 3 channels, each with 8 numbers to predict. The script also measures the leak a random split would cause: 98 % of test windows would sit right next to a training window.
 
-### Slide 26 · Prepare, cell by cell
+### Slide 36 · Your turn: Notebook 1: collect, clean, prepare
 
-Notebook 1, part C, running cell by cell.
+Scholars open `workshop/notebooks/01_data_collect_clean_prepare.ipynb` and run parts A, B and C. Walk around the room. The usual problems: they skip a cell, or their kernel was started in the wrong folder. The menu item *Kernel, Restart Kernel and Run All Cells* fixes most of it. Anyone stuck can run the lesson 2 and lesson 3 scripts instead. Ask them to think about this while it runs: training has no storm, the test is a storm. What will happen?
 
-### Slide 27 · Check yourself
+### Slide 37 · Our shapes, and the models in the project
 
-1. Why not split at random? Neighbouring windows share 95 of 96 samples, so the test would contain near-copies of training examples.
-2. Where do the mean and standard deviation come from? The training data only.
-3. Read the shape (1906, 96, 3). 1906 examples, 96 time steps each, 3 measurements per step.
+Apply the table from part 1 to our data. The input is a sequence, (N, 96, 3): 96 time steps of flow, ammonium and COD. The output is 8 numbers, the next 8 flows. A sequence in and numbers out means a model that knows time order, such as a 1-D convolution, with a linear last layer. And as in part 1: baselines first, then a linear model, then an MLP, then the CNN.
 
-### Slide 28 · Your turn: notebook 1, part C (10 minutes)
+Then click through the project's six models on the right. Each card gives the shapes, the model, the loss and the reason. The last one is the published MAACC controller, which has only 10 to 14 knobs that learn. Remember that for part 3.
 
-Ask them to think about the question on the slide while it runs: training has no storm, the test is a storm. What will happen?
-
-## Lesson 4. Choose the model
-
-### Slide 29 · Lesson 4 of 7
-
-Goal: let the shape of the input and output choose the kind of model, look inside a network layer by layer, and count its knobs.
-
-### Slide 30 · The input and output decide the model
-
-Say: "Start from the shapes, not from the fashionable model. If your input is a table, start with a linear model or gradient-boosted trees. If it is a sequence, use a model that knows about time order. If your output is a number, the last layer is linear and the loss is squared or absolute error. If it is a yes-or-no probability, use a sigmoid and cross-entropy."
-
-Then click through the project's six models on the right. Each card gives the shapes, the model, the loss and the reason. The last one is the published MAACC controller, which has only 10 to 14 knobs that learn. Remember that for lesson 7.
-
-### Slide 31 · What happens inside a neural network, layer by layer
-
-Press *next step* by hand, slowly. This slide is where most people finally understand what a network is.
-
-Say: "Three inputs come in: flow, ammonium and COD. Each neuron in the first layer multiplies every input by its own weight, adds them, adds its bias, and gets one number z. Then it applies ReLU: if z is negative it becomes zero, otherwise it stays. The next layer does the same with these results. The last neuron gives the forecast. Blue lines are positive weights, red are negative, and thicker lines are bigger weights. Training only changes those numbers."
-
-A whole layer at once is h = ReLU(W·x + b), one matrix multiplication. That is why networks run fast on hardware built for matrices.
-
-### Slide 32 · Counting parameters
-
-Type layer sizes or click the presets. A dense layer from n inputs to m outputs has n × m weights and m biases.
-
-Our small network, 288 → 64 → 64 → 8, has (288·64 + 64) + (64·64 + 64) + (64·8 + 8) = 23 176 knobs for 1906 training examples. That is about 12 knobs per example, common for a network, but it means we must watch the validation curve. Click *too big* to show 1.3 million knobs: far more than examples, so it can memorise.
-
-### Slide 33 · A causal convolution
+### Slide 38 · A causal convolution: the same small filter slides along time
 
 A small filter of 3 weights slides along time. Each output looks at 3 inputs, and only from the past: padding is added on the left so nothing from the future gets in. With dilations 1, 2, 4, each layer looks twice as far back, so a few layers cover a whole day with very few weights. The project's forecaster sees 253 steps back, more than its 96-step input.
 
-### Slide 34 · A recurrent network carries a memory
+### Slide 39 · Shapes, baselines and models, cell by cell
 
-The same cell runs at every time step. It reads the new input and the memory from the previous step, and writes a new memory. The project's digital twin uses one. The memory stands in for things no sensor measures, such as how many bacteria are in the tanks.
-
-### Slide 35 · Shapes, baselines, linear, MLP, CNN
-
-The five steps of the lesson in four panels. Press through them.
+Notebook 2, sections 1 to 6, running. The layer-by-layer cell is worth showing even if you ran the script.
 
 #### The code: `lesson4_models.py`
 
-Run it with `python workshop/examples/lesson4_models.py`. It reads the file lesson 3 wrote.
+Run it with `python workshop/examples/lesson4_models.py`. It reads the file `lesson3_prepare.py` wrote.
 
 {{code:workshop/examples/lesson4_models.py|d = np.load(|count = lambda m}}
 
@@ -400,35 +468,11 @@ Two rules with no learning. *Persistence* says the next 2 hours equal the last v
 
 The numbers to point at: persistence is good at 15 minutes and poor at 2 hours. Yesterday is the same at every horizon. The linear model beats both at every horizon. The CNN has fewer knobs than the MLP (10 808 against 23 176) for the same input, because one small filter is reused at every time step.
 
-### Slide 36 · Shapes, baselines and models, cell by cell
+### Slide 40 · Training, overfitting and the test, cell by cell
 
-Notebook 2, sections 1 to 6, running. The layer-by-layer cell is worth showing even if you ran the script.
+Notebook 2, sections 5 to 9, running. The overfitting cell draws both curves side by side.
 
-### Slide 37 · Check yourself
-
-1. How many knobs has a layer from 64 to 8 units? 64 × 8 + 8 = 520.
-2. What does ReLU do? Keeps positive numbers, sets negative ones to zero. That bend lets a network learn curved patterns.
-3. Why is the convolution causal? Padding goes on the left only, so each output sees only the present and the past.
-
-## Lesson 5. Train and evaluate
-
-### Slide 38 · Lesson 5 of 7
-
-Goal: train with a validation set, recognise overfitting, beat the baselines, test once, and save the model with its scaler.
-
-### Slide 39 · The loss says what "wrong" means
-
-Toggle the curves. Squared error (MSE) punishes big mistakes hard and aims at the mean. Absolute error (MAE) is calmer about outliers and aims at the median. The pinball loss is lopsided: at τ = 0.9, guessing too low costs 9 times more than guessing too high, so the best answer is the value exceeded only 10 % of the time. Train three of these and you get a band, which is what the project's forecaster outputs. Cross-entropy is the loss for classes and yes-or-no questions.
-
-### Slide 40 · Gradient descent: walk downhill on the loss
-
-Try the three learning rates. At 0.02 the ball barely moves. At 0.15 it walks to the bottom. At 0.5 it bounces from side to side and flies off. This is the explosion from lesson 1, drawn. In practice the project uses AdamW, which adapts the step size for each knob, plus a learning-rate schedule and gradient clipping.
-
-### Slide 41 · The training loop
-
-The circle animates the five stages: a batch, forward, loss, backward, update. Below it the two loss curves are drawn epoch by epoch. Training loss keeps falling. Validation loss falls, then starts to rise. That turning point is where the model starts to memorise, and that epoch is the one we keep.
-
-### Slide 42 · Train, validate, test once, save
+### Slide 41 · Train, validate, test once, save
 
 The four steps in the lesson script, notebook 2, the project's early-warning training code and the project's forecaster loader.
 
@@ -444,7 +488,7 @@ Run it with `python workshop/examples/lesson5_train_and_evaluate.py`. It takes a
 
 - `DataLoader(..., batch_size=128, shuffle=True)` serves the training examples in shuffled batches of 128. One pass through all of them is an epoch.
 - `AdamW` is the optimiser. `weight_decay` gently pulls every weight towards zero, a mild brake on memorising.
-- Inside the batch loop are lesson 1's four steps in two lines: guess and loss in one, then `zero_grad`, `backward`, `step`.
+- Inside the batch loop are the four steps of part 1 in two lines: guess and loss in one, then `zero_grad`, `backward`, `step`.
 - `model.eval()` and `torch.no_grad()` switch learning off while we measure. We measure both the training and the validation loss after every epoch.
 - `if va < best:` keeps a copy of the weights from the epoch with the lowest validation loss. `copy.deepcopy` matters: without it we would keep a reference to weights that go on changing.
 - At the end `load_state_dict(best_state)` puts the best epoch back.
@@ -472,47 +516,44 @@ What to say about these numbers:
 - On the test storm, the linear model and the MLP are close, both far better than persistence. With about 1900 examples, a model with 2312 knobs is as good as one with 23 176.
 - The reloaded model forecasts the calm period almost exactly and overshoots the storm. No storm was in the training data. More varied data would help more than a bigger model.
 
-### Slide 43 · Training, overfitting and the test, cell by cell
-
-Notebook 2, sections 5 to 9, running. The overfitting cell draws both curves side by side.
-
-### Slide 44 · A model is only good compared with something simple
+### Slide 42 · A model is only good compared with something simple
 
 The left side lists the baselines. The bar chart on the right shows the project's own lesson. Read the bars from the README: a published learning controller, rebuilt exactly, did nothing beyond its PID, and our own learned controller was matched by a carefully tuned PID with the daily ILC. That is a result, not a failure, and it belongs in the report.
 
-### Slide 45 · Check yourself
-
-1. Training loss falls and validation loss rises. Overfitting: the model memorises. Keep the best epoch, regularise, use a smaller model or more data.
-2. Why use the test set only once? Any choice made after looking at it turns it into training data.
-3. What must be saved with the weights? The scaler and the settings.
-
-### Slide 46 · Your turn: notebook 2 (20 minutes)
+### Slide 43 · Your turn: Notebook 2: choose and train
 
 The longest hands-on session. Ask everyone to fill in the table on the slide: parameters and test error at 2 hours for each model. When most have finished, ask who had the best model, and point out that the linear model is usually at or near the top.
 
-## Lesson 6. Reinforcement learning
+### Slide 44 · Check yourself
 
-### Slide 47 · Lesson 6 of 7
+1. Why did every column of the Excel file come out as text? One row of names makes pandas read the whole column as text.
+2. All the usual checks passed. Can the data still be wrong? Yes. S_I stays at 30 while rain doubles the flow. Only physics catches it.
+3. Read the shape (1906, 96, 3). 1906 examples, 96 time steps each, 3 measurements per step.
+4. Why did the simplest model win on the storm? About 1900 examples and no storm in training. More varied data helps more than a bigger model.
 
-Goal: learn from a reward instead of right answers, then see the project's agents.
+## Part 3. Reinforcement learning and our controller
 
-### Slide 48 · When there is no correct answer to copy
+### Slide 45 · Reinforcement learning and our controller
+
+Goal: learn from a reward instead of right answers, then see the project itself: how it was built, the published methods we rebuilt, our controller and the latest results.
+
+### Slide 46 · When there is no correct answer to copy
 
 The loop animates: the agent sees the state, picks an action, the tank responds, a reward comes back.
 
 Say: "For control there is no right answer to copy. Nobody can tell us the perfect amount of air for every minute. So the agent tries actions, the plant responds, and a reward scores what happened. The reward is where you write down what you want. Paper 2's reward is on the slide: pay for the air you use, and pay for ammonium above the limit of 4. That agent saved 9 % energy, and it broke the ammonium limit far more often than the PID. It did exactly what the reward allowed."
 
-### Slide 49 · The parts of an actor-critic agent
+### Slide 47 · The parts of an actor-critic agent (DDPG, SAC)
 
-The table lists the parts: the environment, an actor network that picks actions, a critic network that estimates the future reward of an action, a replay buffer of past experience, slow target copies of the networks, and exploration noise. The code on the right is one DDPG update. Point at the critic's loss: it is a squared error against a target, the same kind of regression as lesson 5.
+The table lists the parts: the environment, an actor network that picks actions, a critic network that estimates the future reward of an action, a replay buffer of past experience, slow target copies of the networks, and exploration noise. The code on the right is one DDPG update. Point at the critic's loss: it is a squared error against a target, the same kind of regression as in part 1.
 
-### Slide 50 · Environment, reward, act, learn
+### Slide 48 · Reinforcement learning, cell by cell
 
-The four steps in the lesson script, notebook 3, the project's environment and reward, and the project's RL training loop.
+Notebook 3 running, including the learning curve and the comparison on the unseen rain day.
 
 #### The physics of the toy tank
 
-Lesson 6 uses one aerated tank, small enough to train in seconds. Its oxygen follows a mass balance:
+The script `lesson6_rl.py` and notebook 3 use one aerated tank, small enough to train in seconds. Its oxygen follows a mass balance:
 
 change of oxygen per day = KLa × (8 − S) − OUR
 
@@ -566,6 +607,22 @@ What to say:
 - The PID with one line of physics does as well (0.230), with no training and no bad days of exploration.
 - With air made 50 times more expensive in the reward, the agent switches the air off and the oxygen collapses. Nothing in the reward said the oxygen must stay up.
 
+### Slide 49 · Your turn: Notebook 3: reinforcement learning in brief
+
+The question on the slide is the best discussion of the day: change the energy weight in the reward and watch the oxygen. Ask where the behaviour flips. In our runs the agent still holds the oxygen at a weight of 3, starts cutting the air at 4, and gives up on the oxygen at 5.
+
+### Slide 50 · How the project was built: one script per step
+
+Press the right arrow and walk through the boxes in order. Each box is one script in `experiments/`, and the panel shows the command that runs it and the file it writes. The story to tell:
+
+1. Rebuild the official plant and its data.
+2. Rebuild three published controllers exactly as their papers print them, and check their claims. Two of the three did not work as printed.
+3. Build our own controller and two strong baselines to compare it with.
+4. Test everything on data nothing was tuned on, twice, with the test plan committed to git before each test was run.
+5. Audit every number. 76 of 76 checks pass.
+
+The point to land: research code is a chain of small scripts, each writing a result file that the next one reads, so every number in the report can be traced back to a command.
+
 ### Slide 51 · Reward, DDPG update and SAC-IL update, in the project's code
 
 A code tour in three tabs. The paper 2 reward, two lines. One DDPG update: replay batch, Bellman target, critic regression, actor step, soft target update. One SAC-IL update: a quarter of each batch comes from the expert's demonstrations, and the imitation term never fades below a floor.
@@ -573,34 +630,14 @@ A code tour in three tabs. The paper 2 reward, two lines. One DDPG update: repla
 {{code:src/wwtp/rl/ddpg.py|# eq. (9): y = r + gamma|self.opt_actor.step()}}
 
 - `y = r + γ · (1 − d) · Q_target(s′, μ_target(s′))` is the Bellman target, made with the slow target networks so it does not jump every step. `(1 − d)` drops the future at the end of an episode.
-- `loss_c` is the squared error between the critic's estimate and that target. This is lesson 5's regression.
+- `loss_c` is the squared error between the critic's estimate and that target. This is the same regression as in part 1.
 - `loss_a` is minus the critic's value of the actor's action. Minimising it means the actor climbs the critic. The small penalty on `pre` keeps the `tanh` output from getting stuck at a limit.
 
-### Slide 52 · Reinforcement learning, cell by cell
-
-Notebook 3 running, including the learning curve and the comparison on the unseen rain day.
-
-### Slide 53 · Start from the expert, then improve, behind a safety gate
+### Slide 52 · Start from the expert, then improve, behind a safety gate
 
 The project's controller in four boxes. The expert PID is run on dry week 1 and its moves recorded. A network copies it (behaviour cloning, which is supervised learning). Soft actor-critic improves on that copy using the reward. A safety gate switches the learned part off whenever the inputs leave the range seen in training. The code on the left is the copying step, a plain regression.
 
-### Slide 54 · Check yourself
-
-1. What is the difference between a reward and a label? A label is the right answer. A reward only scores what happened.
-2. Why does the agent sometimes act at random? To explore. Without trying new moves it can never find a better one.
-3. What did the agent do when air was made very expensive? It switched the air off.
-
-### Slide 55 · Your turn: notebook 3 (12 minutes)
-
-The question on the slide is the best discussion of the day: change the energy weight in the reward and watch the oxygen. Ask where the behaviour flips. In our runs the agent still holds the oxygen at a weight of 3, starts cutting the air at 4, and gives up on the oxygen at 5.
-
-## Lesson 7. Our project's code
-
-### Slide 56 · Lesson 7 of 7
-
-Goal: read the published methods and our controller in the project's own code, and see what the latest tests found.
-
-### Slide 57 · Papers 1 and 3 exactly as printed
+### Slide 53 · Papers 1 and 3 exactly as printed, and why they don't learn
 
 Two code tours. Paper 1's MAACC is a small adaptive-critic controller added on top of a PID.
 
@@ -612,7 +649,7 @@ Two code tours. Paper 1's MAACC is a small adaptive-critic controller added on t
 
 Paper 3's IOQL repeats 50 critic updates and 60 actor updates on each single sample. That many steps on one point makes it unstable: it either stays at its PID or the oxygen collapses.
 
-### Slide 58 · ILC, the control step, the safety gate and the training script
+### Slide 54 · ILC, the control step, the safety gate and the training script
 
 Our controller in four files. The first is the daily ILC, iterative learning control. Each night it looks at what the PID had to do during the day, and the next day it does part of that in advance.
 
@@ -636,7 +673,7 @@ The third tab is the safety gate.
 
 If any input is more than 10 % outside the range seen in training, or the PID needs a bigger move than the learned part may make, the learned part is switched off for this step and the PID acts alone.
 
-### Slide 59 · The second held-out test: two fixes, one open problem
+### Slide 55 · The second held-out test: two fixes, one open problem
 
 This slide holds the project's latest results (`docs/PAPER1_HELDOUT2.md`). The plan for this test was committed to git before any of its 432 runs.
 
@@ -653,20 +690,23 @@ They were then tested on new BSM2 influent windows, with and without a primary c
 
 Say: "This is what honest research looks like. Two fixes worked and are reported. One problem is still open and is reported too. A test that only uses clean data, as paper 1 did, would have hidden all of this."
 
-### Slide 60 · Check yourself
+### Slide 56 · Check yourself
 
-1. Why does MAACC as printed equal its PID? Its learning signal is about 10⁻⁴, so its networks hardly move.
-2. What does the safety gate do? Switches the learned part off on inputs outside the training range.
-3. What did held-out test 2 show? Anti-windup fixed overload, the robust PID never failed, and under sensor noise nothing beat the paper's PID.
+1. What is the difference between a reward and a label? A label is the right answer. A reward only scores what happened.
+2. What did the agent do when air was made very expensive? It switched the air off.
+3. What does the safety gate do? Switches the learned part off on inputs outside the training range.
+4. What did held-out test 2 show? Anti-windup fixed overload, the robust PID never failed, and under sensor noise nothing beat the paper's PID.
 
-### Slide 61 · Questions learners ask
+## Closing
+
+### Slide 57 · Questions learners ask, with short answers
 
 Eight questions with short answers, collected by going through the lesson as a beginner. Open the ones the room cares about.
 
-### Slide 62 · What this project teaches about doing ML research
+### Slide 58 · What this project teaches about doing ML research
 
 End on the eight habits. Look at the data first. Let the shapes choose the model. Split honestly. Beat simple baselines. Reproduce published work before claiming to improve it. Use several seeds. Write the test down before you run it. Save the model with everything it needs. Then take questions.
 
 ## After the session
 
-Everything is in the repository and in the zip bundle. The scholars can rerun any lesson with one command from `workshop/examples/`. The notebooks are also web pages with every output. The project's own documents (`docs/PAPER1_STUDY.md`, `docs/PAPER1_HELDOUT2.md`, `docs/PAPER1_AUDIT.md`) take them as deep as they want to go.
+Everything is in the workshop folder. The scholars can rerun any step with one command from `workshop/examples/`, and notebook 0 is the skeleton to copy for their own projects. The notebooks are also web pages with every output. The project's own documents (`docs/PAPER1_STUDY.md`, `docs/PAPER1_HELDOUT2.md`, `docs/PAPER1_AUDIT.md`) take them as deep as they want to go.
