@@ -208,12 +208,13 @@ is ours, not the paper's.
 
 \begin{figure*}[!t]
 \centering
-\includegraphics[width=0.92\textwidth]{d1_paper}
-\caption{MAACC as described in~\cite{wang2026maacc}: one agent per loop,
-each with an action network that outputs an increment and a critic that
-sees both loops; the control is the integrated action plus the PID output,
-$u=a+b$. Each step's data are used once, in a one-step temporal-difference
-update.}
+\includegraphics[width=0.72\textwidth]{d1_paper}
+\caption{MAACC as described in~\cite{wang2026maacc}. One agent is drawn;
+the oxygen and nitrate agents have the same form and are coupled through
+their critics, which see both loops and both actions. The action network
+outputs an increment, which is integrated and added to the PID output,
+$u_i=a_i+b_i$. Each sample is used once, in a one-step temporal-difference
+update (dashed).}
 \label{fig:maacc}
 \end{figure*}
 
@@ -254,6 +255,20 @@ other initializations; each either stayed at the PID or diverged.
 %=====================================================================
 \section{Controllers}
 \label{sec:ctrl}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.86\textwidth]{d2_ours}
+\caption{Architecture of our oxygen loop (robust variant). Green blocks are
+added in this work: the PID with gains tuned per term, the daily ILC that
+adds a feedforward $f(t)$, and a first-order filter on the measured oxygen.
+The dashed arrow is the anti-windup signal: in slots where the aeration is
+at a limit, the PID's limits are shifted by $f$ and the ILC does not learn.
+The nitrate loop is the PID alone. A learned correction (SAC-IL or the
+repaired MAACC, behind a safety gate) can be added at the second summing
+junction; on the tuned PID with ILC it changes nothing, so it is not drawn.}
+\label{fig:ours}
+\end{figure*}
 %=====================================================================
 
 Table~\ref{tab:ctrl} lists the controllers compared. Everything that is
@@ -301,9 +316,10 @@ larger search could find a still better PID.
 \begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{d3_ilc}
-\caption{The daily ILC. It records the PID's output for every 45-s slot of
-the day and, at midnight, updates a feedforward profile that is applied the
-next day slightly earlier.}
+\caption{The daily ILC, one update per night. $\mathcal{L}$ advances the
+recorded profile by a few minutes and $\mathcal{S}$ smooths it, as in
+\eqref{eq:ilc}. At the update the PID's state is reduced by the same
+change, so the aeration does not jump at midnight.}
 \label{fig:ilc}
 \end{figure}
 
@@ -351,21 +367,13 @@ choices: for PID$\times$3, 24 of 60 settings are within 5\,\% of the best.
 
 \subsection{SAC with imitation learning}
 
-\begin{figure*}[!t]
-\centering
-\includegraphics[width=0.82\textwidth]{d2_ours}
-\caption{Oxygen loop of the controllers built on the tuned PID. New
-components are marked. The learned correction (SAC-IL or repaired MAACC,
-behind a safety gate) is optional; on the tuned PID with ILC it adds
-nothing. The oxygen filter and halved gains belong to the robust variant.}
-\label{fig:ours}
-\end{figure*}
 
 SAC-IL is our attempt to fix what we believe stops MAACC from learning: no
 data re-use, a random start and no exploration. A small actor (18\,564
 weights) sees the last three errors of both loops, both inputs and the
 influent flow, and adds a bounded increment, at most 6\,d$^{-1}$ per period,
-to the aeration (Fig.~\ref{fig:ours}). The reward is
+to the aeration at the second summing junction of Fig.~\ref{fig:ours}.
+The reward is
 $r=-(100|e_O|+50|e_N|)-0.05\|a\|^2$. Training on the dry training week
 proceeds in four stages: a recorded run of the expert (PID with ILC),
 behaviour cloning, a critic warm-up and five SAC~\cite{haarnoja2018sac}
@@ -472,8 +480,19 @@ red worse; dark cells mean every run failed.}
 \label{fig:matrix}
 \end{figure*}
 
-Fig.~\ref{fig:matrix} summarizes all results. The tables below give the
-numbers.
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{f0_headline}
+\caption{Base against ours, in brief: change in oxygen IAE against the
+paper's PID (paired over the runs both finished). Left: ideal sensors, as in
+the paper's own test, and new influent. Right: the official BSM1 sensor
+noise. MAACC as printed lost 1 of 6 windows on new influent (H4).}
+\label{fig:headline}
+\end{figure}
+
+Fig.~\ref{fig:headline} gives the main result in brief and
+Fig.~\ref{fig:matrix} gives every controller in every test. The tables
+below give the numbers.
 
 \subsection{Test week}
 
@@ -536,6 +555,18 @@ results. Four observations:
 
 \begin{figure}[!t]
 \centering
+\includegraphics[width=\columnwidth]{f8_inside}
+\caption{Two days of the dry test week. (a) True oxygen: the paper's PID
+dips at every morning load rise; the tuned PID with ILC stays at the set
+point (mean $|e|$ 0.0112 against 0.0010 over these two days). (b) The
+aeration is almost the same for both. (c) The difference is at most
+6\,d$^{-1}$, applied around the load rise: a small correction at the right
+time is enough.}
+\label{fig:inside}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
 \includegraphics[width=\columnwidth]{f7_learning}
 \caption{Oxygen IAE on the training week after each episode, five training
 runs per learner. The repaired MAACC learns quickly from the paper's PID;
@@ -543,6 +574,7 @@ SAC-IL stays near its imitation start, and one run diverged.}
 \label{fig:learning}
 \end{figure}
 
+Fig.~\ref{fig:inside} shows what the ILC does in the plant, and
 Fig.~\ref{fig:learning} shows the learning curves. Aeration energy
 (3690\,kWh/d in dry weather) and effluent ammonium (about 2.47\,g\,N/m$^3$)
 are the same for all controllers to the precision reported. On nitrate, all

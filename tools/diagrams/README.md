@@ -31,3 +31,7 @@ expects two files in its folder:
 * `sizes.json`: the cropped title-less PNGs and their sizes;
 * `numbers.json`: the paired percentages, computed from the result files
   with the functions in `experiments/45_paper1_figures.py`.
+
+## Paper versions
+
+`build_paper.py` writes the paper diagrams in `docs/diagrams/paper/` (no titles, short labels, no crossing arrows). Run it from this folder, then `node render.js paper/*.drawio` and `node audit.js paper/*.drawio`.
