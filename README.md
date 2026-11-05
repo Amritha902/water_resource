@@ -31,6 +31,20 @@ PID numbers we reproduce correspond to [2, 1], which we use.
 
 ## Paper 1: our controller, stronger baselines and a held-out test
 
+**Headline (how to quote it).** A tuned PID with a daily ILC cuts the oxygen
+error by 80–90 % against the paper's PID on the BSM1 test week with ideal
+sensors (−90 / −89 / −80 %, dry / rain / storm). SAC-IL adds 0–2 points on
+top. Under the official sensor noise, nothing beats the paper's PID.
+
+Read with it:
+- The errors are small in absolute terms: mean oxygen error 0.0113 →
+  0.0011 mg/L on a 2 mg/L set point.
+- Most of the gain is PID tuning (−85 % alone); the ILC adds about 5 points
+  on the tuned PID, and the learned part adds 0–2.
+- The aeration moves more: 852 against 501 (1/d per day).
+- The % is against our run of the paper's PID. For oxygen it matches the
+  paper within 1 % in dry and storm and is 10 % higher in rain.
+
 We built a controller from paper 1's own PID: a retuned prior (×3), a daily
 iterative learning control (ILC) of the load cycle (oxygen loop, bumpless
 nightly update), and a soft actor-critic trained by imitation learning
@@ -64,8 +78,10 @@ In short:
 
 **Held-out test 2** (new influent windows and new sensor noise; protocol
 pushed before the runs) tested two fixes:
-- **ILC anti-windup** removes the ILC's harm under overload (−39 %) at no
-  cost in normal operation.
+- **ILC anti-windup** removes the ILC's harm under overload (−39 %) and
+  changes nothing on normal influent (0.0 %). But under the official sensor
+  noise it fails like the tuned PID alone (all H6 runs, 5 of 6 H7 windows),
+  where the tuned PID + ILC without it finished every run.
 - **A robust tuned PID + ILC** (oxygen filter, gains ×0.5, anti-windup)
   never failed. It reaches −83 % on new influent, with the paper's aeration
   movement, but it is not better than the paper's PID under the official

@@ -83,8 +83,8 @@ concentrations.
 ## Step 4. What this shows
 
 * **Anti-windup works on new data.** Under overload it removes the ILC's
-  harm (−39 %) and costs nothing in normal operation. That makes the ILC
-  safe to use.
+  harm (−39 %) and changes nothing on normal influent. With ideal
+  sensors, that makes the ILC safe under overload (but see the next point).
 * **Anti-windup is not enough with high gains and sensor noise.** The tuned
   PID + ILC fails every H6 run with anti-windup but none without it. With
   noise the loop hits the limits often, and anti-windup lets the high-gain

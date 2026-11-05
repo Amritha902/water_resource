@@ -53,8 +53,9 @@ before any run: influent windows from BSM2 and the official BSM1 sensor
 models. Under the official sensor noise every high-gain controller, learned
 or not, either failed or lost its advantage, and no controller we tested
 beat the original PID there. The most useful changes we found were not
-learned: an anti-windup rule for the ILC ($-39$\,\% error under overload)
-and a filtered, lower-gain variant that finished every held-out run. All
+learned: an anti-windup rule for the ILC ($-39$\,\% error under overload
+with ideal sensors) and a filtered, lower-gain variant that finished every
+held-out run but did not beat the original PID under sensor noise. All
 76 checks of a final audit of the reported numbers pass.
 \end{abstract}
 
@@ -636,7 +637,12 @@ anti-windup the oxygen drops when the aeration leaves its limit.}
 lower error than without it and is better in 5 of 6 windows; on H4 the
 difference is 0.0\,\% (Fig.~\ref{fig:aw}). With anti-windup the tuned
 PID+ILC is no worse than the tuned PID under overload ($-10$\,\% against the
-paper's PID for both).
+paper's PID for both). Anti-windup is not free, however. Under the official
+sensor noise the tuned PID+ILC with anti-windup fails every H6 run and 5 of
+6 H7 windows, as the tuned PID alone does, whereas without anti-windup it
+finished every run. With noise the loop reaches its limits often, and
+anti-windup lets the high-gain PID move straight from one limit to the
+other. It needs lower gains, which is what the robust variant has.
 
 \emph{The robust variant never fails, but it does not beat the paper's PID
 under noise.} It finished all H6 and H7 runs, as did the paper's PID, and
