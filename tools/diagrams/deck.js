@@ -88,7 +88,7 @@ s.addNotes("Paper 1 claims a learning controller that cuts the oxygen tracking e
 
 // ---------------------------------------------------------------- 2. plant
 s = content("The plant and the control task", "Introduction");
-const img2 = fit("notitle/d0_plant_crop.png", 0.5, 1.35, 12.33, 4.6);
+const img2 = fit("paper/plant.png", 0.5, 1.35, 12.33, 4.6);
 s.addImage(img2);
 [["Loop 1: oxygen", "aeration KLa,5 keeps S_O,5 in tank 5 at 2 mg/L"],
  ["Loop 2: nitrate", "internal recycle Q_a keeps S_NO,2 in tank 2 at 1 mg/L"],
@@ -104,7 +104,7 @@ s.addNotes("BSM1 is the IWA benchmark plant. Paper 1 controls two inputs, drawn 
 // ---------------------------------------------------------------- 3. paper architecture
 pres.addSection({ title: "Paper 1" });
 s = content("Paper 1's architecture: two adaptive-critic agents on top of a PID", "Paper 1");
-s.addImage(fit("notitle/d1_paper_crop.png", 0.5, 1.3, 12.33, 5.6));
+under(s, fit("paper/maacc.png", 0.5, 1.3, 12.33, 5.0), "One agent drawn; the oxygen and nitrate agents have the same form and are coupled through their critics, which see both loops. Dashed: the one-step learning update, each sample used once.", { fontSize: 13, color: "5B6B73" });
 s.addNotes("Each loop has an agent with an action network and a critic. The output is the PID's input plus a learned part, u = a + b. The critic learns from one-step temporal-difference errors, each step used once.");
 
 // ---------------------------------------------------------------- 4. reproduction
@@ -131,17 +131,25 @@ s.addNotes("So the improvement the paper reports does not come from the method a
 // ---------------------------------------------------------------- 5. ours
 pres.addSection({ title: "Our work" });
 s = content("Our controller: what is new", "Our work");
-under(s, fit("notitle/d2_ours_crop.png", 0.5, 1.3, 12.33, 5.2), "Green: new.  Grey: from paper 1.  Dashed orange: learned options we built and tested.  Nitrate loop (Q_a → S_NO,2 = 1): the paper's PID with tuned gains, no ILC.", { fontSize: 12, color: "5B6B73" });
+under(s, fit("paper/ours.png", 0.5, 1.3, 12.33, 4.7), "Green: added in this work (robust variant shown). Dashed: anti-windup, at a limit the ILC does not learn. A learned correction (SAC-IL or repaired MAACC) can be added at the second Σ; on this controller it adds nothing, so it is not drawn. Nitrate loop: a PID only.", { fontSize: 13, color: "5B6B73" });
 s.addNotes("Green is new. The tuned PID and the daily iterative learning control do the work. The learned correction, SAC with imitation learning or the repaired MAACC, was built and tested; on top of the tuned PID with ILC it adds nothing.");
 
 // ---------------------------------------------------------------- 6. ILC
 s = content("The daily ILC: learning the load pattern, one update per night", "Our work");
-under(s, fit("notitle/d3_ilc_crop.png", 0.5, 1.4, 12.33, 4.6), "The load on the plant repeats every day; most of the PID's remaining error repeats with it. The ILC removes that repeating part before it happens.");
+under(s, fit("paper/ilc.png", 0.5, 1.4, 12.33, 2.9), "The load repeats every day, and about 96 % of the PID's remaining oxygen error repeats with it. Each night the ILC moves the PID's daily correction into a feedforward f, shifted a few minutes earlier and smoothed.");
+[["Bumpless update", "At midnight the PID's state is reduced by the same change, so the aeration does not jump. Largest deviation near midnight: 0.053 → 0.011 mg/L."],
+ ["Anti-windup", "At an actuator limit the ILC does not learn, and the PID's limits move with f. Under overload: −39 % error (ideal sensors)."]].forEach(([t, d], k) => {
+  const x = 0.5 + k * 6.27, y = 4.95;
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w: 6.06, h: 1.55, fill: { color: "F4FBF7" }, line: { color: HEX.accent2, width: 1.25 },
+    rectRadius: 0.08, objectName: "ilc card " + (k + 1) });
+  s.addText(t, { x: x + 0.25, y: y + 0.14, w: 5.56, h: 0.4, fontSize: 17, bold: true, color: HEX.accent2, isTextBox: true, margin: 0 });
+  s.addText(d, { x: x + 0.25, y: y + 0.6, w: 5.56, h: 0.85, fontSize: 14, color: C.text1, isTextBox: true, margin: 0, valign: "top" });
+});
 s.addNotes("This is iterative learning control. Each night it takes over part of the correction the PID had to make, and applies it a few minutes earlier the next day. Bumpless transfer removed a jump at midnight; anti-windup stopped it from hurting when the aeration is at its limit.");
 
 // ---------------------------------------------------------------- 7. repaired MAACC
 s = content("A fair baseline: the paper's learner with its training repaired", "Our work");
-const img7 = fit("notitle/d4_repaired_crop.png", 0.5, 1.35, 12.33, 4.3);
+const img7 = fit("paper/repaired.png", 0.5, 1.3, 12.33, 4.5);
 s.addImage(img7);
 s.addText([
   { text: "Result: ", options: { bold: true } },
@@ -190,6 +198,23 @@ s.addText([
 ], { x: 9.4, y: 1.6, w: 3.43, h: 4.6, fontSize: 15, color: C.text1, isTextBox: true, margin: 0, paraSpaceAfter: 10, valign: "top" });
 s.addNotes("Week 2 of the official files, never used for tuning or training. Learned controllers are the mean of five training runs.");
 
+// ---------------------------------------------------------------- 9b. headline figure
+s = content("Base vs ours: big gain with ideal sensors, none with sensor noise", "Results");
+under(s, fit("paper/f0_headline.png", 0.5, 1.3, 12.33, 5.1), "Change in oxygen error against the paper's PID, paired over the runs both controllers finished. ✗: every run failed. MAACC as printed lost 1 of 6 windows on new influent (H4).", { fontSize: 13, color: "5B6B73" });
+s.addNotes("Left: the paper's own kind of test, with ideal sensors, plus new influent. The tuned PID with the daily ILC is 80 to 90 per cent better. Right: with the official sensor noise, it is worse than the paper's PID; the robust variant is close to it but not better.");
+
+// ---------------------------------------------------------------- 9c. inside the plant
+s = content("Inside the plant: a small correction at the right time", "Results");
+const img9c = fit("paper/f8_inside.png", 0.5, 1.25, 8.4, 5.9);
+s.addImage(img9c);
+s.addText([
+  { text: "Two days of the dry test week", options: { bold: true, fontSize: 18, color: C.text2, breakLine: true } },
+  { text: "The paper's PID dips at every morning load rise.", options: { bullet: true, breakLine: true } },
+  { text: "Tuned PID + ILC stays at 2 mg/L: mean error 0.0010 against 0.0112 mg/L.", options: { bullet: true, breakLine: true } },
+  { text: "The aeration is almost the same; the ILC changes it by at most 6 1/d, at the load rise.", options: { bullet: true } },
+], { x: 9.2, y: 1.6, w: 3.63, h: 4.8, fontSize: 15, color: C.text1, isTextBox: true, margin: 0, paraSpaceAfter: 10, valign: "top" });
+s.addNotes("These are real traces from the simulation, not a sketch. The gain in tracking comes from timing, not from more aeration: energy is the same for both.");
+
 // ---------------------------------------------------------------- 10. held-out table
 s = content("Held-out test 2: new influent and real sensors", "Results");
 const cols = [["H4", "New influent"], ["H5", "Overload"], ["H6", "Official sensors"], ["H7", "New influent + sensors"]];
@@ -219,12 +244,12 @@ s.addNotes("New BSM2 influent windows, raw and after a simple primary clarifier,
 // ---------------------------------------------------------------- 11. fixes
 s = content("Two fixes, tested on new data: one works, one half-works", "Results");
 stat(s, 0.5, 1.5, 3.0, "−39 %", "ILC anti-windup under overload, better in 5 of 6 new windows", HEX.accent2);
-stat(s, 0.5, 3.25, 3.0, "0 %", "its cost in normal operation", HEX.accent2);
+stat(s, 0.5, 3.25, 3.0, "0 %", "change on normal influent; but with high gains it fails under sensor noise", HEX.accent3);
 stat(s, 0.5, 5.0, 3.0, "+3 / +24 %", "robust PID vs paper's PID with real sensor noise", HEX.accent4);
 s.addImage({ path: path.join(HERE, "f6_white.png"), x: 3.85, y: 1.45, w: 8.98, h: 8.98 * 1240 / 2400 });
 s.addText("True oxygen with the official sensors (noise 0.25 g/m³): the paper's PID and the robust controller stay in range; our SAC-IL controller fails after 11 h.",
   { x: 3.85, y: 6.2, w: 8.98, h: 0.6, fontSize: 12, color: "5B6B73", isTextBox: true, margin: 0, valign: "top" });
-s.addNotes("Anti-windup fixed the ILC under overload at no cost. The robust version never failed, kept −83 % on new normal influent, and moves the aeration no more than the paper's PID, but under real sensor noise nothing we built beats the paper's PID. That is the open problem.");
+s.addNotes("Anti-windup fixed the ILC under overload and changed nothing on normal influent; but with the high tuned gains it failed under the official sensor noise, where the version without it finished. The robust version never failed, kept −83 % on new normal influent, and moves the aeration no more than the paper's PID, but under real sensor noise nothing we built beats the paper's PID. That is the open problem.");
 
 // ---------------------------------------------------------------- 12. what's new table
 pres.addSection({ title: "Conclusion" });
@@ -258,7 +283,7 @@ col(0.5, "We can claim", HEX.accent2, [
   "MAACC as printed does not learn; it fails every held-out condition",
   "With repaired training it learns (−85 % dry), but is not robust to sensor noise",
   "Tuned PID + daily ILC: −80 to −90 % on the official test week",
-  "Anti-windup makes the ILC safe under overload (−39 %)",
+  "Anti-windup makes the ILC safe under overload (−39 %, ideal sensors)",
   "Every number re-run and audited",
 ]);
 col(6.88, "We cannot claim", HEX.accent4, [

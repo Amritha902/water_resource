@@ -98,6 +98,29 @@ def ilc():
     d.save("paper/ilc.drawio")
 
 
-for f in (plant, maacc, ours, ilc):
+def repaired():
+    d = Diagram("Repaired MAACC", 930, 450)
+    d.box(20, 20, 640, 410, "Agent <i>i</i>, repaired training (same structure as MAACC)", "group")
+    act = d.box(50, 80, 170, 60, "Action network<br>last layer starts at 0", "paper")
+    itg = d.box(270, 80, 130, 60, "Integrate<br>bounded by tanh", "paper")
+    sm = d.box(490, 85, 50, 50, "Σ", "sum")
+    pid = d.box(440, 200, 150, 60, "Expert PID<br><i>b<sub>i</sub></i>(<i>z<sub>i</sub></i>)", "paper")
+    cr = d.box(150, 205, 230, 70, "<b>Twin critics</b> + target nets<br>actor updated every 2nd step", "new")
+    buf = d.box(195, 330, 140, 50, "<b>Replay buffer</b>", "new")
+    pl = d.box(730, 70, 170, 80, "<b>BSM1</b>", "plant")
+    d.edge(act, itg, ex=(1, 0.5), en=(0, 0.5))
+    d.edge(itg, sm, "<i>a<sub>i</sub></i>", ex=(1, 0.5), en=(0, 0.5))
+    d.edge(pid, sm, "<i>b<sub>i</sub></i>", ex=(0.5, 0), en=(0.5, 1))
+    d.edge(sm, pl, "<i>u<sub>i</sub></i> = <i>a<sub>i</sub></i> + <i>b<sub>i</sub></i>", ex=(1, 0.5), en=(0, 0.5))
+    d.edge(cr, act, "", kind="learn", ex=(0, 0.5), en=(0.5, 1), pts=((135, 240),))
+    d.edge(pl, buf, "(<i>z</i>, <i>a</i>, <i>r</i>, <i>z</i>′)", kind="fb", ex=(0.5, 1), en=(1, 0.5), pts=((815, 355),))
+    d.edge(buf, cr, "batches of 256", kind="new", ex=(0.5, 0), en=(0.5, 1))
+    d.edge(buf, act, "", kind="fb", ex=(0, 0.5), en=(0, 0.5), pts=((32, 355), (32, 110)))
+    d.box(440, 330, 18, 18, "", "new")
+    d.box(466, 326, 180, 26, "repaired in this work", "text", "fontSize=13;")
+    d.save("paper/repaired.drawio")
+
+
+for f in (plant, maacc, ours, ilc, repaired):
     f()
 print("ok")

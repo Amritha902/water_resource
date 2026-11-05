@@ -8,6 +8,8 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{array}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 \usepackage{url}
 \usepackage{xcolor}
 \usepackage[hidelinks]{hyperref}
@@ -358,6 +360,30 @@ Three details matter in practice.
   \eqref{eq:ilc}, and a day spent more than half at a limit keeps the old
   profile. This was added after held-out test~1 (Section~\ref{sec:h2}).
 \end{itemize}
+Algorithm~\ref{alg:ilc} gives the complete update.
+
+\begin{algorithm}[!t]
+\caption{Daily ILC with bumpless update and anti-windup}
+\label{alg:ilc}
+\begin{algorithmic}[1]
+\Require share $\beta$, lead $\ell$, smoothing half-width $w$; $f(j)\gets0$ for all slots $j$
+\For{each control step $k$, with $j$ its slot of the day}
+  \State $u^{\mathrm{PID}}_k \gets$ PID step \eqref{eq:pid}, limited to $[U_{\min}-f(j),\,U_{\max}-f(j)]$
+  \State apply $u_k \gets \mathrm{sat}(u^{\mathrm{PID}}_k+f(j))$
+  \State record $g(j)\gets u^{\mathrm{PID}}_k$ and $o(j)\gets[u_k \text{ not at a limit}]$
+  \If{$j$ is the last slot of the day}
+    \If{$o$ is true in at least half of the slots}
+      \State $\bar g \gets$ mean of $g$ over the slots with $o$ true
+      \State $\delta(j)\gets o(j)\,\bigl(g(j)-\bar g\bigr)$ for all $j$
+      \State $f^{+}\gets \mathcal{S}_w\bigl[f+\beta\,\mathcal{L}_\ell\,\delta\bigr]$
+      \State PID state $\gets$ PID state $-\bigl(f^{+}(1)-f(1)\bigr)$ \Comment{bumpless}
+      \State $f\gets f^{+}$
+    \EndIf
+  \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
 The parameters were chosen on the training week by a rule fixed in advance:
 the lowest oxygen IAE among settings whose largest oxygen deviation is no
 larger than that of the PID alone. For PID$\times$3 this gives $\beta=0.75$,
@@ -403,6 +429,34 @@ never varies, drifted before acting; it was replaced by the usual TD3
 warm-up of one day of exploration. It has the same data and budget as
 SAC-IL and was trained on the paper's PID (both loops) and, behind the same
 gate, on PID$\times$3+ILC (oxygen only).
+
+\begin{table}[!t]
+\centering
+\caption{Training settings of the two learned controllers. Both use dry
+days 0--7 only, five episodes of seven days, and five training runs.}
+\label{tab:train}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{lcc}
+\toprule
+ & SAC-IL & Repaired MAACC\\
+\midrule
+Discount $\gamma$ & 0.97 & 0.97\\
+Learning rate & $3\times10^{-4}$ & $3\times10^{-4}$\\
+Batch, replay buffer & 256, $4\times10^5$ & 256, $4\times10^5$\\
+Target update $\tau$ & 0.005 & 0.005\\
+Reward scale & 0.1 & 0.1\\
+Increment bound per step & 6\,d$^{-1}$ ($K_La_{,5}$) & 6\,d$^{-1}$, 3000\,m$^3$/d\\
+Start & behaviour cloning & last layer zero, 1-day warm-up\\
+Exploration & entropy, $\alpha_0=0.005$ & Gaussian, std 0.1\\
+Imitation term & weight $2\to0.5$ (floor) & none\\
+Other & twin critics & twin critics, delay 2,\\
+ & & target noise 0.2 (clip 0.5)\\
+Loops corrected & oxygen & both (paper's PID)\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:train} lists the training settings of both learners.
 
 \subsection{Robust variant}
 After held-out test~1 showed that every high-gain controller failed under
@@ -689,6 +743,31 @@ H4 and $-8$\,\% on H5, and close to the paper's PID with sensor noise ($+1$\,\%
 on H6, $+6$\,\% on H7), with a few failed runs. By the pre-declared rule it
 is not better than the paper's PID on H4--H7 as a whole.
 
+\begin{table}[!t]
+\centering
+\caption{The questions declared in the protocol of held-out test~2, and
+their answers. ``Better'' requires a lower mean and better in at least two
+thirds of the windows or runs.}
+\label{tab:questions}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.42\columnwidth}>{\raggedright\arraybackslash}p{0.30\columnwidth}>{\raggedright\arraybackslash}p{0.16\columnwidth}}
+\toprule
+Question & Result & Answer\\
+\midrule
+(i) Anti-windup better than without it under overload (H5)? & $-39$\,\%, 5 of 6 windows & yes\\
+\quad and no worse on normal influent (H4)? & 0.0\,\% & yes\\
+(ii) Robust variant fails less than the paper's PID with sensors (H6, H7)? & neither failed & no difference\\
+\quad and is it better there? & $+3$, $+24$\,\%; 0 runs better & no\\
+(iii) Price of robustness on H4, against tuned PID+ILC-AW & $+60$\,\% & reported\\
+(iv) Robust variant better than the paper's PID on H4 and H5? & $-83$, $-10$\,\%; 6 of 6 each & yes\\
+(v) Repaired MAACC better than the paper's PID on H4--H7? & H4, H5: yes; H6, H7: no & no overall\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:questions} answers the five questions declared in the
+protocol of this test.
+
 \emph{Our SAC-IL controller does not generalize.} It failed every H6 run and
 25 of 30 H7 runs, and on H5 it was 33\,\% worse than the paper's PID.
 
@@ -723,6 +802,7 @@ controller we tested is good at both.
 
 %=====================================================================
 \section{Discussion}
+\label{sec:disc}
 %=====================================================================
 
 \emph{Why MAACC as printed does not learn.} An adaptive critic that updates
@@ -749,6 +829,17 @@ noise would not be usable on a plant, however it scores with ideal sensors.
 That the paper's comparatively low-gain PID survives this test best is
 consistent with standard PID practice~\cite{astrom2006pid}: gain bought on
 an ideal measurement is paid for with noise.
+
+\emph{Recommendations.} From this study we would ask four things of any
+learned controller evaluated on BSM1:
+\begin{enumerate}
+\item compare it with a PID tuned under a stated rule and with a daily
+  feedforward such as the ILC, not only with a fixed PID;
+\item report results with the official sensor models switched on, and on
+  influent not used for tuning or training;
+\item report actuator movement and failures next to the tracking error;
+\item fix the test protocol before the test is run, and publish it.
+\end{enumerate}
 
 \emph{Cost.} Every controller here runs far faster than the 45-s period:
 5\,$\mu$s per step for the PID, 37\,$\mu$s for MAACC, 35\,$\mu$s
@@ -792,12 +883,9 @@ carefully tuned PID with a daily iterative learning controller is as good as
 any learned controller we tried, and adding SAC-IL to it changes nothing.
 Two pre-registered held-out tests showed that the official sensor noise
 is the real constraint: every high-gain controller lost its advantage or
-failed, and none beat the paper's PID there. We suggest that learned
-controllers for BSM1 be reported against a tuned PID with a daily
-feedforward, with the official sensor models switched on, on influent not
-used for tuning, and with actuator movement alongside tracking error. The
-open problem this leaves is a controller that is both accurate and
-robust to realistic measurement noise.
+failed, and none beat the paper's PID there. The recommendations in
+Section~\ref{sec:disc} follow from this. The open problem it leaves is a
+controller that is both accurate and robust to realistic measurement noise.
 
 %=====================================================================
 \section*{Code and Data Availability}
