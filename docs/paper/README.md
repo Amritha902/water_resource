@@ -4,7 +4,7 @@
 
 * Upload the folder (or the zip) to Overleaf: New Project → Upload Project.
 * Compiler: pdfLaTeX. Main document: `main.tex`.
-* Red `[...]` text marks what you must fill in before submitting:
+* Compile with pdfLaTeX; `main.pdf` is the compiled version.
   * surname, supervisor, affiliation, journal name;
   * acknowledgment;
   * the AI-assistance disclosure your venue asks for.

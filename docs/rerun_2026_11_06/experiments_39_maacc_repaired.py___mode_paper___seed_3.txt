@@ -1,0 +1,7 @@
+[maacc_rep_paper 3] start IAE O 0.01150 N 0.00635 (32s)
+[maacc_rep_paper 3] ep 1: return -83594  eval IAE O 0.00212 N 0.00822 fail False (166s)
+[maacc_rep_paper 3] ep 2: return -58033  eval IAE O 0.00198 N 0.00568 fail False (316s)
+[maacc_rep_paper 3] ep 3: return -33209  eval IAE O 0.00153 N 0.00233 fail False (466s)
+[maacc_rep_paper 3] ep 4: return -25855  eval IAE O 0.00152 N 0.00314 fail False (608s)
+[maacc_rep_paper 3] ep 5: return -28743  eval IAE O 0.00146 N 0.00304 fail False (751s)
+[maacc_rep_paper 3] kept policy of episode 3

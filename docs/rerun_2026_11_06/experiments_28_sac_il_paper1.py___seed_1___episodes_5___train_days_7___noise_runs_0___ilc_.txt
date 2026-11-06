@@ -1,0 +1,19 @@
+[seed 1] expert cost -18186; BC loss 1.07e-06; BC policy IAE O 0.00200 N 0.00171 (46s)
+/tmp/claude-0/-home-user-gan-driver/a50d7365-fe82-52fd-bebb-f039d7ffe97e/scratchpad/rerun/repo/experiments/28_sac_il_paper1.py:111: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /__w/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:820.)
+  f"N {ev['IAE_SNO2']:.5f} fail {ev['fail']}  alpha {float(agent.log_alpha.exp()):.4f} "
+[seed 1] ep 1: return -18529  eval IAE O 0.00192 N 0.00171 fail False  alpha 0.0020 (182s)
+[seed 1] ep 2: return -21572  eval IAE O 0.01138 N 0.00171 fail False  alpha 0.0029 (317s)
+[seed 1] ep 3: return -249048  eval IAE O 0.29123 N 0.00173 fail False  alpha 0.0954 (457s)
+[seed 1] ep 4: return -268750  eval IAE O 0.29764 N 0.00173 fail False  alpha 0.0100 (605s)
+[seed 1] ep 5: return -66649  eval IAE O 0.00253 N 0.00171 fail False  alpha 0.0060 (751s)
+[seed 1] kept policy of episode 1
+[seed 1] dry: IAE O 0.00179 N 0.00171
+[seed 1] rain: IAE O 0.00230 N 0.00491
+[seed 1] storm: IAE O 0.00529 N 0.00557
+/usr/local/lib/python3.11/dist-packages/numpy/_core/fromnumeric.py:3824: RuntimeWarning: Mean of empty slice
+  return _methods._mean(a, axis=axis, dtype=dtype,
+/usr/local/lib/python3.11/dist-packages/numpy/_core/_methods.py:142: RuntimeWarning: invalid value encountered in scalar divide
+  ret = ret.dtype.type(ret / rcount)
+[seed 1] dry+noise: IAE O nan N nan
+[seed 1] done (845s)
