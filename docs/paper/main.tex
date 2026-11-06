@@ -194,9 +194,11 @@ the first entry for oxygen and the second for nitrate.
 \subsection{Measures}
 Following~\cite[eq.~(36)]{wang2026maacc}, for each loop
 \begin{equation}
-\mathrm{IAE}=\frac1N\sum_{k=1}^N|e_k|,\quad
-\mathrm{ISE}=\frac1N\sum_{k=1}^N e_k^2,\quad
-\mathrm{DEV}_{\max}=\max_k|e_k|.
+\begin{aligned}
+\mathrm{IAE}&=\frac1N\sum_{k=1}^N|e_k|,\qquad
+\mathrm{ISE}=\frac1N\sum_{k=1}^N e_k^2,\\
+\mathrm{DEV}_{\max}&=\max_k|e_k|.
+\end{aligned}
 \end{equation}
 Errors are always computed from the true concentrations, not the measured
 ones. We also report the aeration movement $\sum_k|K_La_{,5}(k)-K_La_{,5}(k-1)|$
@@ -436,7 +438,9 @@ gate, on PID$\times$3+ILC (oxygen only).
 days 0--7 only, five episodes of seven days, and five training runs.}
 \label{tab:train}
 \renewcommand{\arraystretch}{1.08}
-\begin{tabular}{lcc}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{0.29\columnwidth}>{\raggedright\arraybackslash}p{0.35\columnwidth}@{}}
 \toprule
  & SAC-IL & Repaired MAACC\\
 \midrule
@@ -445,8 +449,9 @@ Learning rate & $3\times10^{-4}$ & $3\times10^{-4}$\\
 Batch, replay buffer & 256, $4\times10^5$ & 256, $4\times10^5$\\
 Target update $\tau$ & 0.005 & 0.005\\
 Reward scale & 0.1 & 0.1\\
-Increment bound per step & 6\,d$^{-1}$ ($K_La_{,5}$) & 6\,d$^{-1}$, 3000\,m$^3$/d\\
-Start & behaviour cloning & last layer zero, 1-day warm-up\\
+Bound per step & 6\,d$^{-1}$ & 6\,d$^{-1}$; 3000\,m$^3$/d\\
+Start & behaviour cloning & last layer zero,\\
+ & & 1-day warm-up\\
 Exploration & entropy, $\alpha_0=0.005$ & Gaussian, std 0.1\\
 Imitation term & weight $2\to0.5$ (floor) & none\\
 Other & twin critics & twin critics, delay 2,\\
@@ -527,7 +532,7 @@ rule was fixed in the protocols.
 
 \begin{figure*}[!t]
 \centering
-\includegraphics[width=0.9\textwidth]{f1_overview_matrix}
+\includegraphics[width=0.8\textwidth]{f1_overview_matrix}
 \caption{Every controller (row) in every test (column): change in oxygen IAE
 against the paper's PID, paired over the runs both finished. Blue is better,
 red worse; dark cells mean every run failed.}
@@ -750,7 +755,9 @@ their answers. ``Better'' requires a lower mean and better in at least two
 thirds of the windows or runs.}
 \label{tab:questions}
 \renewcommand{\arraystretch}{1.1}
-\begin{tabular}{>{\raggedright\arraybackslash}p{0.42\columnwidth}>{\raggedright\arraybackslash}p{0.30\columnwidth}>{\raggedright\arraybackslash}p{0.16\columnwidth}}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.45\columnwidth}>{\raggedright\arraybackslash}p{0.29\columnwidth}>{\raggedright\arraybackslash}p{0.17\columnwidth}}
 \toprule
 Question & Result & Answer\\
 \midrule
