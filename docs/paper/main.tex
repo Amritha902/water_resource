@@ -161,11 +161,23 @@ $\sum_k|K_La_{,5}(k)-K_La_{,5}(k-1)|$ per day, the aeration energy and the
 effluent ammonium are also reported. A run is terminated if $S_{O,5}$ leaves
 the range 0.3 to 4\,mg/L.
 
-The influent consists of the BSM1 dry, rain and storm files (14 days,
-15-min samples). In the rain and storm files, the inert soluble COD is
+The influent data are the BSM1 dry, rain and storm weather files
+\cite{alex2008bsm1} (\texttt{Inf\_dry\_2006}, \texttt{Inf\_rain\_2006} and
+\texttt{Inf\_strm\_2006}; 14 days, 15-min samples), the same benchmark files
+used in \cite{wang2026maacc}. They were obtained from \cite{bsm1files}; the
+dry weather file is identical to the one distributed with
+\texttt{bsm2-python} \cite{bsm2python}. Fig.~\ref{fig:influent} shows the
+influent flow rates. In the rain and storm files, the inert soluble COD is
 diluted as $S_I=30\,Q_\text{dry}/Q$, as in the official rain data. Every run
 starts from the state reached after 14 days of dry weather under the PID
 prior.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{influent}
+\caption{Influent flow rate of the BSM1 dry, rain and storm weather files.}
+\label{fig:influent}
+\end{figure}
 
 %=====================================================================
 \section{Baseline: Multiagent Adaptive Critic Control}
@@ -456,6 +468,46 @@ $K_La_{,5}$ between the two controllers.}
 \label{fig:inside}
 \end{figure}
 
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{trajectories}
+\caption{Trajectories of $S_{O,5}$ and $S_{NO,2}$ over 14 days under the
+PID prior (grey) and the proposed controller (black) in dry (a, b), rain
+(c, d) and storm (e, f) weather. MAACC with the published parameters
+coincides with the PID prior. The nitrate excursions during the rain and
+storm events occur when $Q_a$ reaches its upper bound and are the same for
+both controllers.}
+\label{fig:traj}
+\end{figure*}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{inputs}
+\caption{Control inputs of the proposed controller in the three weather
+conditions: (a) $K_La_{,5}$; (b) $Q_a$.}
+\label{fig:inputs}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{noise}
+\caption{Trajectories of (a) $S_{O,5}$ and (b) $S_{NO,2}$ in dry weather
+with actuator noise (standard deviation 3\,\% of each upper bound) under
+the PID prior (grey) and the proposed controller (black).}
+\label{fig:noise}
+\end{figure}
+
+Fig.~\ref{fig:traj} shows the 14-day trajectories in the format of Figs.~4
+to 6 of \cite{wang2026maacc}. Under the PID prior, the oxygen concentration
+falls by up to 0.10\,mg/L at each morning load increase; under the proposed
+controller, it stays within 0.011\,mg/L of the set point in dry and rain
+weather. In storm weather, the storm on day 9 causes a deviation of
+0.14\,mg/L under both controllers. Fig.~\ref{fig:inputs} shows that both
+inputs remain within their bounds, with $Q_a$ at its upper bound during the
+rain and storm events. With actuator noise (Fig.~\ref{fig:noise}), both
+controllers show high-frequency variation, and the proposed controller
+reduces the oxygen IAE by 23\,\%.
+
 Fig.~\ref{fig:inside} shows the mechanism. The PID prior lets the oxygen
 concentration fall at each morning load increase, whereas the proposed
 controller holds it at the set point. The required change in aeration is
@@ -591,6 +643,13 @@ S.~L. Du, P.~X. Chen, H.~G. Han, and J.~F. Qiao, ``Dissolved oxygen
 concentration control in wastewater treatment process based on reinforcement
 learning,'' \emph{Sci. China Technol. Sci.}, vol.~66, no.~9,
 pp.~2549--2560, 2023, doi: 10.1007/s11431-022-2403-8.
+
+\bibitem{bsm1files}
+davidfernand, \emph{BSM1\_in\_Python}, GitHub repository,
+commit 5dadb20, influent files \texttt{Inf\_dry\_2006.xlsx},
+\texttt{Inf\_rain\_2006.xlsx}, \texttt{Inf\_strm\_2006.xlsx}. [Online].
+Available:
+\url{https://github.com/davidfernand/BSM1_in_Python/tree/5dadb209a5a34ecb0e2f83a2e79c060bf3470582/code/Influent%20files}
 
 \bibitem{bsm2python}
 \emph{bsm2-python}, version 0.0.16, Python Package Index. [Online].
