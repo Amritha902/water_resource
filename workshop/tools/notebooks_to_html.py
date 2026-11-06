@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[2]
 NBDIR = ROOT / "workshop" / "notebooks"
 OUT = NBDIR / "html"
 NAMES = {"00_ml_skeleton": "Notebook 0 · The skeleton of every ML notebook",
+         "00b_three_ways_to_load_data": "Notebook 0b · Three ways to bring data in, and feed it to a model",
          "01_data_collect_clean_prepare": "Notebook 1 · Collect, clean and prepare the plant data",
          "02_choose_and_train_a_model": "Notebook 2 · Choose a model and train it",
          "03_reinforcement_learning_in_brief": "Notebook 3 · Reinforcement learning in brief"}
