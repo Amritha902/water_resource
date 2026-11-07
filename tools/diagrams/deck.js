@@ -1,309 +1,190 @@
-// Paper 1 deck: architecture diagrams drawn in draw.io (d*.drawio, rendered with mxGraph), results native.
+// Paper 1 deck, version 3: mirrors the journal paper. Black-and-white figures only.
 const pptxgen = require("pptxgenjs");
 const fs = require("fs");
 const path = require("path");
 const { applyTheme } = require("/root/.claude/skills/synced/255d15fd-5aca-411d-bb76-f644d356f751_9cb1af74-6e1e-4034-ab80-67bbea4c3a3d/pptx/scripts/apply_theme.js");
 
-const HERE = __dirname;
-const SIZES = JSON.parse(fs.readFileSync(path.join(HERE, "sizes.json"), "utf8"));
-const N = JSON.parse(fs.readFileSync(path.join(HERE, "numbers.json"), "utf8"));
-const FIG = "/home/user/water_resource/docs/figures/final";
-
+const FIG = "/home/user/water_resource/docs/paper/figures";
+const SIZES = JSON.parse(fs.readFileSync(path.join(__dirname, "sizes_v3.json"), "utf8"));
 const THEME = {
-  name: "Water Teal",
-  headFontFace: "Cambria",
-  bodyFontFace: "Calibri",
-  colors: {
-    dk1: "1B2A33", lt1: "FFFFFF", dk2: "0B3C49", lt2: "EEF4F6",
-    accent1: "1C6E8C", accent2: "1B7F5A", accent3: "C8611E", accent4: "B03A2E",
-    accent5: "7A7A74", accent6: "A07A2C", hlink: "1C6E8C", folHlink: "5B6B73",
-  },
+  name: "Journal Mono", headFontFace: "Times New Roman", bodyFontFace: "Times New Roman",
+  colors: { dk1: "000000", lt1: "FFFFFF", dk2: "1A1A1A", lt2: "F2F2F2", accent1: "404040", accent2: "7F7F7F",
+    accent3: "A6A6A6", accent4: "262626", accent5: "595959", accent6: "BFBFBF", hlink: "000000", folHlink: "404040" },
 };
-const HEX = THEME.colors;
-
 const pres = new pptxgen();
-pres.layout = "LAYOUT_WIDE"; // 13.333 x 7.5
-pres.title = "Paper 1: reproduction, our controller and held-out tests";
+pres.layout = "LAYOUT_WIDE";
+pres.title = "Daily ILC with a tuned PID prior for dissolved oxygen control in BSM1";
 pres.author = "Amritha";
-pres.theme = { headFontFace: THEME.headFontFace, bodyFontFace: THEME.bodyFontFace };
-const C = pres.SchemeColor;
+const INK = "000000", GREY = "595959", RULE = "BFBFBF", HEAD = "F2F2F2";
+const FONT = "Times New Roman";
 
-// ---------------------------------------------------------------- layouts
 pres.defineSlideMaster({
-  title: "DARK_TITLE",
-  background: { color: HEX.dk2 },
+  title: "CONTENT", background: { color: "FFFFFF" },
   objects: [
-    { placeholder: { options: { name: "title", type: "title", x: 0.8, y: 2.2, w: 11.7, h: 1.8, fontSize: 40, bold: true,
-      color: C.background1, valign: "bottom", align: "left", fontFace: THEME.headFontFace }, text: "" } },
-    { placeholder: { options: { name: "body", type: "body", x: 0.8, y: 4.2, w: 11.7, h: 1.4, fontSize: 18,
-      color: "CADCE3", valign: "top", align: "left" }, text: "" } },
+    { placeholder: { options: { name: "title", type: "title", x: 0.5, y: 0.3, w: 12.33, h: 0.75, fontSize: 28, bold: true,
+      color: INK, fontFace: FONT, valign: "middle", margin: 0 }, text: "" } },
+    { line: { x: 0.5, y: 1.1, w: 12.33, h: 0, line: { color: RULE, width: 0.75 } } },
   ],
-});
-pres.defineSlideMaster({
-  title: "CONTENT",
-  background: { color: HEX.lt1 },
-  objects: [
-    { placeholder: { options: { name: "title", type: "title", x: 0.5, y: 0.3, w: 12.33, h: 0.85, fontSize: 30, bold: true,
-      color: C.text2, valign: "middle", align: "left", fontFace: THEME.headFontFace, margin: 0 }, text: "" } },
-  ],
-  slideNumber: { x: 12.55, y: 7.05, w: 0.5, h: 0.3, fontSize: 10, color: "8A979D" },
+  slideNumber: { x: 12.55, y: 7.05, w: 0.5, h: 0.3, fontSize: 10, color: GREY, fontFace: FONT },
 });
 
-const notes = {};
-function content(title, sect) {
-  const s = pres.addSlide({ masterName: "CONTENT", sectionTitle: sect });
-  s.addText(title, { placeholder: "title" });
-  return s;
+const content = (t) => { const s = pres.addSlide({ masterName: "CONTENT" }); s.addText(t, { placeholder: "title" }); return s; };
+function fit(name, x, y, w, h) {
+  const [pw, ph] = SIZES[name]; let W = w, H = w * ph / pw;
+  if (H > h) { H = h; W = h * pw / ph; }
+  return { path: path.join(FIG, name + ".png"), x: x + (w - W) / 2, y, w: W, h: H };
 }
-function fit(file, x, y, w, h) {
-  const [pw, ph] = SIZES[file];
-  const r = pw / ph;
-  let W = w, H = w / r;
-  if (H > h) { H = h; W = h * r; }
-  return { path: path.join(HERE, file), x: x + (w - W) / 2, y, w: W, h: H };
-}
-function under(s, img, text, opts = {}) {
-  s.addImage(img);
-  caption(s, text, img.y + img.h + 0.2, opts);
-}
-function caption(s, text, y, opts = {}) {
-  s.addText(text, { x: 0.5, y, w: 12.33, h: 0.5, fontSize: 13, color: C.text1, isTextBox: true, margin: 0,
-    valign: "top", ...opts });
-}
-function stat(s, x, y, w, big, small, color) {
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h: 1.55, fill: { color: HEX.lt2 }, line: { color: HEX.lt2 },
-    rectRadius: 0.08, objectName: "stat card" });
-  s.addText(big, { x: x + 0.2, y: y + 0.12, w: w - 0.4, h: 0.8, fontSize: 36, bold: true, color, isTextBox: true,
-    margin: 0, fontFace: THEME.headFontFace });
-  s.addText(small, { x: x + 0.2, y: y + 0.9, w: w - 0.4, h: 0.6, fontSize: 13, color: C.text1, isTextBox: true,
-    margin: 0, valign: "top" });
+const text = (s, t, o) => s.addText(t, { fontFace: FONT, color: INK, isTextBox: true, margin: 0, valign: "top", fontSize: 16, ...o });
+const bullets = (s, items, o) => text(s, items.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < items.length - 1 } })),
+  { paraSpaceAfter: 8, ...o });
+const caption = (s, t, y) => text(s, t, { x: 0.5, y, w: 12.33, h: 0.5, fontSize: 13, color: GREY });
+function table(s, rows, o) {
+  s.addTable(rows.map((r, i) => r.map((c, j) => ({ text: String(c), options: {
+    bold: i === 0, fill: { color: i === 0 ? HEAD : "FFFFFF" }, color: INK, align: j === 0 ? "left" : "center",
+    border: [{ type: i === 0 ? "solid" : "none", pt: 0.75, color: INK }, { type: "none" },
+      { type: (i === 0 || i === rows.length - 1 || (o.rules || []).includes(i)) ? "solid" : "none", pt: 0.75, color: INK }, { type: "none" }],
+  } }))), { fontFace: FONT, fontSize: 14, valign: "middle", margin: [0.03, 0.08, 0.03, 0.08], ...o });
 }
 
-// ---------------------------------------------------------------- 1. title
-pres.addSection({ title: "Introduction" });
-let s = pres.addSlide({ masterName: "DARK_TITLE", sectionTitle: "Introduction" });
-s.addText("Paper 1 reproduced, and what actually controls a wastewater plant better", { placeholder: "title" });
-s.addText("MAACC (Wang et al., IEEE T-II 2026) on the official BSM1 benchmark  ·  Amritha", { placeholder: "body" });
-s.addNotes("Paper 1 claims a learning controller that cuts the oxygen tracking error by 92 to 95 per cent. We rebuilt it exactly on the official benchmark, built our own controller, and tested everything on data nothing was tuned on.");
+// 1. title
+let s = pres.addSlide({ background: { color: "FFFFFF" } });
+text(s, "Daily Iterative Learning Control With a Tuned PID Prior for Dissolved Oxygen Control in BSM1: Comparison With Multiagent Adaptive Critic Control",
+  { x: 0.8, y: 1.8, w: 11.7, h: 2.2, fontSize: 32, bold: true, valign: "bottom" });
+s.addShape(pres.shapes.LINE, { x: 0.8, y: 4.2, w: 11.7, h: 0, line: { color: INK, width: 1 } });
+text(s, "Amritha\nVellore Institute of Technology, Chennai", { x: 0.8, y: 4.4, w: 11.7, h: 1.0, fontSize: 18, color: GREY });
 
-// ---------------------------------------------------------------- 2. plant
-s = content("The plant and the control task", "Introduction");
-const img2 = fit("paper/plant.png", 0.5, 1.35, 12.33, 4.6);
-s.addImage(img2);
-[["Loop 1: oxygen", "aeration KLa,5 keeps S_O,5 in tank 5 at 2 mg/L"],
- ["Loop 2: nitrate", "internal recycle Q_a keeps S_NO,2 in tank 2 at 1 mg/L"],
- ["Score", "IAE: mean absolute tracking error (paper 1, eq. 36); 45 s step, 14 days"]].forEach(([t, d], k) => {
-  const x = 0.5 + k * 4.18, y = img2.y + img2.h + 0.35;
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w: 3.97, h: 1.2, fill: { color: HEX.lt2 }, line: { color: HEX.lt2 },
-    rectRadius: 0.08, objectName: "task card " + (k + 1) });
-  s.addText(t, { x: x + 0.2, y: y + 0.12, w: 3.57, h: 0.35, fontSize: 16, bold: true, color: C.text2, isTextBox: true, margin: 0 });
-  s.addText(d, { x: x + 0.2, y: y + 0.5, w: 3.57, h: 0.62, fontSize: 14, color: C.text1, isTextBox: true, margin: 0, valign: "top" });
-});
-s.addNotes("BSM1 is the IWA benchmark plant. Paper 1 controls two inputs, drawn in green. All our runs use the official plant code and the official influent files.");
+// 2. base paper and plant
+s = content("Base paper and control problem");
+text(s, [
+  { text: "Base paper: ", options: { bold: true } },
+  { text: "D. Wang, X. Li, J. Ren and J. Qiao, “Multiagent Adaptive Critic Control With Expert Knowledge for Wastewater Treatment Plants,” IEEE Trans. Ind. Informat., 2026. Reported oxygen error reductions of 92 to 95 % relative to its PID prior." },
+], { x: 0.5, y: 1.3, w: 12.33, h: 1.0, fontSize: 16 });
+s.addImage(fit("plant", 0.5, 2.45, 12.33, 3.4));
+caption(s, "BSM1: two anoxic and three aerated tanks, ten-layer settler. Manipulated: KLa,5 (oxygen in tank 5 to 2 mg/L) and Qa (nitrate in tank 2 to 1 mg/L). Sampling period 45 s.", 6.1);
+s.addNotes("The base paper controls the two standard BSM1 loops with one adaptive critic agent per loop on top of an incremental PID.");
 
-// ---------------------------------------------------------------- 3. paper architecture
-pres.addSection({ title: "Paper 1" });
-s = content("Paper 1's architecture: two adaptive-critic agents on top of a PID", "Paper 1");
-under(s, fit("paper/maacc.png", 0.5, 1.3, 12.33, 5.0), "One agent drawn; the oxygen and nitrate agents have the same form and are coupled through their critics, which see both loops. Dashed: the one-step learning update, each sample used once.", { fontSize: 13, color: "5B6B73" });
-s.addNotes("Each loop has an agent with an action network and a critic. The output is the PID's input plus a learned part, u = a + b. The critic learns from one-step temporal-difference errors, each step used once.");
+// 3. architectures
+s = content("Base architecture and proposed architecture");
+const a = fit("base", 0.5, 1.45, 5.95, 4.3), b = fit("proposed", 6.75, 1.45, 6.08, 4.3);
+s.addImage(a); s.addImage(b);
+text(s, "(a) MAACC, one agent per loop [base paper]", { x: 0.5, y: 5.95, w: 5.95, h: 0.4, fontSize: 14, align: "center" });
+text(s, "(b) Proposed: tuned PID, daily ILC with anti-windup, measurement filter", { x: 6.75, y: 5.95, w: 6.08, h: 0.4, fontSize: 14, align: "center" });
+s.addNotes("In MAACC the action network output is integrated and added to the PID output. The proposed controller replaces the networks with a daily feedforward learned from the PID output.");
 
-// ---------------------------------------------------------------- 4. reproduction
-s = content("Rebuilt exactly as printed, MAACC never leaves its PID", "Paper 1");
-stat(s, 0.5, 1.5, 3.9, "0 %", "change in oxygen error against its PID (paper claims −92 to −95 %)", HEX.accent4);
-stat(s, 4.72, 1.5, 3.9, "80 / 80", "runs in which MAACC equals its PID (20 runs × 4 cases)", HEX.accent4);
-stat(s, 8.93, 1.5, 3.9, "10⁻⁴", "size of its learning signal with the printed weights", HEX.accent4);
-const H = (t) => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: HEX.dk2 }, align: "center" } });
-const cell = (t, fill, bold) => ({ text: t, options: { align: "center", color: HEX.dk1, fill: { color: fill }, bold: !!bold } });
-s.addTable([
-  [{ text: "Oxygen error, 14 days (IAE)", options: { bold: true, color: "FFFFFF", fill: { color: HEX.dk2 } } },
-    H("Paper's PID (Table II)"), H("Our PID"), H("MAACC, paper's claim"), H("MAACC, our run")],
-  ...[["Dry", "0.0114", "0.0114", "0.00053", "0.0114"], ["Rain", "0.0098", "0.0108", "0.00051", "0.0108"],
-      ["Storm", "0.0117", "0.0118", "0.00095", "0.0118"]].map(([w, a, b, c, d]) => [
-    { text: w, options: { bold: true, color: HEX.dk1 } }, cell(a, "F1F1EE"), cell(b, "F1F1EE"), cell(c, "F6D9D6"),
-    cell(d, "F6D9D6", true)]),
-], { x: 0.5, y: 3.45, w: 12.33, colW: [3.13, 2.3, 2.3, 2.3, 2.3], fontSize: 15, fontFace: "Calibri", rowH: 0.5,
-  valign: "middle", border: { type: "solid", pt: 0.75, color: "FFFFFF" }, margin: [0.04, 0.12, 0.04, 0.12] });
-s.addText("Our plant matches the paper's (PID columns). The PID gains, 45 s step, 14 days, input limits and noise are exactly as printed. "
-  + "Differences we know of: the set points are printed as [1, 2] but the figures match [2, 1]; our nitrate PID error is about half the paper's.",
-  { x: 0.5, y: 5.65, w: 12.33, h: 1.0, fontSize: 14, color: C.text1, isTextBox: true, margin: 0, valign: "top" });
-s.addNotes("So the improvement the paper reports does not come from the method as printed. The plant matches, the settings match, the learner simply does not move.");
+// 4. ILC algorithm
+s = content("Daily iterative learning control");
+text(s, "Profile update at the end of each day d (1920 slots of 45 s):", { x: 0.5, y: 1.35, w: 12.33, h: 0.4 });
+text(s, "f(d+1) = S_w [ f(d) + β · L_ℓ ( u_PID(d) − mean u_PID(d) ) ]", { x: 0.5, y: 1.85, w: 12.33, h: 0.5, fontSize: 20, align: "center", italic: true });
+text(s, [
+  "1:  for each control step k with slot j",
+  "2:    u_PID ← PID step, limited to [U_min − f(j), U_max − f(j)]",
+  "3:    u ← sat(u_PID + f(j))",
+  "4:    record g(j) ← u_PID;  o(j) ← 1 if u is not saturated",
+  "5:    if j = 1920 and at least half of the slots are unsaturated",
+  "6:        δ(j) ← o(j)(g(j) − mean g);   f⁺ ← S_w[f + β L_ℓ δ]",
+  "7:        PID state ← PID state − (f⁺(1) − f(1));   f ← f⁺",
+].join("\n"), { x: 0.5, y: 2.6, w: 8.6, h: 3.4, fontSize: 12.5, fontFace: "Courier New" });
+bullets(s, ["L_ℓ: shift earlier by ℓ = 4 slots (3 min)", "S_w: circular moving average, w = 30 slots", "β = 1 (tuned PID)",
+  "Line 2 and the saturation test: anti-windup", "Line 7: bumpless update at midnight"], { x: 9.3, y: 2.6, w: 3.53, h: 3.4, fontSize: 14 });
+s.addNotes("The ILC transfers the recurring part of the PID correction to a feedforward. Settings were selected on dry days 0 to 7.");
 
-// ---------------------------------------------------------------- 5. ours
-pres.addSection({ title: "Our work" });
-s = content("Our controller: what is new", "Our work");
-under(s, fit("paper/ours.png", 0.5, 1.3, 12.33, 4.7), "Green: added in this work (robust variant shown). Dashed: anti-windup, at a limit the ILC does not learn. A learned correction (SAC-IL or repaired MAACC) can be added at the second Σ; on this controller it adds nothing, so it is not drawn. Nitrate loop: a PID only.", { fontSize: 13, color: "5B6B73" });
-s.addNotes("Green is new. The tuned PID and the daily iterative learning control do the work. The learned correction, SAC with imitation learning or the repaired MAACC, was built and tested; on top of the tuned PID with ILC it adds nothing.");
+// 5. data
+s = content("Data and evaluation protocol");
+s.addImage(fit("influent", 0.5, 1.4, 6.4, 3.6));
+bullets(s, [
+  "BSM1 influent files Inf_dry_2006, Inf_rain_2006, Inf_strm_2006 (14 days, 15 min), the same benchmark files as the base paper",
+  "Source: github.com/davidfernand/BSM1_in_Python, commit 5dadb20; dry file identical to the one in bsm2-python 0.0.16",
+  "Tuning and training: dry weather, days 0 to 7 only",
+  "Test period: days 7 to 14 of dry, rain and storm weather",
+  "Additional conditions: BSM2 influent windows, actuator saturation, BSM1 sensor models",
+], { x: 7.2, y: 1.45, w: 5.63, h: 5.2, fontSize: 15 });
+caption(s, "Influent flow rate of the three weather files.", 5.15);
 
-// ---------------------------------------------------------------- 6. ILC
-s = content("The daily ILC: learning the load pattern, one update per night", "Our work");
-under(s, fit("paper/ilc.png", 0.5, 1.4, 12.33, 2.9), "The load repeats every day, and about 96 % of the PID's remaining oxygen error repeats with it. Each night the ILC moves the PID's daily correction into a feedforward f, shifted a few minutes earlier and smoothed.");
-[["Bumpless update", "At midnight the PID's state is reduced by the same change, so the aeration does not jump. Largest deviation near midnight: 0.053 → 0.011 mg/L."],
- ["Anti-windup", "At an actuator limit the ILC does not learn, and the PID's limits move with f. Under overload: −39 % error (ideal sensors)."]].forEach(([t, d], k) => {
-  const x = 0.5 + k * 6.27, y = 4.95;
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w: 6.06, h: 1.55, fill: { color: "F4FBF7" }, line: { color: HEX.accent2, width: 1.25 },
-    rectRadius: 0.08, objectName: "ilc card " + (k + 1) });
-  s.addText(t, { x: x + 0.25, y: y + 0.14, w: 5.56, h: 0.4, fontSize: 17, bold: true, color: HEX.accent2, isTextBox: true, margin: 0 });
-  s.addText(d, { x: x + 0.25, y: y + 0.6, w: 5.56, h: 0.85, fontSize: 14, color: C.text1, isTextBox: true, margin: 0, valign: "top" });
-});
-s.addNotes("This is iterative learning control. Each night it takes over part of the correction the PID had to make, and applies it a few minutes earlier the next day. Bumpless transfer removed a jump at midnight; anti-windup stopped it from hurting when the aeration is at its limit.");
+// 6. training
+s = content("Training of the learned corrections");
+s.addImage(fit("training", 0.5, 1.4, 7.4, 4.3));
+bullets(s, [
+  "Five independent training runs per method, five episodes of seven days",
+  "rMAACC: oxygen IAE 0.0115 to 0.0013–0.0023 (retained policies)",
+  "SAC-IL: stays near its imitation start (about 0.0020); one run diverged in episodes 3 and 4",
+  "A complete retraining from scratch reproduced all ten training curves to five decimal places",
+], { x: 8.2, y: 1.5, w: 4.63, h: 5.0, fontSize: 15 });
+caption(s, "Oxygen IAE on the training period after each episode. Dashed line: PID prior.", 5.9);
 
-// ---------------------------------------------------------------- 7. repaired MAACC
-s = content("A fair baseline: the paper's learner with its training repaired", "Our work");
-const img7 = fit("paper/repaired.png", 0.5, 1.3, 12.33, 4.5);
-s.addImage(img7);
-s.addText([
-  { text: "Result: ", options: { bold: true } },
-  { text: "it learns. Oxygen error −85 % in dry weather (−52 % rain, −67 % storm), but it moves the aeration 3.7 × as much as the PID." },
-], { x: 0.5, y: img7.y + img7.h + 0.3, w: 12.33, h: 0.8, fontSize: 16, color: C.text1, isTextBox: true, margin: 0, valign: "top" });
-s.addNotes("To compare fairly we kept the paper's structure and fixed only the training, with standard fixes. It does learn, so the paper's idea can work; its printed training is what fails.");
+// 7. test period table
+s = content("Test period: change in oxygen IAE relative to the PID prior");
+table(s, [
+  ["Controller", "Dry", "Rain", "Storm", "Actuator noise", "KLa,5 movement"],
+  ["PID prior (IAE)", "0.0113", "0.0100", "0.0120", "0.0249", "501"],
+  ["MAACC [base paper]", "0 %", "0 %", "0 %", "0 %", "501"],
+  ["rMAACC", "−85 %", "−52 %", "−67 %", "−13 %", "1835"],
+  ["PID×3 + ILC + SAC-IL", "−87 %", "−82 %", "−74 %", "−26 %", "982"],
+  ["Tuned PID", "−85 %", "−85 %", "−77 %", "−22 %", "852"],
+  ["Tuned PID + ILC (proposed)", "−90 %", "−89 %", "−80 %", "−23 %", "852"],
+  ["Tuned PID + ILC + SAC-IL", "−90 %", "−88 %", "−80 %", "−22 %", "874"],
+  ["Noise-robust variant (proposed)", "−83 %", "−80 %", "−73 %", "+10 %", "522"],
+], { x: 0.5, y: 1.4, w: 12.33, colW: [3.9, 1.5, 1.5, 1.5, 2.0, 1.93], rowH: 0.48, rules: [3] });
+caption(s, "Days 7 to 14, excluded from tuning and training. Learned corrections: mean of five training runs. Aeration energy (3690 kWh/d) and effluent ammonium are equal for all controllers.", 6.0);
 
-// ---------------------------------------------------------------- 8. method
-s = content("How we tested: nothing was tuned on the test data", "Our work");
-under(s, fit("notitle/d5_method_crop.png", 0.5, 1.35, 12.33, 4.85), "Both held-out protocols were pushed to git before their runs, so the order can be checked. The audit re-ran stored runs and recomputed every quoted number.");
-s.addNotes("Tuning and training used one dry week. The second week was the test. Then two held-out tests on new data and real sensor models, each fixed in writing before running.");
+// 8. trajectories
+s = content("Trajectories of S_O,5 and S_NO,2 over 14 days");
+const tr = fit("trajectories", 0.5, 1.25, 8.0, 5.75);
+s.addImage(tr);
+bullets(s, [
+  "Format of Figs. 4 to 6 of the base paper",
+  "Grey: PID prior (MAACC coincides with it). Black: proposed",
+  "PID prior: oxygen falls by up to 0.10 mg/L at each morning load increase",
+  "Proposed: within 0.011 mg/L of the set point in dry and rain weather",
+  "Storm on day 9 and nitrate dips in rain and storm: the same for both controllers (Qa at its upper bound)",
+], { x: 8.8, y: 1.5, w: 4.03, h: 5.4, fontSize: 15 });
 
-// ---------------------------------------------------------------- 9. results chart
-pres.addSection({ title: "Results" });
-s = content("Official test week: tuned PID + ILC is as good as any learner", "Results");
-// a horizontal bar chart draws the first category and the first series at the bottom: list them bottom-up
-const ctrl = [["MAACC as printed", "MAACC"], ["Repaired MAACC", "rMAACC"], ["Ours: PID ×3 + ILC + SAC-IL", "Ours"],
-  ["Robust (filter, ×0.5, ILC-AW)", "Robust"], ["Tuned PID + ILC", "PIDtuned+ILC"]];
-const labels = ctrl.map((c) => c[0]);
-const WCOL = { Dry: "1C6E8C", Rain: "A07A2C", Storm: "5B6B73" };
-const series = [["Storm", "tw_storm"], ["Rain", "tw_rain"], ["Dry", "tw_dry"]].map(([name, k]) => ({
-  name, labels, values: ctrl.map(([, c]) => -N[k][c].pct),
-}));
-s.addChart(pres.charts.BAR, series, {
-  x: 0.5, y: 1.35, w: 8.6, h: 5.25, barDir: "bar", barGrouping: "clustered", barGapWidthPct: 60,
-  chartColors: [WCOL.Storm, WCOL.Rain, WCOL.Dry],
-  showValue: true, dataLabelPosition: "outEnd", dataLabelFontSize: 11, dataLabelColor: "1B2A33", dataLabelFormatCode: "0\"%\"",
-  catAxisLabelFontSize: 13, catAxisLabelColor: "1B2A33", catAxisLabelFontFace: "+mn-lt",
-  valAxisLabelFontSize: 11, valAxisLabelColor: "5B6B73", valAxisMaxVal: 100, valAxisMinVal: 0, valAxisLabelFormatCode: "0\"%\"",
-  valGridLine: { color: "E1E0D9", size: 0.75 }, catGridLine: { style: "none" },
-  showLegend: false,
-  showTitle: true, title: "Reduction of oxygen error against the paper's PID (test week, higher is better)",
-  titleFontSize: 13, titleColor: "1B2A33", titleFontFace: "+mn-lt", dataLabelFontFace: "+mn-lt",
-});
-["Dry", "Rain", "Storm"].forEach((w, i) => {
-  s.addShape(pres.shapes.RECTANGLE, { x: 3.0 + i * 1.3, y: 6.72, w: 0.18, h: 0.18, fill: { color: WCOL[w] },
-    line: { color: WCOL[w] }, objectName: "legend " + w });
-  s.addText(w, { x: 3.25 + i * 1.3, y: 6.66, w: 1.0, h: 0.3, fontSize: 12, color: C.text1, isTextBox: true, margin: 0 });
-});
-s.addText([
-  { text: "What this shows", options: { bold: true, fontSize: 18, color: C.text2, breakLine: true } },
-  { text: "A PID tuned term by term plus the daily ILC: −90 / −89 / −80 %.", options: { bullet: true, breakLine: true } },
-  { text: "SAC-IL on top of it adds 0 %.", options: { bullet: true, breakLine: true } },
-  { text: "The repaired MAACC beats SAC-IL in the same stack.", options: { bullet: true, breakLine: true } },
-  { text: "MAACC as printed: 0 %.", options: { bullet: true } },
-], { x: 9.4, y: 1.6, w: 3.43, h: 4.6, fontSize: 15, color: C.text1, isTextBox: true, margin: 0, paraSpaceAfter: 10, valign: "top" });
-s.addNotes("Week 2 of the official files, never used for tuning or training. Learned controllers are the mean of five training runs.");
+// 9. inputs and actuator noise
+s = content("Control inputs and actuator noise");
+s.addImage(fit("inputs", 0.5, 1.35, 5.9, 4.9));
+s.addImage(fit("noise", 6.93, 1.35, 5.9, 4.9));
+text(s, "(a) KLa,5 and Qa of the proposed controller, three weathers", { x: 0.5, y: 6.35, w: 5.9, h: 0.4, fontSize: 13, align: "center", color: GREY });
+text(s, "(b) Dry weather with actuator noise (3 % of each upper bound); proposed: −23 % oxygen IAE", { x: 6.93, y: 6.35, w: 5.9, h: 0.5, fontSize: 13, align: "center", color: GREY });
 
-// ---------------------------------------------------------------- 9b. headline figure
-s = content("Base vs ours: big gain with ideal sensors, none with sensor noise", "Results");
-under(s, fit("paper/f0_headline.png", 0.5, 1.3, 12.33, 5.1), "Change in oxygen error against the paper's PID, paired over the runs both controllers finished. ✗: every run failed. MAACC as printed lost 1 of 6 windows on new influent (H4).", { fontSize: 13, color: "5B6B73" });
-s.addNotes("Left: the paper's own kind of test, with ideal sensors, plus new influent. The tuned PID with the daily ILC is 80 to 90 per cent better. Right: with the official sensor noise, it is worse than the paper's PID; the robust variant is close to it but not better.");
+// 10. mechanism
+s = content("Mechanism: a small correction at the load increase");
+s.addImage(fit("inside", 0.5, 1.35, 6.0, 5.6));
+bullets(s, [
+  "Two days of the dry test period",
+  "(a) PID prior (dashed) against proposed (solid)",
+  "(b) The aeration differs by at most 6 d⁻¹, applied at the morning load increase",
+  "Mean oxygen error over the two days: 0.0112 (PID prior) and 0.0010 mg/L (proposed)",
+], { x: 7.0, y: 1.6, w: 5.83, h: 5.0, fontSize: 16 });
 
-// ---------------------------------------------------------------- 9c. inside the plant
-s = content("Inside the plant: a small correction at the right time", "Results");
-const img9c = fit("paper/f8_inside.png", 0.5, 1.25, 8.4, 5.9);
-s.addImage(img9c);
-s.addText([
-  { text: "Two days of the dry test week", options: { bold: true, fontSize: 18, color: C.text2, breakLine: true } },
-  { text: "The paper's PID dips at every morning load rise.", options: { bullet: true, breakLine: true } },
-  { text: "Tuned PID + ILC stays at 2 mg/L: mean error 0.0010 against 0.0112 mg/L.", options: { bullet: true, breakLine: true } },
-  { text: "The aeration is almost the same; the ILC changes it by at most 6 1/d, at the load rise.", options: { bullet: true } },
-], { x: 9.2, y: 1.6, w: 3.63, h: 4.8, fontSize: 15, color: C.text1, isTextBox: true, margin: 0, paraSpaceAfter: 10, valign: "top" });
-s.addNotes("These are real traces from the simulation, not a sketch. The gain in tracking comes from timing, not from more aeration: energy is the same for both.");
+// 11. additional conditions
+s = content("Additional conditions: change in oxygen IAE relative to the PID prior");
+table(s, [
+  ["Controller", "H4 new influent", "H5 saturation", "H6 sensors", "H7 influent + sensors"],
+  ["PID prior (IAE)", "0.0105", "0.0815", "0.261", "0.178"],
+  ["rMAACC", "−73 %", "−8 %", "+1 % (5/45)", "+6 % (1/30)"],
+  ["Tuned PID + ILC", "−89 %", "+48 %", "+46 %", "+50 %"],
+  ["Tuned PID + ILC with anti-windup", "−89 %", "−10 %", "–", "+84 % (5/6)"],
+  ["Noise-robust variant", "−83 %", "−10 %", "+3 %", "+24 %"],
+], { x: 0.5, y: 1.4, w: 12.33, colW: [4.13, 2.0, 2.0, 2.0, 2.2], rowH: 0.5 });
+bullets(s, [
+  "H4: BSM2 influent windows after a simplified primary clarifier; H5: without it (actuator saturation)",
+  "H6: BSM1 sensor models (noise 0.25 mg/L) on the BSM1 files; H7: H4 with the sensor models",
+  "In brackets: runs terminated (oxygen outside 0.3 to 4 mg/L); –: no completed run",
+  "Under measurement noise, none of the evaluated controllers improved on the PID prior",
+], { x: 0.5, y: 4.75, w: 12.33, h: 2.0, fontSize: 14 });
 
-// ---------------------------------------------------------------- 10. held-out table
-s = content("Held-out test 2: new influent and real sensors", "Results");
-const cols = [["H4", "New influent"], ["H5", "Overload"], ["H6", "Official sensors"], ["H7", "New influent + sensors"]];
-const trows = [["Paper's PID", "PID"], ["MAACC as printed", "MAACC"], ["Repaired MAACC", "rMAACC"],
-  ["Ours: PID ×3 + ILC + SAC-IL", "Ours"], ["Tuned PID + ILC", "PIDtuned+ILC"],
-  ["Tuned PID + ILC, anti-windup", "PIDtuned+ILC-AW"], ["Robust (filter, ×0.5, ILC-AW)", "Robust"]];
-const hdr = [{ text: "Oxygen error vs paper's PID", options: { bold: true, color: "FFFFFF", fill: { color: HEX.dk2 } } },
-  ...cols.map(([k, t]) => ({ text: `${k}  ${t}`, options: { bold: true, color: "FFFFFF", fill: { color: HEX.dk2 }, align: "center" } }))];
-const body = trows.map(([lab, c]) => [
-  { text: lab, options: { bold: c === "Robust", color: HEX.dk1 } },
-  ...cols.map(([k]) => {
-    const d = N[k][c];
-    if (c === "PID") return { text: "reference", options: { align: "center", color: "5B6B73", fill: { color: "F1F1EE" } } };
-    if (d.failed === d.n) return { text: "✗ all failed", options: { align: "center", bold: true, color: "FFFFFF", fill: { color: "3B3B38" } } };
-    const p = d.pct;
-    let t = (p > 0 ? "+" : p < 0 ? "−" : "") + Math.abs(p) + " %";
-    if (d.failed) t += `  (✗ ${d.failed}/${d.n})`;
-    const fill = p <= -20 ? "CFE6DA" : p < 0 ? "E8F3ED" : p < 5 ? "F1F1EE" : "F6D9D6";
-    return { text: t, options: { align: "center", color: HEX.dk1, fill: { color: fill } } };
-  }),
-]);
-s.addTable([hdr, ...body], { x: 0.5, y: 1.4, w: 12.33, colW: [3.93, 2.1, 2.1, 2.1, 2.1], fontSize: 14, fontFace: "Calibri",
-  border: { type: "solid", pt: 0.75, color: "FFFFFF" }, rowH: 0.52, valign: "middle", margin: [0.04, 0.12, 0.04, 0.12] });
-caption(s, "Green: better than the paper's PID; red: worse; dark: every run failed (oxygen left 0.3–4 mg/L). Each % compares only runs both controllers finished. Protocol pushed before the 432 runs.", 5.85, { fontSize: 12, color: "5B6B73" });
-s.addNotes("New BSM2 influent windows, raw and after a simple primary clarifier, and the official sensor models with new noise seeds. Our SAC-IL controller fails every run with the official sensor noise. The robust tuned PID never fails, but with sensor noise it is no better than the paper's PID.");
-
-// ---------------------------------------------------------------- 11. fixes
-s = content("Two fixes, tested on new data: one works, one half-works", "Results");
-stat(s, 0.5, 1.5, 3.0, "−39 %", "ILC anti-windup under overload, better in 5 of 6 new windows", HEX.accent2);
-stat(s, 0.5, 3.25, 3.0, "0 %", "change on normal influent; but with high gains it fails under sensor noise", HEX.accent3);
-stat(s, 0.5, 5.0, 3.0, "+3 / +24 %", "robust PID vs paper's PID with real sensor noise", HEX.accent4);
-s.addImage({ path: path.join(HERE, "f6_white.png"), x: 3.85, y: 1.45, w: 8.98, h: 8.98 * 1240 / 2400 });
-s.addText("True oxygen with the official sensors (noise 0.25 g/m³): the paper's PID and the robust controller stay in range; our SAC-IL controller fails after 11 h.",
-  { x: 3.85, y: 6.2, w: 8.98, h: 0.6, fontSize: 12, color: "5B6B73", isTextBox: true, margin: 0, valign: "top" });
-s.addNotes("Anti-windup fixed the ILC under overload and changed nothing on normal influent; but with the high tuned gains it failed under the official sensor noise, where the version without it finished. The robust version never failed, kept −83 % on new normal influent, and moves the aeration no more than the paper's PID, but under real sensor noise nothing we built beats the paper's PID. That is the open problem.");
-
-// ---------------------------------------------------------------- 12. what's new table
-pres.addSection({ title: "Conclusion" });
-s = content("Paper 1 against our work", "Conclusion");
-const cmp = [
-  ["", "Paper 1", "Our work"],
-  ["Controller", "two adaptive-critic agents on a PID", "tuned PID + daily ILC (bumpless, anti-windup); learned options tested"],
-  ["Learning", "online, one step at a time; does not learn as printed", "ILC learns daily; repaired MAACC and SAC-IL trained on one dry week"],
-  ["Testing", "learns and is scored on the same 14-day run", "train week → test week → two pre-registered held-out tests"],
-  ["Robustness", "noise added to the two inputs only", "new influent, overload, official sensor delay and noise"],
-  ["Verification", "—", "audit: stored runs re-run exactly, 76 of 76 checks pass"],
-  ["Oxygen result", "claims −92 to −95 %", "−80 to −90 % on the test week (tuned PID + ILC); not robust to real sensor noise"],
-];
-s.addTable(cmp.map((r, i) => r.map((t, j) => ({ text: t, options: {
-  bold: i === 0 || j === 0, color: i === 0 ? "FFFFFF" : HEX.dk1,
-  fill: { color: i === 0 ? HEX.dk2 : j === 2 ? "E2F3EA" : j === 1 ? "F1F1EE" : "FFFFFF" } } }))),
-  { x: 0.5, y: 1.4, w: 12.33, colW: [2.1, 4.4, 5.83], fontSize: 14, fontFace: "Calibri", rowH: 0.66, valign: "middle",
-    border: { type: "solid", pt: 0.75, color: "FFFFFF" }, margin: [0.04, 0.12, 0.04, 0.12] });
-s.addNotes("The contribution is a reproducibility and robustness study plus a simple controller that works on nominal data, with every test fixed before it was run.");
-
-// ---------------------------------------------------------------- 13. claims and limits
-s = content("What we can claim, and what we cannot", "Conclusion");
-const col = (x, title, color, items) => {
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.45, w: 5.95, h: 4.9, fill: { color: color === HEX.accent2 ? "F4FBF7" : "FBEFEE" },
-    line: { color, width: 1.5 }, rectRadius: 0.06, objectName: title });
-  s.addText(title, { x: x + 0.3, y: 1.6, w: 5.4, h: 0.5, fontSize: 20, bold: true, color, isTextBox: true, margin: 0 });
-  s.addText(items.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < items.length - 1 } })),
-    { x: x + 0.3, y: 2.25, w: 5.4, h: 3.95, fontSize: 18, color: C.text1, isTextBox: true, margin: 0, paraSpaceAfter: 14, valign: "top" });
-};
-col(0.5, "We can claim", HEX.accent2, [
-  "MAACC as printed does not learn; it fails every held-out condition",
-  "With repaired training it learns (−85 % dry), but is not robust to sensor noise",
-  "Tuned PID + daily ILC: −80 to −90 % on the official test week",
-  "Anti-windup makes the ILC safe under overload (−39 %, ideal sensors)",
-  "Every number re-run and audited",
-]);
-col(6.88, "We cannot claim", HEX.accent4, [
-  "The paper's −92 to −95 %",
-  "That SAC-IL beats good tuning",
-  "Any gain over the paper's PID under real sensor noise",
-  "A real-plant result (simulation, one benchmark)",
-  "Statistical significance (5 runs, 6 windows)",
-]);
-s.addNotes("Be clear about both columns. Every percentage is against our rebuilt PID, which matches the paper's PID on oxygen.");
-
-// ---------------------------------------------------------------- 14. next
-s = pres.addSlide({ masterName: "DARK_TITLE", sectionTitle: "Conclusion" });
-s.addText("Next: make the controller robust to real sensor noise", { placeholder: "title" });
-s.addText("1. Model-based filtering (Kalman filter or observer) instead of a simple filter\n2. Train the repaired MAACC with the official sensor models in the loop\n3. Report nominal and robust results side by side, as standard",
-  { placeholder: "body" });
-s.addNotes("Under the official sensor noise, nothing we built beats the paper's PID. That is the open problem and the next step.");
+// 12. conclusion
+s = content("Conclusions and limitations");
+bullets(s, [
+  "Tuned PID with a daily ILC: oxygen IAE reduced by 90, 89 and 80 % relative to the PID prior of MAACC, without a neural network and with the same aeration energy",
+  "MAACC with the published parameters remains equal to its PID prior; with replay and twin critics it reaches 85, 52 and 67 %",
+  "SAC-IL adds no further improvement to the proposed controller",
+  "Anti-windup reduces the error under actuator saturation by 39 %",
+  "Limitation: under the BSM1 sensor noise, no evaluated controller improves on the PID prior",
+  "Limitation: one benchmark, five training runs, six windows or nine noise runs per condition; no significance tests",
+], { x: 0.5, y: 1.4, w: 12.33, h: 5.4, fontSize: 18, paraSpaceAfter: 12 });
 
 (async () => {
-  const out = path.join(HERE, "Paper1_Architecture_Deck.pptx");
+  const out = path.join(__dirname, "Paper1_Deck.pptx");
   await pres.writeFile({ fileName: out });
   await applyTheme(out, THEME);
   console.log("wrote", out);
