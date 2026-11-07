@@ -37,7 +37,7 @@ def base():
     s2 = d.box(398, 238, 44, 44, "Σ", "msum")
     pl = d.box(500, 225, 140, 70, "BSM1", "m")
     act = d.box(170, 125, 120, 50, "Action net π<sub><i>i</i></sub>", "m")
-    itg = d.box(360, 125, 120, 50, "1 / (1 − <i>z</i><sup>−1</sup>)", "m")
+    itg = d.box(360, 125, 120, 50, "1 / (1 - <i>z</i><sup>-1</sup>)", "m")
     cr = d.box(170, 20, 120, 60, "Critic <i>Q<sub>i</sub></i>", "mdash")
     d.edge(s1, pid, "", "m", ex=(1, 0.5), en=(0, 0.5))
     d.edge(pid, s2, "<i>b<sub>i</sub></i>", "m", ex=(1, 0.5), en=(0, 0.5))
@@ -53,7 +53,7 @@ def base():
     d.line((700, 260), (90, 284), "", "m", pts=((700, 350), (90, 350)))
     dot(d, 700, 260)
     sign(d, 48, 236, "+")
-    sign(d, 96, 288, "−")
+    sign(d, 96, 288, "-")
     d.save("mono/base.drawio")
 
 
@@ -84,7 +84,7 @@ def proposed():
     d.edge(sen, flt, "", "m", ex=(0, 0.5), en=(1, 0.5))
     d.edge(flt, s1, "<i>y</i><sub>m</sub>", "m", ex=(0, 0.5), en=(0.5, 1), pts=((90, 370),))
     sign(d, 48, 236, "+")
-    sign(d, 96, 288, "−")
+    sign(d, 96, 288, "-")
     d.save("mono/proposed.drawio")
 
 
@@ -107,7 +107,7 @@ def plant():
     dot(d, 975, 275)
     for k, x in enumerate((447, 602, 757)):
         d.line((x, 280), (x, 232), "", "m" if k == 2 else "mdash")
-        d.box(x + 4, 248, 130, 26, ("<i>K<sub>L</sub>a</i><sub>5</sub> (manipulated)" if k == 2 else "<i>K<sub>L</sub>a</i> = 240 d<sup>−1</sup>"),
+        d.box(x + 4, 248, 130, 26, ("<i>K<sub>L</sub>a</i><sub>5</sub> (manipulated)" if k == 2 else "<i>K<sub>L</sub>a</i> = 240 d<sup>-1</sup>"),
               "mtxt", "align=left;fontSize=15;")
     d.box(240, 112, 105, 26, "<i>S</i><sub>NO,2</sub>", "m", "fontSize=15;")
     d.box(705, 112, 105, 26, "<i>S</i><sub>O,5</sub>", "m", "fontSize=15;")

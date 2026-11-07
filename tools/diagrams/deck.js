@@ -76,15 +76,15 @@ s.addNotes("In MAACC the action network output is integrated and added to the PI
 // 4. ILC algorithm
 s = content("Daily iterative learning control");
 text(s, "Profile update at the end of each day d (1920 slots of 45 s):", { x: 0.5, y: 1.35, w: 12.33, h: 0.4 });
-text(s, "f(d+1) = S_w [ f(d) + β · L_ℓ ( u_PID(d) − mean u_PID(d) ) ]", { x: 0.5, y: 1.85, w: 12.33, h: 0.5, fontSize: 20, align: "center", italic: true });
+text(s, "f(d+1) = S_w [ f(d) + β · L_ℓ ( u_PID(d) - mean u_PID(d) ) ]", { x: 0.5, y: 1.85, w: 12.33, h: 0.5, fontSize: 20, align: "center", italic: true });
 text(s, [
   "1:  for each control step k with slot j",
-  "2:    u_PID ← PID step, limited to [U_min − f(j), U_max − f(j)]",
+  "2:    u_PID ← PID step, limited to [U_min - f(j), U_max - f(j)]",
   "3:    u ← sat(u_PID + f(j))",
   "4:    record g(j) ← u_PID;  o(j) ← 1 if u is not saturated",
   "5:    if j = 1920 and at least half of the slots are unsaturated",
-  "6:        δ(j) ← o(j)(g(j) − mean g);   f⁺ ← S_w[f + β L_ℓ δ]",
-  "7:        PID state ← PID state − (f⁺(1) − f(1));   f ← f⁺",
+  "6:        δ(j) ← o(j)(g(j) - mean g);   f+ ← S_w[f + β L_ℓ δ]",
+  "7:        PID state ← PID state - (f+(1) - f(1));   f ← f+",
 ].join("\n"), { x: 0.5, y: 2.6, w: 8.6, h: 3.4, fontSize: 12.5, fontFace: "Courier New" });
 bullets(s, ["L_ℓ: shift earlier by ℓ = 4 slots (3 min)", "S_w: circular moving average, w = 30 slots", "β = 1 (tuned PID)",
   "Line 2 and the saturation test: anti-windup", "Line 7: bumpless update at midnight"], { x: 9.3, y: 2.6, w: 3.53, h: 3.4, fontSize: 14 });
@@ -107,26 +107,26 @@ s = content("Training of the learned corrections");
 s.addImage(fit("training", 0.5, 1.4, 7.4, 4.3));
 bullets(s, [
   "Five independent training runs per method, five episodes of seven days",
-  "rMAACC: oxygen IAE 0.0115 to 0.0013–0.0023 (retained policies)",
+  "rMAACC: oxygen IAE 0.0115 to 0.0013 to 0.0023 (retained policies)",
   "SAC-IL: stays near its imitation start (about 0.0020); one run diverged in episodes 3 and 4",
   "A complete retraining from scratch reproduced all ten training curves to five decimal places",
 ], { x: 8.2, y: 1.5, w: 4.63, h: 5.0, fontSize: 15 });
 caption(s, "Oxygen IAE on the training period after each episode. Dashed line: PID prior.", 5.9);
 
 // 7. test period table
-s = content("Test period: change in oxygen IAE relative to the PID prior");
+s = content("Test period: reduction of oxygen IAE relative to the PID prior (%)");
 table(s, [
   ["Controller", "Dry", "Rain", "Storm", "Actuator noise", "KLa,5 movement"],
   ["PID prior (IAE)", "0.0113", "0.0100", "0.0120", "0.0249", "501"],
   ["MAACC [base paper]", "0 %", "0 %", "0 %", "0 %", "501"],
-  ["rMAACC", "−85 %", "−52 %", "−67 %", "−13 %", "1835"],
-  ["PID×3 + ILC + SAC-IL", "−87 %", "−82 %", "−74 %", "−26 %", "982"],
-  ["Tuned PID", "−85 %", "−85 %", "−77 %", "−22 %", "852"],
-  ["Tuned PID + ILC (proposed)", "−90 %", "−89 %", "−80 %", "−23 %", "852"],
-  ["Tuned PID + ILC + SAC-IL", "−90 %", "−88 %", "−80 %", "−22 %", "874"],
-  ["Noise-robust variant (proposed)", "−83 %", "−80 %", "−73 %", "+10 %", "522"],
+  ["rMAACC", "85 %", "52 %", "67 %", "13 %", "1835"],
+  ["PID×3 + ILC + SAC-IL", "87 %", "82 %", "74 %", "26 %", "982"],
+  ["Tuned PID", "85 %", "85 %", "77 %", "22 %", "852"],
+  ["Tuned PID + ILC (proposed)", "90 %", "89 %", "80 %", "23 %", "852"],
+  ["Tuned PID + ILC + SAC-IL", "90 %", "88 %", "80 %", "22 %", "874"],
+  ["Noise-robust variant (proposed)", "83 %", "80 %", "73 %", "+10 %", "522"],
 ], { x: 0.5, y: 1.4, w: 12.33, colW: [3.9, 1.5, 1.5, 1.5, 2.0, 1.93], rowH: 0.48, rules: [3] });
-caption(s, "Days 7 to 14, excluded from tuning and training. Learned corrections: mean of five training runs. Aeration energy (3690 kWh/d) and effluent ammonium are equal for all controllers.", 6.0);
+caption(s, "Entries marked + are increases. Days 7 to 14, excluded from tuning and training. Learned corrections: mean of five training runs. Aeration energy (3690 kWh/d) and effluent ammonium are equal for all controllers.", 6.0);
 
 // 8. trajectories
 s = content("Trajectories of S_O,5 and S_NO,2 over 14 days");
@@ -145,7 +145,7 @@ s = content("Control inputs and actuator noise");
 s.addImage(fit("inputs", 0.5, 1.35, 5.9, 4.9));
 s.addImage(fit("noise", 6.93, 1.35, 5.9, 4.9));
 text(s, "(a) KLa,5 and Qa of the proposed controller, three weathers", { x: 0.5, y: 6.35, w: 5.9, h: 0.4, fontSize: 13, align: "center", color: GREY });
-text(s, "(b) Dry weather with actuator noise (3 % of each upper bound); proposed: −23 % oxygen IAE", { x: 6.93, y: 6.35, w: 5.9, h: 0.5, fontSize: 13, align: "center", color: GREY });
+text(s, "(b) Dry weather with actuator noise (3 % of each upper bound); proposed: oxygen IAE 23 % lower", { x: 6.93, y: 6.35, w: 5.9, h: 0.5, fontSize: 13, align: "center", color: GREY });
 
 // 10. mechanism
 s = content("Mechanism: a small correction at the load increase");
@@ -153,24 +153,24 @@ s.addImage(fit("inside", 0.5, 1.35, 6.0, 5.6));
 bullets(s, [
   "Two days of the dry test period",
   "(a) PID prior (dashed) against proposed (solid)",
-  "(b) The aeration differs by at most 6 d⁻¹, applied at the morning load increase",
+  "(b) The aeration differs by at most 6 1/d, applied at the morning load increase",
   "Mean oxygen error over the two days: 0.0112 (PID prior) and 0.0010 mg/L (proposed)",
 ], { x: 7.0, y: 1.6, w: 5.83, h: 5.0, fontSize: 16 });
 
 // 11. additional conditions
-s = content("Additional conditions: change in oxygen IAE relative to the PID prior");
+s = content("Additional conditions: reduction of oxygen IAE relative to the PID prior (%)");
 table(s, [
   ["Controller", "H4 new influent", "H5 saturation", "H6 sensors", "H7 influent + sensors"],
   ["PID prior (IAE)", "0.0105", "0.0815", "0.261", "0.178"],
-  ["rMAACC", "−73 %", "−8 %", "+1 % (5/45)", "+6 % (1/30)"],
-  ["Tuned PID + ILC", "−89 %", "+48 %", "+46 %", "+50 %"],
-  ["Tuned PID + ILC with anti-windup", "−89 %", "−10 %", "–", "+84 % (5/6)"],
-  ["Noise-robust variant", "−83 %", "−10 %", "+3 %", "+24 %"],
+  ["rMAACC", "73 %", "8 %", "+1 % (5/45)", "+6 % (1/30)"],
+  ["Tuned PID + ILC", "89 %", "+48 %", "+46 %", "+50 %"],
+  ["Tuned PID + ILC with anti-windup", "89 %", "10 %", "n.c.", "+84 % (5/6)"],
+  ["Noise-robust variant", "83 %", "10 %", "+3 %", "+24 %"],
 ], { x: 0.5, y: 1.4, w: 12.33, colW: [4.13, 2.0, 2.0, 2.0, 2.2], rowH: 0.5 });
 bullets(s, [
   "H4: BSM2 influent windows after a simplified primary clarifier; H5: without it (actuator saturation)",
   "H6: BSM1 sensor models (noise 0.25 mg/L) on the BSM1 files; H7: H4 with the sensor models",
-  "In brackets: runs terminated (oxygen outside 0.3 to 4 mg/L); –: no completed run",
+  "Entries marked + are increases. In brackets: runs terminated (oxygen outside 0.3 to 4 mg/L); n.c.: no completed run",
   "Under measurement noise, none of the evaluated controllers improved on the PID prior",
 ], { x: 0.5, y: 4.75, w: 12.33, h: 2.0, fontSize: 14 });
 
@@ -193,7 +193,7 @@ if (process.env.COMPARE === "1") {
     ["", "PID / MAACC, this work", "1.18e-2", "0.141", "1.04e-2", "0.514"],
     ["", "Proposed", "1.77e-3", "0.140", "5.65e-3", "0.508"],
   ], { x: 0.5, y: 1.3, w: 12.33, colW: [1.3, 3.4, 1.9, 1.9, 1.9, 1.93], rowH: 0.36, fontSize: 12, rules: [4, 8] });
-  caption(s, "Published rows: Table II of the base paper. With the published settings, MAACC stays at its PID in all 80 runs here, so it shares the PID row. Oxygen IAE against each paper's own PID: base paper claims −95 / −95 / −92 %; proposed −90 / −89 / −85 % (14 days).", 6.25);
+  caption(s, "Published rows: Table II of the base paper. With the published settings, MAACC stays at its PID in all 80 runs here, so it shares the PID row. Reduction of oxygen IAE against each paper's own PID: base paper claims 95, 95 and 92 %; proposed 90, 89 and 85 % (14 days).", 6.25);
 
   s = content("Architecture: base paper Fig. 2 and this work");
   s.addImage(fit("cmp/b_fig2", 0.5, 1.3, 12.33, 2.9));

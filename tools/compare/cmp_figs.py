@@ -8,7 +8,7 @@ ROOT = "/home/user/water_resource"
 OUT = sys.argv[1]
 plt.rcParams.update({"font.family": "serif", "font.serif": ["Liberation Serif"], "mathtext.fontset": "stix",
     "font.size": 9, "axes.grid": True, "grid.color": "#d9d9d9", "grid.linewidth": 0.5, "axes.axisbelow": True,
-    "axes.spines.top": False, "axes.spines.right": False, "legend.frameon": False, "savefig.facecolor": "white"})
+    "axes.spines.top": False, "axes.spines.right": False, "legend.frameon": False, "savefig.facecolor": "white", "axes.unicode_minus": False})
 T = json.load(open(f"{ROOT}/results/traces_paper1_study.json"))
 def tr(k):
     s, u = np.array(T[k]["s"]), np.array(T[k]["u"]); return np.arange(len(s)) * 14 / len(s), s, u
@@ -27,7 +27,7 @@ for w in ("dry", "rain", "storm"):
     print(w, "MAACC == PID max |diff|", float(np.abs(sm - sp).max()))
 t, _, ui = tr("PIDtuned+ILC|dry|clean"); _, _, un = tr("PIDtuned+ILC|dry|noise")
 fig, axs = plt.subplots(2, 1, figsize=(3.5, 3.3), sharex=True)
-for c, (lab, sc, lim) in enumerate(((r"$K_La_{,5}$ (d$^{-1}$)", 1, 300), (r"$Q_a$ ($10^4$ m$^3$/d)", 1e4, 10))):
+for c, (lab, sc, lim) in enumerate(((r"$K_La_{,5}$ (1/d)", 1, 300), (r"$Q_a$ ($10^4$ m$^3$/d)", 1e4, 10))):
     axs[c].plot(t, un[:, c] / sc, color="#9a9a9a", lw=0.4, label="Input with noise")
     axs[c].plot(t, ui[:, c] / sc, color="black", lw=0.7, label="Ideal input")
     axs[c].set_ylabel(lab); axs[c].set_ylim(0, lim)

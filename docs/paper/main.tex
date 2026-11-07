@@ -1,7 +1,12 @@
 % Compile with pdfLaTeX. All figures are in figures/.
 \documentclass[journal]{IEEEtran}
 
-\usepackage{cite}
+\usepackage[nocompress]{cite}
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd{\abstract}{---}{:\ }{}{}
+\patchcmd{\IEEEkeywords}{---}{:\ }{}{}
+\makeatother
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -12,6 +17,10 @@
 \usepackage[hidelinks]{hyperref}
 
 \graphicspath{{figures/}}
+\newcommand{\mn}{\mathbin{\text{-}}}
+\newcommand{\hy}{\text{-}}
+\newcommand{\nc}{n.c.}
+\newcommand{\nev}{n.e.}
 
 \begin{document}
 
@@ -137,7 +146,7 @@ The plant (Fig.~\ref{fig:plant}) consists of two anoxic tanks of
 settler, simulated with the BSM1 implementation of \texttt{bsm2-python}
 0.0.16 \cite{bsm2python}. As in \cite{wang2026maacc}, two loops are closed
 with a sampling period of 45\,s: the oxygen concentration in tank~5,
-$S_{O,5}$, is controlled to 2\,mg/L through $K_La_{,5}\in[0,240]$\,d$^{-1}$,
+$S_{O,5}$, is controlled to 2\,mg/L through $K_La_{,5}\in[0,240]$\,d\textsuperscript{-1},
 and the nitrate concentration in tank~2, $S_{NO,2}$, to 1\,mg/L through
 $Q_a\in[0,92\,230]$\,m$^3$/d. The set points are printed as $[1,2]$ in
 \cite{wang2026maacc}; the published figures and PID errors correspond to the
@@ -145,7 +154,7 @@ standard values $[2,1]$, which are used here.
 
 The PID prior of \cite{wang2026maacc} is incremental:
 \begin{equation}
-\Delta u_k = K_p(e_k-e_{k-1}) + K_i e_k + K_d(e_k-2e_{k-1}+e_{k-2}),
+\Delta u_k = K_p(e_k\mn e_{k\mn 1}) + K_i e_k + K_d(e_k\mn 2e_{k\mn 1}+e_{k\mn 2}),
 \label{eq:pid}
 \end{equation}
 with $K_p=\mathrm{diag}\{100,10^5\}$, $K_i=\mathrm{diag}\{20,3\times10^4\}$
@@ -157,7 +166,7 @@ Performance is measured, following \cite{wang2026maacc}, by
 \label{eq:iae}
 \end{equation}
 computed from the true concentrations. The aeration movement
-$\sum_k|K_La_{,5}(k)-K_La_{,5}(k-1)|$ per day, the aeration energy and the
+$\sum_k|K_La_{,5}(k)\mn K_La_{,5}(k\mn 1)|$ per day, the aeration energy and the
 effluent ammonium are also reported. A run is terminated if $S_{O,5}$ leaves
 the range 0.3 to 4\,mg/L.
 
@@ -235,7 +244,7 @@ Table~\ref{tab:repro} shows that the PID results agree with
 approximately half of the published value (0.0064 against 0.0145 in dry
 weather). MAACC with the published parameters remained within 1\,\% of the
 PID in all 80 runs: with the published initial weights, the gradient
-reaching the action networks is of the order of $10^{-4}$, and with learning
+reaching the action networks is of the order of $10^{\hy4}$, and with learning
 rates of 0.01 and 0.005 the networks change little over 14 days. Twelve
 alternative initializations either remained at the PID or diverged.
 
@@ -262,7 +271,7 @@ the day, the applied aeration is
 $u_k=\mathrm{sat}(u^{\mathrm{PID}}_k+f_d(j_k))$, and at the end of day $d$
 the feedforward profile is updated as
 \begin{equation}
-f_{d+1}=\mathcal{S}_w\!\left[f_d+\beta\,\mathcal{L}_\ell\bigl(u^{\mathrm{PID}}_d-\bar u^{\mathrm{PID}}_d\bigr)\right],
+f_{d+1}=\mathcal{S}_w\!\left[f_d+\beta\,\mathcal{L}_\ell\bigl(u^{\mathrm{PID}}_d\mn \bar u^{\mathrm{PID}}_d\bigr)\right],
 \label{eq:ilc}
 \end{equation}
 where $\mathcal{L}_\ell$ advances the recorded profile by $\ell$ slots,
@@ -293,13 +302,13 @@ PID$\times$3.
 \begin{algorithmic}[1]
 \Require $\beta$, $\ell$, $w$; $f(j)\gets0$ for all slots $j$
 \For{each control step $k$ with slot $j$}
-  \State $u^{\mathrm{PID}}_k\gets$ \eqref{eq:pid} limited to $[U_{\min}-f(j),U_{\max}-f(j)]$
+  \State $u^{\mathrm{PID}}_k\gets$ \eqref{eq:pid} limited to $[U_{\min}\mn f(j),U_{\max}\mn f(j)]$
   \State $u_k\gets\mathrm{sat}(u^{\mathrm{PID}}_k+f(j))$
   \State $g(j)\gets u^{\mathrm{PID}}_k$; $o(j)\gets 1$ if $u_k$ is not saturated, else $0$
   \If{$j=1920$ and $\sum_j o(j)\ge 960$}
-    \State $\delta(j)\gets o(j)\,\bigl(g(j)-\bar g\bigr)$, $\bar g$ the mean over $o(j)=1$
+    \State $\delta(j)\gets o(j)\,\bigl(g(j)\mn \bar g\bigr)$, $\bar g$ the mean over $o(j)=1$
     \State $f^{+}\gets\mathcal{S}_w[f+\beta\,\mathcal{L}_\ell\,\delta]$
-    \State PID state $\gets$ PID state $-(f^{+}(1)-f(1))$
+    \State PID state $\gets$ PID state $\mn (f^{+}(1)\mn f(1))$
     \State $f\gets f^{+}$
   \EndIf
 \EndFor
@@ -332,7 +341,7 @@ runs each); Table~\ref{tab:train} lists their settings.
   training starts with behaviour cloning of the PID with ILC, and an
   imitation term with a lower bound is kept in the actor loss
   \cite{fujimoto2021td3bc}. The reward is
-  $r=-(100|e_O|+50|e_N|)-0.05\|a\|^2$. The learned part is disabled when an
+  $r=\mn (100|e_O|+50|e_N|)\mn 0.05\|a\|^2$. The learned part is disabled when an
   input leaves its training range by more than 10\,\%.
 \end{itemize}
 
@@ -347,10 +356,10 @@ runs each); Table~\ref{tab:train} lists their settings.
  & SAC-IL & rMAACC\\
 \midrule
 Discount factor & 0.97 & 0.97\\
-Learning rate & $3\times10^{-4}$ & $3\times10^{-4}$\\
+Learning rate & $3\times10^{\hy4}$ & $3\times10^{\hy4}$\\
 Batch; buffer size & 256; $4\times10^5$ & 256; $4\times10^5$\\
 Target update rate & 0.005 & 0.005\\
-Bound per step & 6\,d$^{-1}$ & 6\,d$^{-1}$; 3000\,m$^3$/d\\
+Bound per step & 6\,d\textsuperscript{-1} & 6\,d\textsuperscript{-1}; 3000\,m$^3$/d\\
 Initialization & behaviour cloning & zero last layer, one day of exploration\\
 Exploration & entropy, $\alpha_0=0.005$ & Gaussian, std.\ 0.1\\
 Imitation weight & 2 decaying to 0.5 & none\\
@@ -420,9 +429,10 @@ training curves of all ten runs to five decimal places.
 
 \begin{table*}[!t]
 \centering
-\caption{Test period (days 7 to 14): change in oxygen IAE relative to the PID
-prior. First row: absolute IAE of the PID prior. Actuator noise: dry weather,
-14 days. Movement: $K_La_{,5}$ movement in d$^{-1}$ per day, dry weather.
+\caption{Test period (days 7 to 14): reduction of the oxygen IAE relative to
+the PID prior in percent; entries marked + are increases. First row: absolute
+IAE of the PID prior. Actuator noise: dry weather,
+14 days. Movement: $K_La_{,5}$ movement in d\textsuperscript{-1} per day, dry weather.
 Learned corrections: mean of five training runs.}
 \label{tab:testweek}
 \begin{tabular}{lccccc}
@@ -430,17 +440,17 @@ Learned corrections: mean of five training runs.}
 Controller & Dry & Rain & Storm & Actuator noise & Movement\\
 \midrule
 PID prior \cite{wang2026maacc} (IAE) & 0.0113 & 0.0100 & 0.0120 & 0.0249 & 501\\
-MAACC \cite{wang2026maacc} & 0\,\% & 0\,\% & 0\,\% & 0\,\% & 501\\
-rMAACC & $-85$\,\% & $-52$\,\% & $-67$\,\% & $-13$\,\% & 1835\\
+MAACC \cite{wang2026maacc} & 0 & 0 & 0 & 0 & 501\\
+rMAACC & 85 & 52 & 67 & 13 & 1835\\
 \midrule
-PID$\times$3 & $-66$\,\% & $-67$\,\% & $-60$\,\% & $-26$\,\% & 966\\
-PID$\times$3 + ILC & $-85$\,\% & $-82$\,\% & $-72$\,\% & $-28$\,\% & 961\\
-PID$\times$3 + ILC + SAC-IL & $-87$\,\% & $-82$\,\% & $-74$\,\% & $-26$\,\% & 982\\
+PID$\times$3 & 66 & 67 & 60 & 26 & 966\\
+PID$\times$3 + ILC & 85 & 82 & 72 & 28 & 961\\
+PID$\times$3 + ILC + SAC-IL & 87 & 82 & 74 & 26 & 982\\
 \midrule
-Tuned PID & $-85$\,\% & $-85$\,\% & $-77$\,\% & $-22$\,\% & 852\\
-Tuned PID + ILC (proposed) & $-90$\,\% & $-89$\,\% & $-80$\,\% & $-23$\,\% & 852\\
-Tuned PID + ILC + SAC-IL & $-90$\,\% & $-88$\,\% & $-80$\,\% & $-22$\,\% & 874\\
-Noise-robust variant (proposed) & $-83$\,\% & $-80$\,\% & $-73$\,\% & $+10$\,\% & 522\\
+Tuned PID & 85 & 85 & 77 & 22 & 852\\
+Tuned PID + ILC (proposed) & 90 & 89 & 80 & 23 & 852\\
+Tuned PID + ILC + SAC-IL & 90 & 88 & 80 & 22 & 874\\
+Noise-robust variant (proposed) & 83 & 80 & 73 & +10 & 522\\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -511,16 +521,17 @@ reduces the oxygen IAE by 23\,\%.
 Fig.~\ref{fig:inside} shows the mechanism. The PID prior lets the oxygen
 concentration fall at each morning load increase, whereas the proposed
 controller holds it at the set point. The required change in aeration is
-small (at most 6\,d$^{-1}$) and occurs at the load increase.
+small (at most 6\,d\textsuperscript{-1}) and occurs at the load increase.
 
 \subsection{Additional Conditions}
 
 \begin{table*}[!t]
 \centering
-\caption{Additional conditions, days 7 to 14: change in oxygen IAE relative to
-the PID prior over the runs completed by both. First row: absolute IAE of the
-PID prior. Number of terminated runs in parentheses where nonzero; --: no
-completed run or not evaluated.}
+\caption{Additional conditions, days 7 to 14: reduction of the oxygen IAE
+relative to the PID prior in percent, over the runs completed by both; entries
+marked + are increases. First row: absolute IAE of the PID prior. Terminated
+runs in parentheses where nonzero. n.c.: no completed run; n.e.: not
+evaluated.}
 \label{tab:heldout}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{lccccccc}
@@ -528,13 +539,13 @@ completed run or not evaluated.}
 Controller & H1 & H2 & H3 & H4 & H5 & H6 & H7\\
 \midrule
 PID prior (IAE) & 0.106 & 0.255 (2/9) & 0.0319 & 0.0105 & 0.0815 & 0.261 & 0.178\\
-MAACC & -- & -- & -- & $+43$\,\% (1/6) & $-59$\,\% (4/6) & -- & --\\
-rMAACC & $-6$\,\% & $+1$\,\% (2/45) & $-86$\,\% & $-73$\,\% & $-8$\,\% & $+1$\,\% (5/45) & $+6$\,\% (1/30)\\
-PID$\times$3 + ILC + SAC-IL & $+52$\,\% & -- & $-56$\,\% & $-77$\,\% & $+33$\,\% & -- & $+144$\,\% (25/30)\\
-Tuned PID & $-7$\,\% & $+25$\,\% (8/9) & $-74$\,\% & $-85$\,\% & $-10$\,\% & -- & $+84$\,\% (5/6)\\
-Tuned PID + ILC & $+76$\,\% & $+46$\,\% & $-73$\,\% & $-89$\,\% & $+48$\,\% & $+46$\,\% & $+50$\,\%\\
-Tuned PID + ILC with anti-windup & -- & -- & -- & $-89$\,\% & $-10$\,\% & -- & $+84$\,\% (5/6)\\
-Noise-robust variant & -- & -- & -- & $-83$\,\% & $-10$\,\% & $+3$\,\% & $+24$\,\%\\
+MAACC & \nc & \nc & \nc & +43 (1/6) & 59 (4/6) & \nc & \nc\\
+rMAACC & 6 & +1 (2/45) & 86 & 73 & 8 & +1 (5/45) & +6 (1/30)\\
+PID$\times$3 + ILC + SAC-IL & +52 & \nc & 56 & 77 & +33 & \nc & +144 (25/30)\\
+Tuned PID & 7 & +25 (8/9) & 74 & 85 & 10 & \nc & +84 (5/6)\\
+Tuned PID + ILC & +76 & +46 & 73 & 89 & +48 & +46 & +50\\
+Tuned PID + ILC with anti-windup & \nev & \nev & \nev & 89 & 10 & \nc & +84 (5/6)\\
+Noise-robust variant & \nev & \nev & \nev & 83 & 10 & +3 & +24\\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -565,7 +576,7 @@ Table~\ref{tab:heldout} gives the results for the additional conditions.
 %=====================================================================
 
 \emph{Learning in MAACC.} An adaptive critic updated once per step from that
-step alone, with a gradient of the order of $10^{-4}$ and learning rates of
+step alone, with a gradient of the order of $10^{\hy4}$ and learning rates of
 0.01 and 0.005, does not move appreciably from its initial policy within
 26\,879 steps. Initialized from the PID, it therefore remains at the PID.
 With data reuse and stable targets, the same architecture improves the
@@ -636,13 +647,13 @@ Informat.}, 2026, doi: 10.1109/TII.2026.3659924.
 \bibitem{zhao2025ioql}
 M.~Zhao, D.~Wang, J.~Ren, and J.~Qiao, ``Integrated online Q-learning design
 for wastewater treatment processes,'' \emph{IEEE Trans. Ind. Informat.},
-vol.~21, no.~2, pp.~1833--1842, 2025, doi: 10.1109/TII.2024.3488790.
+vol.~21, no.~2, pp.~1833-1842, 2025, doi: 10.1109/TII.2024.3488790.
 
 \bibitem{du2023do}
 S.~L. Du, P.~X. Chen, H.~G. Han, and J.~F. Qiao, ``Dissolved oxygen
 concentration control in wastewater treatment process based on reinforcement
 learning,'' \emph{Sci. China Technol. Sci.}, vol.~66, no.~9,
-pp.~2549--2560, 2023, doi: 10.1007/s11431-022-2403-8.
+pp.~2549-2560, 2023, doi: 10.1007/s11431-022-2403-8.
 
 \bibitem{bsm1files}
 davidfernand, \emph{BSM1\_in\_Python}, GitHub repository,
@@ -667,12 +678,12 @@ arXiv:1910.01465, 2019.
 \bibitem{haarnoja2018sac}
 T.~Haarnoja, A.~Zhou, P.~Abbeel, and S.~Levine, ``Soft actor-critic:
 Off-policy maximum entropy deep reinforcement learning with a stochastic
-actor,'' in \emph{Proc. 35th Int. Conf. Mach. Learn.}, 2018, pp.~1861--1870.
+actor,'' in \emph{Proc. 35th Int. Conf. Mach. Learn.}, 2018, pp.~1861-1870.
 
 \bibitem{fujimoto2018td3}
 S.~Fujimoto, H.~van Hoof, and D.~Meger, ``Addressing function approximation
 error in actor-critic methods,'' in \emph{Proc. 35th Int. Conf. Mach.
-Learn.}, 2018, pp.~1587--1596.
+Learn.}, 2018, pp.~1587-1596.
 
 \bibitem{henderson2018matters}
 P.~Henderson, R.~Islam, P.~Bachman, J.~Pineau, D.~Precup, and D.~Meger,
@@ -693,7 +704,7 @@ K.~V. Gernaey, U.~Jeppsson, P.~A. Vanrolleghem, and J.~B. Copp, Eds.,
 \bibitem{lewis2009adp}
 F.~L. Lewis and D.~Vrabie, ``Reinforcement learning and adaptive dynamic
 programming for feedback control,'' \emph{IEEE Circuits Syst. Mag.},
-vol.~9, no.~3, pp.~32--50, 2009.
+vol.~9, no.~3, pp.~32-50, 2009.
 
 \bibitem{alex2008bsm1}
 J.~Alex \emph{et al.}, ``Benchmark simulation model no.~1 (BSM1),'' Dept.
@@ -702,12 +713,12 @@ Ind. Elect. Eng. Autom., Lund Univ., Lund, Sweden, Tech. Rep., 2008.
 \bibitem{jeppsson2007bsm2}
 U.~Jeppsson \emph{et al.}, ``Benchmark simulation model no~2: General
 protocol and exploratory case studies,'' \emph{Water Sci. Technol.},
-vol.~56, no.~8, pp.~67--78, 2007.
+vol.~56, no.~8, pp.~67-78, 2007.
 
 \bibitem{bristow2006ilc}
 D.~A. Bristow, M.~Tharayil, and A.~G. Alleyne, ``A survey of iterative
 learning control,'' \emph{IEEE Control Syst. Mag.}, vol.~26, no.~3,
-pp.~96--114, 2006.
+pp.~96-114, 2006.
 
 \bibitem{astrom2006pid}
 K.~J. {\AA}str{\"o}m and T.~H{\"a}gglund, \emph{Advanced PID Control}.
@@ -721,11 +732,11 @@ No.~9). London, U.K.: IWA Publishing, 2000.
 \bibitem{gomi1993fel}
 H.~Gomi and M.~Kawato, ``Neural network control for a closed-loop system
 using feedback-error-learning,'' \emph{Neural Netw.}, vol.~6, no.~7,
-pp.~933--946, 1993.
+pp.~933-946, 1993.
 
 \bibitem{arimoto1984ilc}
 S.~Arimoto, S.~Kawamura, and F.~Miyazaki, ``Bettering operation of robots
-by learning,'' \emph{J. Robot. Syst.}, vol.~1, no.~2, pp.~123--140, 1984.
+by learning,'' \emph{J. Robot. Syst.}, vol.~1, no.~2, pp.~123-140, 1984.
 
 \end{thebibliography}
 

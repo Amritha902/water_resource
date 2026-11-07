@@ -16,6 +16,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.ticker  # noqa: E402
 import numpy as np  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,6 +28,7 @@ plt.rcParams.update({
     "axes.grid": True, "grid.color": "#d9d9d9", "grid.linewidth": 0.5, "axes.axisbelow": True,
     "axes.spines.top": False, "axes.spines.right": False, "legend.frameon": False,
     "figure.facecolor": "white", "axes.facecolor": "white", "savefig.facecolor": "white",
+    "axes.unicode_minus": False,
 })
 
 
@@ -45,7 +47,7 @@ def inside():
     ax1.text(0.01, 0.97, "(a)", transform=ax1.transAxes, va="top")
     ax2.axhline(0, color="black", lw=0.5)
     ax2.plot(t[m], ub[m] - ua[m], color="black", lw=0.8)
-    ax2.set_ylabel(r"$\Delta K_La_{,5}$ (d$^{-1}$)")
+    ax2.set_ylabel(r"$\Delta K_La_{,5}$ (1/d)")
     ax2.set_xlabel("Time (d)")
     ax2.set_xlim(9, 11)
     ax2.text(0.01, 0.97, "(b)", transform=ax2.transAxes, va="top")
@@ -71,6 +73,8 @@ def training(curves: Path):
         ax.set_xlabel("Episode")
         ax.set_xticks(range(0, 6))
         ax.set_yscale("log")
+        ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
+        ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
     for ax in axs:
         ax.axhline(pid, color="#7f7f7f", lw=0.8, ls=(0, (4, 2)))
     axs[0].set_ylabel("Oxygen IAE, training")
@@ -117,7 +121,7 @@ def inputs():
         t, _, u = _tr(T, f"PIDtuned+ILC|{w}|clean")
         axs[0].plot(t, u[:, 0], color=col, lw=lw, label=w.capitalize())
         axs[1].plot(t, u[:, 1] / 1e4, color=col, lw=lw)
-    axs[0].set_ylabel(r"$K_La_{,5}$ (d$^{-1}$)")
+    axs[0].set_ylabel(r"$K_La_{,5}$ (1/d)")
     axs[1].set_ylabel(r"$Q_a$ ($10^4$ m$^3$/d)")
     axs[0].set_ylim(0, 260)
     axs[1].set_ylim(0, 10)
