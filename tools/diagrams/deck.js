@@ -14,7 +14,7 @@ const THEME = {
 const pres = new pptxgen();
 pres.layout = "LAYOUT_WIDE";
 pres.title = "Daily ILC with a tuned PID prior for dissolved oxygen control in BSM1";
-pres.author = "Amritha";
+pres.author = "Amritha, Soumya Ranjan Mahapatro";
 const INK = "000000", GREY = "595959", RULE = "BFBFBF", HEAD = "F2F2F2";
 const FONT = "Times New Roman";
 
@@ -51,7 +51,7 @@ let s = pres.addSlide({ background: { color: "FFFFFF" } });
 text(s, "Daily Iterative Learning Control With a Tuned PID Prior for Dissolved Oxygen Control in BSM1: Comparison With Multiagent Adaptive Critic Control",
   { x: 0.8, y: 1.8, w: 11.7, h: 2.2, fontSize: 32, bold: true, valign: "bottom" });
 s.addShape(pres.shapes.LINE, { x: 0.8, y: 4.2, w: 11.7, h: 0, line: { color: INK, width: 1 } });
-text(s, "Amritha\nVellore Institute of Technology, Chennai", { x: 0.8, y: 4.4, w: 11.7, h: 1.0, fontSize: 18, color: GREY });
+text(s, "Amritha and Dr. Soumya Ranjan Mahapatro\nVellore Institute of Technology, Chennai", { x: 0.8, y: 4.4, w: 11.7, h: 1.0, fontSize: 18, color: GREY });
 
 // 2. base paper and plant
 s = content("Base paper and control problem");
