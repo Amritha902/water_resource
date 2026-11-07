@@ -29,10 +29,12 @@ pres.defineSlideMaster({
 });
 
 const content = (t) => { const s = pres.addSlide({ masterName: "CONTENT" }); s.addText(t, { placeholder: "title" }); return s; };
+const CMP = "/tmp/claude-0/-home-user-gan-driver/a50d7365-fe82-52fd-bebb-f039d7ffe97e/scratchpad/cmp/w/fig";
 function fit(name, x, y, w, h) {
   const [pw, ph] = SIZES[name]; let W = w, H = w * ph / pw;
   if (H > h) { H = h; W = h * pw / ph; }
-  return { path: path.join(FIG, name + ".png"), x: x + (w - W) / 2, y, w: W, h: H };
+  const file = name.startsWith("cmp/") ? path.join(CMP, name.slice(4) + ".png") : path.join(FIG, name + ".png");
+  return { path: file, x: x + (w - W) / 2, y, w: W, h: H };
 }
 const text = (s, t, o) => s.addText(t, { fontFace: FONT, color: INK, isTextBox: true, margin: 0, valign: "top", fontSize: 16, ...o });
 const bullets = (s, items, o) => text(s, items.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < items.length - 1 } })),
@@ -172,6 +174,49 @@ bullets(s, [
   "Under measurement noise, none of the evaluated controllers improved on the PID prior",
 ], { x: 0.5, y: 4.75, w: 12.33, h: 2.0, fontSize: 14 });
 
+
+// ---------------------------------------------------------------- comparison with the base paper (local copy only)
+if (process.env.COMPARE === "1") {
+  s = content("Base paper and this work: 14-day results");
+  table(s, [
+    ["Weather", "Controller", "S_O,5 IAE", "S_O,5 DEVmax", "S_NO,2 IAE", "S_NO,2 DEVmax"],
+    ["Dry", "MAACC, published", "5.27e-4", "0.0092", "3.70e-3", "0.0299"],
+    ["", "PID, published", "1.14e-2", "0.0871", "1.45e-2", "0.0882"],
+    ["", "PID / MAACC, this work", "1.14e-2", "0.102", "6.35e-3", "0.0575"],
+    ["", "Proposed", "1.13e-3", "0.0133", "1.71e-3", "0.0262"],
+    ["Rain", "MAACC, published", "5.09e-4", "0.0098", "6.00e-3", "0.167"],
+    ["", "PID, published", "9.80e-3", "0.0822", "2.04e-2", "0.190"],
+    ["", "PID / MAACC, this work", "1.08e-2", "0.102", "1.07e-2", "0.483"],
+    ["", "Proposed", "1.15e-3", "0.0133", "4.95e-3", "0.479"],
+    ["Storm", "MAACC, published", "9.47e-4", "0.0712", "4.80e-3", "0.123"],
+    ["", "PID, published", "1.17e-2", "0.0916", "1.96e-2", "0.158"],
+    ["", "PID / MAACC, this work", "1.18e-2", "0.141", "1.04e-2", "0.514"],
+    ["", "Proposed", "1.77e-3", "0.140", "5.65e-3", "0.508"],
+  ], { x: 0.5, y: 1.3, w: 12.33, colW: [1.3, 3.4, 1.9, 1.9, 1.9, 1.93], rowH: 0.36, fontSize: 12, rules: [4, 8] });
+  caption(s, "Published rows: Table II of the base paper. With the published settings, MAACC stays at its PID in all 80 runs here, so it shares the PID row. Oxygen IAE against each paper's own PID: base paper claims −95 / −95 / −92 %; proposed −90 / −89 / −85 % (14 days).", 6.25);
+
+  s = content("Architecture: base paper Fig. 2 and this work");
+  s.addImage(fit("cmp/b_fig2", 0.5, 1.3, 12.33, 2.9));
+  s.addImage(fit("cmp/o_base", 0.5, 4.35, 5.9, 2.5));
+  s.addImage(fit("cmp/o_proposed", 6.93, 4.35, 5.9, 2.5));
+  text(s, "Top: base paper. Bottom: MAACC as implemented here (left) and the proposed controller (right).", { x: 0.5, y: 6.9, w: 12.33, h: 0.35, fontSize: 12, color: GREY });
+
+  const pair = (title, b, o, capL, capR) => {
+    const sl = content(title);
+    sl.addImage(fit("cmp/" + b, 0.5, 1.35, 5.95, 5.1));
+    sl.addImage(fit("cmp/" + o, 6.88, 1.35, 5.95, 5.1));
+    text(sl, capL, { x: 0.5, y: 6.55, w: 5.95, h: 0.45, fontSize: 13, color: GREY, align: "center" });
+    text(sl, capR, { x: 6.88, y: 6.55, w: 5.95, h: 0.45, fontSize: 13, color: GREY, align: "center" });
+  };
+  pair("Influent flow rate", "b_fig3", "o_influent", "Base paper, Fig. 3", "This work (same BSM1 files)");
+  pair("Dry weather: S_O,5 and S_NO,2", "b_fig4", "o_traj_dry", "Base paper, Fig. 4 (MAACC and PID)", "This work: PID (grey), proposed (black)");
+  pair("Rain weather: S_O,5 and S_NO,2", "b_fig5", "o_traj_rain", "Base paper, Fig. 5", "This work");
+  pair("Storm weather: S_O,5 and S_NO,2", "b_fig6", "o_traj_storm", "Base paper, Fig. 6", "This work");
+  pair("Control inputs in the three weathers", "b_fig7", "o_inputs", "Base paper, Fig. 7 (MAACC)", "This work (proposed)");
+  pair("Dry weather with input noise", "b_fig8", "o_noise", "Base paper, Fig. 8", "This work: PID (grey), proposed (black)");
+  pair("Control inputs with and without input noise", "b_fig9", "o_inputs_noise", "Base paper, Fig. 9", "This work (proposed)");
+}
+
 // 12. conclusion
 s = content("Conclusions and limitations");
 bullets(s, [
@@ -184,7 +229,7 @@ bullets(s, [
 ], { x: 0.5, y: 1.4, w: 12.33, h: 5.4, fontSize: 18, paraSpaceAfter: 12 });
 
 (async () => {
-  const out = path.join(__dirname, "Paper1_Deck.pptx");
+  const out = path.join(__dirname, process.env.COMPARE === "1" ? "Paper1_Deck_comparison.pptx" : "Paper1_Deck.pptx");
   await pres.writeFile({ fileName: out });
   await applyTheme(out, THEME);
   console.log("wrote", out);
